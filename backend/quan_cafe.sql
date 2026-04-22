@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.0.2
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Apr 14, 2026 at 10:12 AM
--- Server version: 5.7.31
--- PHP Version: 7.3.21
+-- Generation Time: Apr 22, 2026 at 08:47 AM
+-- Server version: 9.1.0
+-- PHP Version: 8.3.14
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -29,7 +29,7 @@ SET time_zone = "+00:00";
 
 DROP TABLE IF EXISTS `ban`;
 CREATE TABLE IF NOT EXISTS `ban` (
-  `ma_ban` int(11) NOT NULL AUTO_INCREMENT,
+  `ma_ban` int NOT NULL AUTO_INCREMENT,
   `ten_ban` varchar(50) DEFAULT NULL,
   `trang_thai` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`ma_ban`)
@@ -52,9 +52,9 @@ INSERT INTO `ban` (`ma_ban`, `ten_ban`, `trang_thai`) VALUES
 
 DROP TABLE IF EXISTS `bill`;
 CREATE TABLE IF NOT EXISTS `bill` (
-  `ma_don_hang` int(11) NOT NULL,
-  `ma_mon` int(11) NOT NULL,
-  `so_luong` int(11) NOT NULL,
+  `ma_don_hang` int NOT NULL,
+  `ma_mon` int NOT NULL,
+  `so_luong` int NOT NULL,
   `don_gia` decimal(10,2) NOT NULL,
   PRIMARY KEY (`ma_don_hang`,`ma_mon`),
   KEY `ma_mon` (`ma_mon`)
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `bill` (
 
 DROP TABLE IF EXISTS `calam`;
 CREATE TABLE IF NOT EXISTS `calam` (
-  `ma_ca` int(11) NOT NULL AUTO_INCREMENT,
+  `ma_ca` int NOT NULL AUTO_INCREMENT,
   `buoi` varchar(50) DEFAULT NULL,
   `ngay` date DEFAULT NULL,
   PRIMARY KEY (`ma_ca`)
@@ -82,13 +82,13 @@ CREATE TABLE IF NOT EXISTS `calam` (
 
 DROP TABLE IF EXISTS `chuquan`;
 CREATE TABLE IF NOT EXISTS `chuquan` (
-  `ma_admin` int(11) NOT NULL AUTO_INCREMENT,
+  `ma_admin` int NOT NULL AUTO_INCREMENT,
   `ten_dang_nhap` varchar(50) NOT NULL,
   `mat_khau` varchar(255) NOT NULL,
   `role` varchar(20) DEFAULT 'admin',
   PRIMARY KEY (`ma_admin`),
   UNIQUE KEY `ten_dang_nhap` (`ten_dang_nhap`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `chuquan`
@@ -105,8 +105,8 @@ INSERT INTO `chuquan` (`ma_admin`, `ten_dang_nhap`, `mat_khau`, `role`) VALUES
 
 DROP TABLE IF EXISTS `congthuc`;
 CREATE TABLE IF NOT EXISTS `congthuc` (
-  `ma_mon` int(11) NOT NULL,
-  `ma_nguyen_lieu` int(11) NOT NULL,
+  `ma_mon` int NOT NULL,
+  `ma_nguyen_lieu` int NOT NULL,
   `dinh_luong` decimal(10,2) NOT NULL,
   PRIMARY KEY (`ma_mon`,`ma_nguyen_lieu`),
   KEY `ma_nguyen_lieu` (`ma_nguyen_lieu`)
@@ -120,8 +120,8 @@ CREATE TABLE IF NOT EXISTS `congthuc` (
 
 DROP TABLE IF EXISTS `donhang`;
 CREATE TABLE IF NOT EXISTS `donhang` (
-  `ma_don_hang` int(11) NOT NULL AUTO_INCREMENT,
-  `ma_ban` int(11) DEFAULT NULL,
+  `ma_don_hang` int NOT NULL AUTO_INCREMENT,
+  `ma_ban` int DEFAULT NULL,
   `ngay_tao` datetime DEFAULT CURRENT_TIMESTAMP,
   `trang_thai_don` varchar(50) DEFAULT NULL,
   `trang_thai_thanh_toan` varchar(50) DEFAULT NULL,
@@ -137,8 +137,8 @@ CREATE TABLE IF NOT EXISTS `donhang` (
 
 DROP TABLE IF EXISTS `lichsunhap`;
 CREATE TABLE IF NOT EXISTS `lichsunhap` (
-  `ma_phieu_nhap` int(11) NOT NULL,
-  `ma_nguyen_lieu` int(11) NOT NULL,
+  `ma_phieu_nhap` int NOT NULL,
+  `ma_nguyen_lieu` int NOT NULL,
   `so_luong_nhap` decimal(10,2) NOT NULL,
   `don_gia_nhap` decimal(10,2) NOT NULL,
   PRIMARY KEY (`ma_phieu_nhap`,`ma_nguyen_lieu`),
@@ -166,7 +166,7 @@ DELIMITER ;
 
 DROP TABLE IF EXISTS `mon`;
 CREATE TABLE IF NOT EXISTS `mon` (
-  `ma_mon` int(11) NOT NULL AUTO_INCREMENT,
+  `ma_mon` int NOT NULL AUTO_INCREMENT,
   `ten_mon` varchar(100) NOT NULL,
   `gia_ban` decimal(10,2) NOT NULL,
   PRIMARY KEY (`ma_mon`)
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `mon` (
 
 DROP TABLE IF EXISTS `nguyenlieu`;
 CREATE TABLE IF NOT EXISTS `nguyenlieu` (
-  `ma_nguyen_lieu` int(11) NOT NULL AUTO_INCREMENT,
+  `ma_nguyen_lieu` int NOT NULL AUTO_INCREMENT,
   `ten_nguyen_lieu` varchar(100) NOT NULL,
   `don_vi_tinh` varchar(50) DEFAULT NULL,
   `so_luong_ton` decimal(10,2) DEFAULT '0.00',
@@ -195,11 +195,12 @@ CREATE TABLE IF NOT EXISTS `nguyenlieu` (
 
 DROP TABLE IF EXISTS `nhanvien`;
 CREATE TABLE IF NOT EXISTS `nhanvien` (
-  `ma_nhan_vien` int(11) NOT NULL AUTO_INCREMENT,
-  `ten` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ma_nhan_vien` int NOT NULL AUTO_INCREMENT,
+  `ten` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `ngay_sinh` date DEFAULT NULL,
-  `so_dien_thoai` varchar(15) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `dia_chi` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `so_dien_thoai` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `dia_chi` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `trang_thai` tinyint(1) DEFAULT '1' COMMENT '1: active, 0: hidden',
   PRIMARY KEY (`ma_nhan_vien`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -207,17 +208,16 @@ CREATE TABLE IF NOT EXISTS `nhanvien` (
 -- Dumping data for table `nhanvien`
 --
 
-INSERT INTO `nhanvien` (`ma_nhan_vien`, `ten`, `ngay_sinh`, `so_dien_thoai`, `dia_chi`) VALUES
-(1, 'Trần Trọng Phúc', '2026-03-31', '1212121212', '12a'),
-(3, 'Đào Văn Nguyên', '2026-03-28', '123456', '12a'),
-(4, 'Trần Văn Hải', '2026-03-28', '020023210', '21a'),
-(5, 'Đặng Ngọc Lam', '2026-03-22', '12121212', '224a'),
-(6, 'Nguyễn Chí Thanh', '2026-04-01', '232442234', '444f'),
-(7, 'Lê Hoàng Long', '2026-03-29', '12121212', '23d'),
-(8, 'Lê Đặng Hải Phục', '2026-03-11', '121333212', 'da'),
-(11, 'Nguyên Thị Duyên', '2000-02-01', '44343422', '12ww'),
-(12, 'Lê Trọng Khiêm', '2003-02-02', '23232232', '121e'),
-(14, 'Trương Quỳnh Giao ', '2000-12-03', '08321515', '33c5');
+INSERT INTO `nhanvien` (`ma_nhan_vien`, `ten`, `ngay_sinh`, `so_dien_thoai`, `dia_chi`, `trang_thai`) VALUES
+(1, 'Trần Trọng Phúc', '2026-03-31', '1212121212', '12a', 1),
+(3, 'Đào Văn Nguyên', '2026-03-28', '123456', '12a', 1),
+(4, 'Trần Văn Hải', '2026-03-28', '020023210', '21a', 1),
+(5, 'Đặng Ngọc Lam', '2026-03-22', '12121212', '224a', 1),
+(6, 'Nguyễn Chí Thanh', '2026-04-01', '232442234', '444f', 1),
+(7, 'Lê Hoàng Long', '2026-03-29', '12121212', '23d', 1),
+(8, 'Lê Đặng Hải Phục', '2026-03-11', '121333212', 'da', 1),
+(11, 'Nguyên Thị Duyên', '2000-02-01', '44343422', '12ww', 1),
+(12, 'Lê Trọng Khiêm', '2003-02-02', '23232232', '121e', 1);
 
 -- --------------------------------------------------------
 
@@ -227,8 +227,8 @@ INSERT INTO `nhanvien` (`ma_nhan_vien`, `ten`, `ngay_sinh`, `so_dien_thoai`, `di
 
 DROP TABLE IF EXISTS `phancong`;
 CREATE TABLE IF NOT EXISTS `phancong` (
-  `ma_nhan_vien` int(11) NOT NULL,
-  `ma_ca` int(11) NOT NULL,
+  `ma_nhan_vien` int NOT NULL,
+  `ma_ca` int NOT NULL,
   `ngay` date NOT NULL,
   PRIMARY KEY (`ma_nhan_vien`,`ma_ca`,`ngay`),
   KEY `ma_ca` (`ma_ca`)
@@ -306,7 +306,7 @@ INSERT INTO `phancong` (`ma_nhan_vien`, `ma_ca`, `ngay`) VALUES
 
 DROP TABLE IF EXISTS `phieunhap`;
 CREATE TABLE IF NOT EXISTS `phieunhap` (
-  `ma_phieu_nhap` int(11) NOT NULL AUTO_INCREMENT,
+  `ma_phieu_nhap` int NOT NULL AUTO_INCREMENT,
   `ngay_nhap` datetime DEFAULT CURRENT_TIMESTAMP,
   `tong_tien` decimal(12,2) DEFAULT NULL,
   `nha_cung_cap` varchar(100) DEFAULT NULL,
