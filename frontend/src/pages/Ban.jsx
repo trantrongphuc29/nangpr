@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-
-const API_URL = "http://localhost:3000";
+import { createBan, deleteBanById, getBanList, updateBanById } from "../services/banService";
 
 export default function Ban() {
   const [list, setList] = useState([]);
@@ -12,8 +10,8 @@ export default function Ban() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/api/ban?sort=asc`);
-      setList(res.data);
+      const data = await getBanList("asc");
+      setList(data);
     } catch (err) {
       alert("Không load được dữ liệu");
     } finally {
@@ -34,7 +32,7 @@ export default function Ban() {
     }
 
     try {
-      await axios.post(`${API_URL}/api/ban`, { ten_ban: ten });
+      await createBan({ ten_ban: ten });
       setTenBan("");
       loadData();
     } catch (err) {
@@ -44,7 +42,7 @@ export default function Ban() {
 
   const deleteBan = async (id) => {
     if (!window.confirm("Xóa bàn này?")) return;
-    await axios.delete(`${API_URL}/api/ban/${id}`);
+    await deleteBanById(id);
     loadData();
   };
 
@@ -53,7 +51,7 @@ export default function Ban() {
     if (!ten) return alert("Nhập tên bàn!");
 
     try {
-      await axios.put(`${API_URL}/api/ban/${editId}`, { ten_ban: ten });
+      await updateBanById(editId, { ten_ban: ten });
       setEditId(null);
       setTenBan("");
       loadData();

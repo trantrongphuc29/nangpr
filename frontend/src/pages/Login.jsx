@@ -1,8 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
-const API_URL = "http://172.31.192.1:3000";
+import { login } from "../services/authService";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -18,16 +16,16 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await axios.post(`${API_URL}/api/login`, {
+      const res = await login({
         username,
         password,
       });
       
-      // ✅ ĐÃ SỬA: Chỉ lưu token vào localStorage
-      localStorage.setItem("token", res.data.token);   
+      // Chỉ lưu token vào localStorage
+      localStorage.setItem("token", res.token);   
 
       setMsg("");
-      alert("✅ Đăng nhập thành công!");
+      alert("Đăng nhập thành công!");
       navigate("/");   // Điều hướng về trang chủ
     } catch (err) {
       console.error("Lỗi login:", err);

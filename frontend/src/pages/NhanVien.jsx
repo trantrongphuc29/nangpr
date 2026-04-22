@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import {
+  createNhanVien,
+  createPhanCong,
+  deleteNhanVien,
+  deletePhanCong,
+  getLichPhanCong,
+  getNhanVienList,
+  updateNhanVien,
+} from "../services/nhanVienService";
 
 // =====================================================================
 // NOTE 1: KHU VỰC XỬ LÝ NGÀY THÁNG (ĐÃ FIX CHUẨN 100%)
@@ -70,14 +78,12 @@ const NhanVien = () => {
   const fetchData = useCallback(async () => {
     try {
       const { startStr, endStr } = getWeekRange(filterDate);
-      const assignUrl = `http://localhost:3000/api/nhanvien/lich-phan-cong?startDate=${startStr}&endDate=${endStr}`;
-      
       const [staffRes, assignRes] = await Promise.all([
-        axios.get('http://localhost:3000/api/nhanvien'),
-        axios.get(assignUrl)
+        getNhanVienList(),
+        getLichPhanCong({ startDate: startStr, endDate: endStr }),
       ]);
-      setStaffList(staffRes.data);
-      setAssignments(assignRes.data);
+      setStaffList(staffRes);
+      setAssignments(assignRes);
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
     }
@@ -94,7 +100,7 @@ const NhanVien = () => {
     e.preventDefault();
     const dataToSend = { ...formData, ngay_sinh: formData.ngay_sinh || null, dia_chi: formData.dia_chi || null };
     try {
-      await axios.post('http://localhost:3000/api/nhanvien', dataToSend);
+      await createNhanVien(dataToSend);
       setIsModalOpen(false); 
       setFormData({ ten: '', ngay_sinh: '', so_dien_thoai: '', dia_chi: '' });
       fetchData();
@@ -112,7 +118,7 @@ const NhanVien = () => {
     };
 
     try {
-      await axios.put(`http://localhost:3000/api/nhanvien/${dataToSend.ma_nhan_vien}`, dataToSend);
+      await updateNhanVien(dataToSend.ma_nhan_vien, dataToSend);
       setStaffDetailModal({ ...staffDetailModal, isEditing: false });
       fetchData();
       alert("Cập nhật thành công!");
@@ -125,7 +131,7 @@ const NhanVien = () => {
   const deleteStaff = async (id) => {
     if (window.confirm("Xóa nhân viên này sẽ xóa luôn lịch trực liên quan. Tiếp tục?")) {
       try {
-        await axios.delete(`http://localhost:3000/api/nhanvien/${id}`);
+        await deleteNhanVien(id);
         setStaffDetailModal({ isOpen: false, data: null, isEditing: false });
         fetchData();
       } catch (error) {
@@ -137,7 +143,7 @@ const NhanVien = () => {
   const handleAssignStaff = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:3000/api/nhanvien/phan-cong', assignForm);
+      await createPhanCong(assignForm);
       setIsAssignModalOpen(false);
       setAssignForm({ ma_nhan_vien: '', ma_ca: '', ngay: assignForm.ngay }); 
       fetchData();
@@ -150,9 +156,7 @@ const NhanVien = () => {
     e.stopPropagation(); 
     if(window.confirm("Bạn có chắc chắn muốn gỡ nhân viên này khỏi ca làm?")) {
       try {
-        await axios.delete('http://localhost:3000/api/nhanvien/phan-cong', {
-          data: { ma_nhan_vien, ma_ca, ngay: ngayStr }
-        });
+        await deletePhanCong({ ma_nhan_vien, ma_ca, ngay: ngayStr });
         fetchData(); 
       } catch (error) {
         alert("Lỗi khi xóa phân công: " + (error.response?.data?.message || error.message));

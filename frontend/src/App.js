@@ -1,18 +1,16 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Ban from "./pages/Ban";
-import Login from "./pages/Login";
 import NhanVien from "./pages/NhanVien";
-import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-
-        {/* Các trang yêu cầu đăng nhập */}
         <Route
           path="/"
           element={
