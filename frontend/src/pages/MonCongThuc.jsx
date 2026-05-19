@@ -429,8 +429,8 @@ export default function MonCongThuc() {
               <div className="space-y-1">
                 <label className="block font-bold uppercase text-muted">Trạng thái phục vụ</label>
                 <select className="w-full bg-[var(--color-input-bg)] border-none p-3.5 rounded-xl font-bold text-sm text-on-surface appearance-none" value={monForm.trang_thai_ban} onChange={e => setMonForm({ ...monForm, trang_thai_ban: parseInt(e.target.value) })}>
-                  <option value={1}>Đang kích hoạt kinh doanh công bố</option>
-                  <option value={0}>Tạm ngưng cung cấp mặt hàng này</option>
+                  <option value={1}>Đang bán</option>
+                  <option value={0}>Tạm ngưng</option>
                 </select>
               </div>
               <div className="flex gap-4 pt-4 border-t border-stone-100">

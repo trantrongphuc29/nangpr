@@ -112,7 +112,7 @@ html.dark {
     background-color: transparent;
     border: 1.5px solid var(--color-border);
     color: var(--color-primary);
-    @apply py-3 px-6 rounded-xl font-semibold transition-all active:scale-[0.98];
+    @apply py-3 px-6 rounded-xl font-semibold transition-all active:scale-[0.98] flex items-center justify-center gap-2;
   }
 
   .btn-outline:hover {
