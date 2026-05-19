@@ -1,0 +1,61 @@
+const NguyenLieuService = require('../services/nguyenlieuService');
+
+const NguyenLieuController = {
+  importStock: async (req, res) => {
+    try {
+      const result = await NguyenLieuService.nhapKho(req.body);
+      res.status(201).json({ message: "Nhập kho thành công!", data: result });
+    } catch (error) { res.status(400).json({ message: error.message }); }
+  },
+
+  getHistory: async (req, res) => {
+    try {
+      const data = await NguyenLieuService.getLichSu();
+      res.json(data);
+    } catch (error) { res.status(500).json({ message: error.message }); }
+  },
+
+  getReportStats: async (req, res) => {
+    try {
+      const data = await NguyenLieuService.getChiPhiStats();
+      res.json(data);
+    } catch (error) { res.status(500).json({ message: error.message }); }
+  },
+
+  getAll: async (req, res) => {
+    try {
+      const data = await NguyenLieuService.getDanhSach();
+      res.json(data);
+    } catch (error) { res.status(500).json({ message: error.message }); }
+  },
+
+  create: async (req, res) => {
+    try {
+      const id = await NguyenLieuService.themMoi(req.body);
+      res.status(201).json({ id, message: "Thêm thành công!" });
+    } catch (error) { res.status(400).json({ message: error.message }); }
+  },
+
+  update: async (req, res) => {
+    try {
+      const cleanId = parseInt(req.params.id);
+      if (isNaN(cleanId)) {
+        return res.status(400).json({ message: "Mã định danh nguyên liệu không hợp lệ!" });
+      }
+
+      await NguyenLieuService.capNhat(cleanId, req.body);
+      return res.json({ message: "Cập nhật thành công!" });
+    } catch (error) { 
+      return res.status(400).json({ message: error.message }); 
+    }
+  },
+
+  delete: async (req, res) => {
+    try {
+      await NguyenLieuService.xoa(req.params.id);
+      res.json({ message: "Đã xóa!" });
+    } catch (error) { res.status(400).json({ message: error.message }); }
+  }
+};
+
+module.exports = NguyenLieuController;

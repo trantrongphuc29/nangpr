@@ -7,19 +7,22 @@ export default function Layout() {
   const [open, setOpen] = useState(false);
 
   return (
-    // Đã thêm print:bg-white để trang giấy in ra trắng tinh thay vì có nền xám
-    <div className="flex min-h-screen bg-[#f5f5f0] print:bg-white">
+    // 1. Thay bg-[#f5f5f0] bằng bg-surface-container-low để đồng bộ Sáng/Tối
+    // 2. Thêm transition-colors duration-500 để nền đổi màu mượt mà
+    <div className="flex min-h-screen bg-surface-container-low transition-colors duration-500 print:bg-white font-sans">
 
       {/* Sidebar */}
       <Sidebar open={open} setOpen={setOpen} />
 
       {/* Main */}
-      {/* Đã thêm print:ml-0 print:block để nội dung khi in được đẩy full ra mép giấy */}
-      <div className="flex-1 flex flex-col lg:ml-64 print:ml-0 print:block">
+      {/* Giữ nguyên logic responsive ml-64 và các class print của bạn */}
+      <div className="flex-1 flex flex-col lg:ml-64 print:ml-0 print:block min-w-0 w-full">
         <Header setOpen={setOpen} />
 
-        {/* Đã thêm print:p-0 để khi in xóa khoảng trắng thừa xung quanh */}
-        <main className="p-6 print:p-0 print:m-0">
+        {/* Main content: p-6 giữ nguyên giao diện. 
+            Mọi trang con (Outlet) bây giờ sẽ hiển thị trên nền tổng đã được đồng bộ.
+        */}
+        <main className="p-4 md:p-6 print:p-0 print:m-0">
           <Outlet />
         </main>
       </div>

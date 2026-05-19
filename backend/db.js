@@ -1,15 +1,17 @@
 const mysql = require("mysql2");
 
-const db = mysql.createConnection({
+// Sử dụng createPool thay vì createConnection
+const pool = mysql.createPool({
     host: "localhost",
     user: "root",
     password: "",
-    database: "quan_cafe"
+    database: "quan_cafe",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-db.connect(err => {
-    if (err) console.log(err);
-    else console.log("MySQL connected");
-});
+// Xuất ra dạng promise để các Repository dùng được await db.execute()
+module.exports = pool.promise();
 
-module.exports = db;
+console.log("MySQL Pool initialized ✅");

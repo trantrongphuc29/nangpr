@@ -38,3 +38,8 @@ export const deletePhanCong = async (payload) => {
   });
   return response.data;
 };
+// Thêm hàm này vào file nhanVienService.js của bạn
+export const updateNhanVienStatus = async (id, trang_thai) => {
+  const response = await axiosClient.patch(`/api/nhanvien/${id}/status`, { trang_thai });
+  return response.data;
+};
