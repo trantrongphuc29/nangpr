@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: May 19, 2026 at 03:37 AM
+-- Generation Time: May 19, 2026 at 05:32 PM
 -- Server version: 5.7.31
 -- PHP Version: 7.3.21
 
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS `chitiet_phieunhap` (
   PRIMARY KEY (`ma_chi_tiet`),
   KEY `fk_ctpn_phieu` (`ma_phieu`),
   KEY `fk_ctpn_nguyenlieu` (`ma_nguyen_lieu`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `chitiet_phieunhap`
@@ -105,7 +105,14 @@ INSERT INTO `chitiet_phieunhap` (`ma_chi_tiet`, `ma_phieu`, `ma_nguyen_lieu`, `s
 (5, 5, 59, '2.00', '200000.00'),
 (6, 6, 59, '2.00', '200000.00'),
 (7, 7, 59, '2.00', '200000.00'),
-(8, 8, 77, '2.00', '200000.00');
+(8, 8, 77, '2.00', '200000.00'),
+(9, 9, 59, '1.00', '20000.00'),
+(10, 10, 59, '2.00', '10000.00'),
+(12, 12, 9, '1.00', '200000.00'),
+(13, 13, 96, '24.00', '10000.00'),
+(14, 14, 59, '1.00', '30000.00'),
+(15, 15, 59, '1.00', '20000.00'),
+(18, 18, 97, '200.00', '500.00');
 
 -- --------------------------------------------------------
 
@@ -438,110 +445,112 @@ CREATE TABLE IF NOT EXISTS `nguyenlieu` (
   `dung_tich_san_pham` decimal(10,2) NOT NULL DEFAULT '1.00',
   `ml_thuc_te_ton` decimal(10,2) NOT NULL DEFAULT '0.00',
   `nguong_canh_bao` decimal(10,2) NOT NULL DEFAULT '1000.00',
-  `ghi_chu` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `trang_thai` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1=đang dùng, 0=ngưng',
+  `ghi_chu` text COLLATE utf8mb4_unicode_ci,
+  `trang_thai` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`ma_nguyen_lieu`)
-) ENGINE=InnoDB AUTO_INCREMENT=95 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=98 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `nguyenlieu`
 --
 
-INSERT INTO `nguyenlieu` (`ma_nguyen_lieu`, `ten_nguyen_lieu`, `don_vi_nhap`, `dung_tich_san_pham`, `ml_thuc_te_ton`, `nguong_canh_bao`) VALUES
-(1, 'Trà đen', 'kg', '1.00', '10000.00', '1000.00'),
-(2, 'Chanh tươi', 'kg', '1.00', '5000.00', '1000.00'),
-(3, 'Syrup đường', 'chai', '1.00', '5000.00', '1000.00'),
-(4, 'Đá viên', 'kg', '1.00', '50000.00', '1000.00'),
-(5, 'Trà lài', 'kg', '1.00', '10000.00', '1000.00'),
-(6, 'Syrup đào', 'chai', '1.00', '3000.00', '1000.00'),
-(7, 'Đào ngâm', 'hộp', '1.00', '2000.00', '1000.00'),
-(8, 'Trà nhài', 'kg', '1.00', '10000.00', '1000.00'),
-(9, 'Syrup vải', 'chai', '1.00', '3000.00', '1000.00'),
-(10, 'Trái vải ngâm', 'hộp', '1.00', '2000.00', '1000.00'),
-(11, 'Trà xanh', 'kg', '1.00', '10000.00', '1000.00'),
-(12, 'Nước ép ổi', 'chai', '1.00', '5000.00', '1000.00'),
-(13, 'Muối hồng', 'kg', '1.00', '1000.00', '1000.00'),
-(14, 'Trà ô long', 'kg', '1.00', '10000.00', '1000.00'),
-(15, 'Mãng cầu xay', 'kg', '1.00', '5000.00', '1000.00'),
-(16, 'Sữa đặc', 'lon', '1.00', '10000.00', '1000.00'),
-(17, 'Trà hibiscus', 'kg', '1.00', '5000.00', '1000.00'),
-(18, 'Mứt dâu', 'chai', '1.00', '3000.00', '1000.00'),
-(19, 'Dâu tươi', 'kg', '1.00', '2000.00', '1000.00'),
-(20, 'Trà bá tước', 'kg', '1.00', '5000.00', '1000.00'),
-(21, 'Syrup nhãn', 'chai', '1.00', '3000.00', '1000.00'),
-(22, 'Nhãn ngâm', 'hộp', '1.00', '2000.00', '1000.00'),
-(23, 'Trà sen', 'kg', '1.00', '5000.00', '1000.00'),
-(24, 'Puree xoài', 'chai', '1.00', '3000.00', '1000.00'),
-(25, 'Xoài cắt hạt', 'kg', '1.00', '2000.00', '1000.00'),
-(26, 'Trà đen lạnh', 'kg', '1.00', '5000.00', '1000.00'),
-(27, 'Syrup dâu tằm', 'chai', '1.00', '3000.00', '1000.00'),
-(28, 'Dâu tằm ngâm', 'hộp', '1.00', '2000.00', '1000.00'),
-(29, 'Sữa chua cái', 'hũ', '1.00', '50.00', '1000.00'),
-(30, 'Sữa tươi', 'hộp', '1.00', '20000.00', '1000.00'),
-(31, 'Đường nước', 'chai', '1.00', '5000.00', '1000.00'),
-(32, 'Cafe espresso', 'kg', '1.00', '5000.00', '1000.00'),
-(33, 'Sữa chua Hy Lạp', 'hũ', '1.00', '5000.00', '1000.00'),
-(34, 'Sữa béo', 'hộp', '1.00', '5000.00', '1000.00'),
-(35, 'Sữa chua không đường', 'hũ', '1.00', '50.00', '1000.00'),
-(36, 'Syrup dâu đỏ', 'chai', '1.00', '3000.00', '1000.00'),
-(37, 'Dâu đông lạnh', 'kg', '1.00', '3000.00', '1000.00'),
-(38, 'Sữa chua lên men', 'hũ', '1.00', '5000.00', '1000.00'),
-(39, 'Puree dưa lưới', 'chai', '1.00', '3000.00', '1000.00'),
-(40, 'Hạt chia', 'kg', '1.00', '1000.00', '1000.00'),
-(41, 'Sữa chua vinamilk', 'hũ', '1.00', '50.00', '1000.00'),
-(42, 'Hạt đác', 'kg', '1.00', '2000.00', '1000.00'),
-(43, 'Thơm vàng', 'kg', '1.00', '2000.00', '1000.00'),
-(44, 'Bột cafe robusta', 'kg', '1.00', '5000.00', '1000.00'),
-(45, 'Nước nóng', 'ml', '1.00', '100000.00', '1000.00'),
-(46, 'Cafe arabica', 'kg', '1.00', '5000.00', '1000.00'),
-(47, 'Sữa đặc ông thọ', 'lon', '1.00', '5000.00', '1000.00'),
-(48, 'Cafe mộc nguyên chất', 'kg', '1.00', '5000.00', '1000.00'),
-(49, 'Nước tinh khiết', 'ml', '1.00', '100000.00', '1000.00'),
-(50, 'Cafe rang medium', 'kg', '1.00', '5000.00', '1000.00'),
-(51, 'Kem sữa', 'chai', '1.00', '5000.00', '1000.00'),
-(52, 'Cafe pha phin', 'kg', '1.00', '5000.00', '1000.00'),
-(53, 'Kem muối', 'chai', '1.00', '3000.00', '1000.00'),
-(54, 'Sữa tươi không đường', 'hộp', '1.00', '10000.00', '1000.00'),
-(55, 'Foam sữa', 'chai', '1.00', '3000.00', '1000.00'),
-(56, 'Cafe shot', 'ml', '1.00', '5000.00', '1000.00'),
-(57, 'Bột cacao nguyên chất', 'kg', '1.00', '3000.00', '1000.00'),
-(58, 'Sữa nóng', 'ml', '1.00', '10000.00', '1000.00'),
-(59, 'Bột cacao dark', 'kg', '1.00', '3006.00', '1000.00'),
-(60, 'Kem cheese mặn', 'chai', '1.00', '3000.00', '1000.00'),
-(61, 'Trà Lipton túi lọc', 'túi', '1.00', '200.00', '1000.00'),
-(62, 'Đường vàng', 'kg', '1.00', '3000.00', '1000.00'),
-(63, 'Soda Schweppes', 'lon', '1.00', '20000.00', '1000.00'),
-(64, 'Syrup blue curacao', 'chai', '1.00', '3000.00', '1000.00'),
-(65, 'Soda lạnh', 'lon', '1.00', '20000.00', '1000.00'),
-(66, 'Syrup strawberry', 'chai', '1.00', '3000.00', '1000.00'),
-(67, 'Soda tonic', 'lon', '1.00', '20000.00', '1000.00'),
-(68, 'Syrup blueberry', 'chai', '1.00', '3000.00', '1000.00'),
-(69, 'Sparkling water', 'lon', '1.00', '20000.00', '1000.00'),
-(70, 'Syrup mint', 'chai', '1.00', '3000.00', '1000.00'),
-(71, 'Sữa tươi Anchor', 'hộp', '1.00', '10000.00', '1000.00'),
-(72, 'Puree dâu handmade', 'chai', '1.00', '3000.00', '1000.00'),
-(73, 'Sữa hạnh nhân', 'hộp', '1.00', '10000.00', '1000.00'),
-(74, 'Mứt việt quất', 'chai', '1.00', '3000.00', '1000.00'),
-(75, 'Bột matcha Nhật', 'kg', '1.00', '2000.00', '1000.00'),
-(76, 'Sữa kem béo', 'hộp', '1.00', '5000.00', '1000.00'),
-(77, 'Bột khoai môn', 'kg', '1.00', '2002.00', '1000.00'),
-(78, 'Sữa béo thực vật', 'hộp', '1.00', '5000.00', '1000.00'),
-(79, 'Matcha ceremonial', 'kg', '1.00', '2000.00', '1000.00'),
-(80, 'Cacao trắng', 'kg', '1.00', '2000.00', '1000.00'),
-(81, 'Sữa yến mạch', 'hộp', '1.00', '10000.00', '1000.00'),
-(82, 'Socola syrup', 'chai', '1.00', '3000.00', '1000.00'),
-(83, 'Trân châu đường đen', 'kg', '1.00', '5000.00', '1000.00'),
-(84, 'Sữa thanh trùng', 'hộp', '1.00', '10000.00', '1000.00'),
-(85, 'Trân châu hoàng kim', 'kg', '1.00', '5000.00', '1000.00'),
-(86, 'Đường đen Hàn Quốc', 'chai', '1.00', '3000.00', '1000.00'),
-(87, 'Sữa fresh milk', 'hộp', '1.00', '10000.00', '1000.00'),
-(88, 'Nước yến đóng lon', 'lon', '1.00', '100.00', '1000.00'),
-(89, 'Lon Red Bull', 'lon', '1.00', '100.00', '1000.00'),
-(90, 'Chai trà xanh đóng chai', 'chai', '1.00', '101.00', '100.00'),
-(91, 'Lon Coca Cola', 'lon', '1.00', '100.00', '1000.00'),
-(92, 'Sting dâu', 'lon', '1.00', '100.00', '1000.00'),
-(93, 'Revive muối khoáng', 'lon', '1.00', '100.00', '1000.00'),
-(94, 'Nước bí đao đóng chai', 'chai', '1.00', '100.00', '1000.00');
+INSERT INTO `nguyenlieu` (`ma_nguyen_lieu`, `ten_nguyen_lieu`, `danh_muc`, `don_vi_tinh`, `don_vi_nhap`, `don_vi_dong_goi`, `dung_tich_san_pham`, `ml_thuc_te_ton`, `nguong_canh_bao`, `ghi_chu`, `trang_thai`) VALUES
+(1, 'Trà đen', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '10000.00', '1000.00', NULL, 1),
+(2, 'Chanh tươi', 'Sản phẩm hết trong ngày', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(3, 'Syrup đường', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(4, 'Đá viên', 'Sản phẩm hết trong ngày', 'g', 'kg', NULL, '1000.00', '50000.00', '1000.00', NULL, 1),
+(5, 'Trà lài', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '10000.00', '1000.00', NULL, 1),
+(6, 'Syrup đào', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(7, 'Đào ngâm', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '2000.00', '1000.00', NULL, 1),
+(8, 'Trà nhài', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '10000.00', '1000.00', NULL, 1),
+(9, 'Syrup vải', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '200.00', '3200.00', '1000.00', NULL, 1),
+(10, 'Vải ngâm', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '2000.00', '1000.00', NULL, 1),
+(11, 'Trà xanh', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '10000.00', '1000.00', NULL, 1),
+(12, 'Nước ép ổi', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(13, 'Muối hồng', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '1000.00', '1000.00', NULL, 1),
+(14, 'Trà ô long', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '10000.00', '1000.00', NULL, 1),
+(15, 'Mãng cầu xay', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(16, 'Sữa đặc', 'Nguyên liệu pha chế', 'g', 'lon', NULL, '1.00', '10000.00', '1000.00', NULL, 1),
+(17, 'Trà hibiscus', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(18, 'Mứt dâu', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(19, 'Dâu tươi', 'Sản phẩm hết trong ngày', 'g', 'kg', NULL, '1000.00', '2000.00', '1000.00', NULL, 1),
+(20, 'Trà bá tước', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(21, 'Syrup nhãn', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(22, 'Nhãn ngâm', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '2000.00', '1000.00', NULL, 1),
+(23, 'Trà sen', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(24, 'Puree xoài', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(25, 'Xoài tươi', 'Sản phẩm hết trong ngày', 'g', 'kg', NULL, '1000.00', '2000.00', '1000.00', NULL, 1),
+(26, 'Trà đen lạnh', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(27, 'Syrup dâu tằm', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(28, 'Dâu tằm ngâm', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '2000.00', '1000.00', NULL, 1),
+(29, 'Sữa chua', 'Nguyên liệu pha chế', 'g', 'hũ', NULL, '1.00', '50.00', '1000.00', NULL, 1),
+(30, 'Sữa tươi', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '20000.00', '1000.00', NULL, 1),
+(31, 'Đường nước', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(32, 'Cafe espresso', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(33, 'Sữa chua Hy Lạp', 'Nguyên liệu pha chế', 'g', 'hũ', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(34, 'Sữa béo', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(35, 'Sữa chua không đường', 'Nguyên liệu pha chế', 'g', 'hũ', NULL, '1.00', '50.00', '1000.00', NULL, 1),
+(36, 'Syrup dâu', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(37, 'Dâu đông lạnh', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '3000.00', '1000.00', NULL, 1),
+(38, 'Sữa chua lên men', 'Nguyên liệu pha chế', 'g', 'hũ', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(39, 'Puree dưa lưới', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(40, 'Hạt chia', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '1000.00', '1000.00', NULL, 1),
+(41, 'Sữa chua vinamilk', 'Nguyên liệu pha chế', 'g', 'hũ', NULL, '1.00', '50.00', '1000.00', NULL, 1),
+(42, 'Hạt đác', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '2000.00', '1000.00', NULL, 1),
+(43, 'Thơm vàng', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '2000.00', '1000.00', NULL, 1),
+(44, 'Bột cafe robusta', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(45, 'Nước nóng', 'Nguyên liệu pha chế', 'g', 'ml', NULL, '1.00', '100000.00', '1000.00', NULL, 1),
+(46, 'Cafe arabica', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(47, 'Sữa đặc', 'Nguyên liệu pha chế', 'g', 'lon', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(48, 'Cafe mộc nguyên chất', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(49, 'Nước tinh khiết', 'Nguyên liệu pha chế', 'g', 'ml', NULL, '1.00', '100000.00', '1000.00', NULL, 1),
+(50, 'Cafe rang medium', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(51, 'Kem sữa', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(52, 'Cafe pha phin', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(53, 'Kem muối', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(54, 'Sữa tươi không đường', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '10000.00', '1000.00', NULL, 1),
+(55, 'Foam sữa', 'Nguyên liệu pha chế', 'ml', 'chai', NULL, '200.00', '3000.00', '1000.00', NULL, 1),
+(56, 'Cafe shot', 'Nguyên liệu pha chế', 'g', 'ml', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(57, 'Bột cacao nguyên chất', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '3000.00', '1000.00', NULL, 1),
+(58, 'Sữa nóng', 'Nguyên liệu pha chế', 'g', 'ml', NULL, '1.00', '10000.00', '1000.00', NULL, 1),
+(59, 'Bột cacao dark', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '7007.00', '1000.00', NULL, 1),
+(60, 'Kem cheese mặn', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(61, 'Trà Lipton túi lọc', 'Hộp & Bao bì đóng gói', 'g', 'túi', NULL, '1.00', '200.00', '1000.00', NULL, 1),
+(62, 'Đường vàng', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '3000.00', '1000.00', NULL, 1),
+(63, 'Soda Schweppes', 'Đồ uống đóng chai/lon', 'g', 'lon', NULL, '1.00', '20000.00', '1000.00', NULL, 1),
+(64, 'Syrup blue curacao', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(65, 'Soda lạnh', 'Đồ uống đóng chai/lon', 'g', 'lon', NULL, '1.00', '20000.00', '1000.00', NULL, 1),
+(66, 'Syrup dâu', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(67, 'Soda tonic', 'Đồ uống đóng chai/lon', 'g', 'lon', NULL, '1.00', '20000.00', '1000.00', NULL, 1),
+(68, 'Syrup việt quất', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(69, 'Sparkling water', 'Đồ uống đóng chai/lon', 'g', 'lon', NULL, '1.00', '20000.00', '1000.00', NULL, 1),
+(70, 'Syrup bạc hà', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(71, 'Sữa tươi Anchor', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '10000.00', '1000.00', NULL, 1),
+(72, 'Puree dâu', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(73, 'Sữa hạnh nhân', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '10000.00', '1000.00', NULL, 1),
+(74, 'Mứt việt quất', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(75, 'Bột matcha', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '2000.00', '1000.00', NULL, 1),
+(76, 'Sữa kem béo', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(77, 'Bột khoai môn', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '2002.00', '1000.00', NULL, 1),
+(78, 'Sữa béo thực vật', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '5000.00', '1000.00', NULL, 1),
+(79, 'Matcha ceremonial', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '2000.00', '1000.00', NULL, 1),
+(80, 'Cacao trắng', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '2000.00', '1000.00', NULL, 1),
+(81, 'Sữa yến mạch', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '10000.00', '1000.00', NULL, 1),
+(82, 'Socola syrup', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(83, 'Trân châu đường đen', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(84, 'Sữa thanh trùng', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '10000.00', '1000.00', NULL, 1),
+(85, 'Trân châu hoàng kim', 'Nguyên liệu pha chế', 'g', 'kg', NULL, '1000.00', '5000.00', '1000.00', NULL, 1),
+(86, 'Đường đen Hàn Quốc', 'Nguyên liệu pha chế', 'g', 'chai', NULL, '1.00', '3000.00', '1000.00', NULL, 1),
+(87, 'Sữa fresh milk', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '1.00', '10000.00', '1000.00', NULL, 1),
+(88, 'Nước yến đóng lon', 'Đồ uống đóng chai/lon', 'g', 'lon', NULL, '1.00', '100.00', '1000.00', NULL, 1),
+(89, 'Bò húc lon', 'Đồ uống đóng chai/lon', 'lon', 'lon', NULL, '1.00', '100.00', '10.00', NULL, 1),
+(90, 'Trà xanh đóng chai', 'Đồ uống đóng chai/lon', 'ml', 'chai', NULL, '320.00', '101.00', '100.00', NULL, 1),
+(91, 'Coca Cola lon', 'Đồ uống đóng chai/lon', 'g', 'lon', NULL, '1.00', '100.00', '1000.00', NULL, 1),
+(92, 'Sting lon', 'Đồ uống đóng chai/lon', 'g', 'lon', NULL, '1.00', '100.00', '1000.00', NULL, 1),
+(93, 'Revive chai', 'Đồ uống đóng chai/lon', 'g', 'lon', NULL, '1.00', '100.00', '1000.00', NULL, 1),
+(94, 'Bí đao đóng chai', 'Đồ uống đóng chai/lon', 'chai', 'chai', NULL, '1.00', '100.00', '10.00', NULL, 1),
+(96, 'Pepsi', 'Đồ uống đóng chai/lon', 'chai/lon', 'chai/lon', NULL, '1.00', '24.00', '10.00', NULL, 1),
+(97, 'Ly Giấy', 'Hộp & Bao bì đóng gói', 'cái', 'cái', NULL, '1.00', '200.00', '10.00', NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -573,7 +582,7 @@ INSERT INTO `nhanvien` (`ma_nhan_vien`, `ten`, `ngay_sinh`, `so_dien_thoai`, `di
 (11, 'Nguyên Thị Duyên', '2000-02-01', '44343422', '12ww', 1),
 (12, 'Lê Trọng Khiêm', '2003-02-02', '23232232', '121e', 1),
 (14, 'Lê Văn Cam', '1999-11-12', '121212121', '12ww', 1),
-(15, 'Lê Văn H', '1999-02-02', '1212121', '12g', 0);
+(15, 'Lê Văn H', '1999-02-02', '1212121', '12g', 1);
 
 -- --------------------------------------------------------
 
@@ -686,7 +695,7 @@ CREATE TABLE IF NOT EXISTS `phieunhap` (
   `tong_tien` decimal(12,2) NOT NULL DEFAULT '0.00',
   `ghi_chu` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`ma_phieu`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `phieunhap`
@@ -700,7 +709,17 @@ INSERT INTO `phieunhap` (`ma_phieu`, `ngay_nhap`, `nha_cung_cap`, `tong_tien`, `
 (5, '2026-05-17 15:26:50', 'ACX', '400000.00', 'Nhập kho hệ thống'),
 (6, '2026-05-17 15:27:46', 'a', '400000.00', 'Nhập kho hệ thống'),
 (7, '2026-05-17 15:29:03', 'a', '400000.00', 'Nhập kho hệ thống'),
-(8, '2026-05-17 15:30:50', 'q', '400000.00', 'Nhập kho hệ thống');
+(8, '2026-05-17 15:30:50', 'q', '400000.00', 'Nhập kho hệ thống'),
+(9, '2026-05-19 00:00:00', 'Đại lý tự do', '20000.00', 'Nhập kho hệ thống'),
+(10, '2026-05-19 07:00:00', 'Đại lý tự do', '20000.00', 'Nhập kho hệ thống'),
+(11, '2026-05-19 07:00:00', 'Đại lý tự do', '20000.00', 'Nhập kho hệ thống'),
+(12, '2026-05-19 07:00:00', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống'),
+(13, '2026-05-19 07:00:00', 'A', '240000.00', 'Nhập kho hệ thống'),
+(14, '2026-05-19 07:00:00', 'A', '30000.00', 'Nhập kho hệ thống'),
+(15, '2026-05-19 07:00:00', 'D', '20000.00', 'Nhập kho hệ thống'),
+(16, '2026-05-19 07:00:00', 'Đại lý tự do', '40000.00', 'Nhập kho hệ thống'),
+(17, '2026-05-19 07:00:00', 'Đại lý tự do', '40000.00', 'Nhập kho hệ thống'),
+(18, '2026-05-19 07:00:00', 'A', '100000.00', 'Nhập kho hệ thống');
 
 --
 -- Constraints for dumped tables

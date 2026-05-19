@@ -18,7 +18,7 @@ const removeById = async (id) => {
 };
 
 const updateById = async (id, tenBan) => {
-  const [result] = await db.execute("UPDATE ban WHERE ma_ban = ?", [tenBan, id]);
+  const [result] = await db.execute("UPDATE ban SET ten_ban = ? WHERE ma_ban = ?", [tenBan, id]);
   return result.affectedRows > 0;
 };
 
