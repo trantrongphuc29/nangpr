@@ -87,7 +87,7 @@ export default function Ban() {
         {editId ? (
           <button
             onClick={updateBan}
-            className="btn-primary !bg-blue-600 hover:!bg-blue-700 !shadow-blue-500/20"
+            className="btn-secondary"
           >
             <span className="material-symbols-outlined">check</span>
             Cập nhật
@@ -134,7 +134,7 @@ export default function Ban() {
                 {/* Nút Sửa: Dùng màu Amber (vàng cam) nhạt để thanh lịch */}
                 <button
                   onClick={() => handleEdit(ban)}
-                  className="flex-1 flex items-center justify-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-amber-500 hover:text-white active:scale-90"
+                  className="flex-1 btn-action-edit"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
                   Sửa

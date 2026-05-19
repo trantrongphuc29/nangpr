@@ -431,10 +431,15 @@ DROP TABLE IF EXISTS `nguyenlieu`;
 CREATE TABLE IF NOT EXISTS `nguyenlieu` (
   `ma_nguyen_lieu` int(11) NOT NULL AUTO_INCREMENT,
   `ten_nguyen_lieu` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `danh_muc` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT 'Khác',
+  `don_vi_tinh` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT 'g',
   `don_vi_nhap` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `don_vi_dong_goi` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `dung_tich_san_pham` decimal(10,2) NOT NULL DEFAULT '1.00',
   `ml_thuc_te_ton` decimal(10,2) NOT NULL DEFAULT '0.00',
   `nguong_canh_bao` decimal(10,2) NOT NULL DEFAULT '1000.00',
+  `ghi_chu` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `trang_thai` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1=đang dùng, 0=ngưng',
   PRIMARY KEY (`ma_nguyen_lieu`)
 ) ENGINE=InnoDB AUTO_INCREMENT=95 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

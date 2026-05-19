@@ -261,7 +261,7 @@ export default function MonCongThuc() {
         </div>
         <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-none group">
-            <span className="absolute inset-y-0 left-3 flex items-center text-stone-400">
+            <span className="absolute inset-y-0 left-3 flex items-center text-muted">
               <span className="material-symbols-outlined text-xl">search</span>
             </span>
             <input 
@@ -287,15 +287,15 @@ export default function MonCongThuc() {
           <p className="text-on-tertiary-container/80 text-sm">Hệ thống phân rã định lượng kho tự động</p>
         </div>
         <div className="flex flex-wrap gap-4 w-full md:w-auto">
-          <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md px-6 py-4 rounded-xl text-center min-w-[110px] flex-1 sm:flex-none">
+          <div className="stat-chip min-w-[110px] flex-1 sm:flex-none">
             <span className="block text-xs font-bold text-on-surface-variant mb-1">CAFÉ</span>
             <span className="text-2xl font-extrabold text-primary">{statsCounters.cafe}</span>
           </div>
-          <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md px-6 py-4 rounded-xl text-center min-w-[110px] flex-1 sm:flex-none">
+          <div className="stat-chip min-w-[110px] flex-1 sm:flex-none">
             <span className="block text-xs font-bold text-on-surface-variant mb-1">TRÀ/LATTE</span>
             <span className="text-2xl font-extrabold text-primary">{statsCounters.tra}</span>
           </div>
-          <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md px-6 py-4 rounded-xl text-center min-w-[110px] flex-1 sm:flex-none">
+          <div className="stat-chip min-w-[110px] flex-1 sm:flex-none">
             <span className="block text-xs font-bold text-on-surface-variant mb-1">NƯỚC NGỌT/SODA</span>
             <span className="text-2xl font-extrabold text-primary">{statsCounters.nuocngot}</span>
           </div>
@@ -303,7 +303,7 @@ export default function MonCongThuc() {
       </div>
 
       {/* TRÌNH CUỘN DANH MỤC TABS ASYMMETRIC */}
-      <div className="flex items-center gap-6 overflow-x-auto pb-2 border-b border-stone-200/40 whitespace-nowrap custom-scrollbar">
+      <div className="flex items-center gap-6 overflow-x-auto pb-2 border-b border-outline whitespace-nowrap custom-scrollbar">
         {['Tất cả', ...categories.map(c => c.ten_danh_muc)].map((tabName) => (
           <button 
             key={tabName}
@@ -336,7 +336,7 @@ export default function MonCongThuc() {
           const hasFormula = formulaCount > 0;
 
           return (
-            <div key={mon.ma_mon} className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container-low border border-stone-100 dark:border-zinc-800/60 transition-all duration-300 shadow-sm hover:shadow-md gap-4">
+            <div key={mon.ma_mon} className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container-low border border-outline transition-all duration-300 shadow-sm hover:shadow-md gap-4">
               <div className="flex items-center gap-5 flex-1">
                 <div className="w-16 h-16 rounded-lg bg-surface-container border flex items-center justify-center text-2xl shadow-inner shrink-0">
                   {mon.ten_danh_muc?.includes('Café') ? '☕' : mon.ten_danh_muc?.includes('Soda') ? '🍹' : '🥤'}
@@ -347,13 +347,13 @@ export default function MonCongThuc() {
                     
                     {/* KHỐI HIỂN THỊ TRẠNG THÁI ẨN/HIỆN ĐỘNG BẢO VỆ ĐƠN HÀNG */}
                     {!hasFormula && (
-                      <span className="text-[9px] font-black tracking-tight uppercase bg-red-50 text-red-500 px-1.5 py-0.5 rounded border border-red-200/40">Ẩn - Thiếu công thức</span>
+                      <span className="badge-error">Ẩn - Thiếu công thức</span>
                     )}
                   </div>
                   <h4 className="text-lg font-extrabold text-primary group-hover:text-secondary transition-colors uppercase tracking-tight mt-1">{mon.ten_mon}</h4>
                   
-                  <p className="text-xs font-bold text-stone-400 mt-0.5 flex items-center gap-1">
-                    <span className={`w-2 h-2 rounded-full ${hasFormula && mon.so_luong_co_the_lam > 0 ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                  <p className="text-xs font-bold text-muted mt-0.5 flex items-center gap-1">
+                    <span className={`w-2 h-2 rounded-full ${hasFormula && mon.so_luong_co_the_lam > 0 ? 'bg-success' : 'bg-warning'}`}></span>
                     {hasFormula ? `Quầy bar ước lượng làm được: ${mon.so_luong_co_the_lam} ly` : 'Cần bổ sung cấu hình vật tư trước khi mở bán'}
                   </p>
                 </div>
@@ -361,15 +361,15 @@ export default function MonCongThuc() {
 
               <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-8 border-t sm:border-none pt-3 sm:pt-0 border-dashed">
                 <div className="text-left sm:text-right">
-                  <span className="block text-[10px] font-black text-stone-400 uppercase tracking-wider">Đơn giá</span>
+                  <span className="block text-[10px] font-black text-muted uppercase tracking-wider">Đơn giá</span>
                   <span className="text-lg font-black text-primary tracking-tight">{Number(mon.gia_ban).toLocaleString('vi-VN')}đ</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleOpenFormulaModal(mon)} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${hasFormula ? 'bg-stone-100 text-primary hover:bg-primary hover:text-white' : 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white'}`}>
+                  <button onClick={() => handleOpenFormulaModal(mon)} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${hasFormula ? 'bg-[var(--color-input-bg)] text-primary hover:bg-primary hover:text-on-primary' : 'badge-error hover:bg-error hover:text-white border-0'}`}>
                     <span className="material-symbols-outlined text-base">menu_book</span>
                     <span>Công thức</span>
                   </button>
-                  <button onClick={() => handleOpenEditModal(mon)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-blue-600 bg-surface-container-high border rounded-lg hover:bg-blue-600 hover:text-white transition-all">
+                  <button onClick={() => handleOpenEditModal(mon)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-primary bg-surface-container-high border border-outline rounded-lg hover:bg-primary hover:text-on-primary transition-all">
                     <span className="material-symbols-outlined text-base">edit</span>
                   </button>
                   <button onClick={() => handleDeleteMon(mon.ma_mon)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-error bg-error-container rounded-lg hover:bg-error hover:text-on-error transition-all">
@@ -382,59 +382,59 @@ export default function MonCongThuc() {
         })}
 
         {filteredMonList.length === 0 && (
-          <div className="py-16 text-center text-stone-400 font-black uppercase tracking-widest text-xs animate-pulse">Không tìm thấy món nước uống nào khớp tiêu chí...</div>
+          <div className="py-16 text-center text-muted font-black uppercase tracking-widest text-xs animate-pulse">Không tìm thấy món nước uống nào khớp tiêu chí...</div>
         )}
       </div>
 
       {/* KHỐI ĐIỀU HƯỚNG PHÂN TRANG ĐỒNG BỘ */}
       {filteredMonList.length > itemsPerPage && (
-        <div className="px-6 py-4 flex justify-between items-center text-xs font-bold text-stone-400">
+        <div className="px-6 py-4 flex justify-between items-center text-xs font-bold text-muted">
           <span>Trang {currentPage} / {totalPages} ({filteredMonList.length} món)</span>
           <div className="flex gap-1">
-            <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-stone-100 text-primary disabled:opacity-30"><span className="material-symbols-outlined text-sm">chevron_left</span></button>
+            <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--color-input-bg)] text-primary disabled:opacity-30"><span className="material-symbols-outlined text-sm">chevron_left</span></button>
             {Array.from({ length: totalPages }).map((_, i) => (
-              <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${currentPage === i + 1 ? 'bg-primary text-white font-black shadow-sm' : 'hover:bg-stone-100 text-stone-600'}`}>{i + 1}</button>
+              <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${currentPage === i + 1 ? 'bg-primary text-white font-black shadow-sm' : 'hover:bg-[var(--color-input-bg)] text-stone-600'}`}>{i + 1}</button>
             ))}
-            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-stone-100 text-primary disabled:opacity-30"><span className="material-symbols-outlined text-sm">chevron_right</span></button>
+            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--color-input-bg)] text-primary disabled:opacity-30"><span className="material-symbols-outlined text-sm">chevron_right</span></button>
           </div>
         </div>
       )}
 
       {/* Popup 1: MODAL DIALOG THÊM / SỬA THÔNG TIN MÓN */}
       {showMonModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border border-stone-100 dark:border-zinc-800">
+        <div className="modal-overlay animate-in fade-in duration-200">
+          <div className="modal-panel max-w-md p-8 rounded-[2.5rem]">
             <h4 className="text-xl font-black text-primary uppercase italic mb-6 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl">local_cafe</span>
               {monForm.ma_mon ? 'Cập nhật thông tin món' : 'Khai báo món nước mới'}
             </h4>
             <form onSubmit={handleSaveMon} className="space-y-4 text-xs text-slate-700 dark:text-zinc-300">
               <div className="space-y-1">
-                <label className="block font-bold uppercase text-stone-400">Tên món uống</label>
-                <input type="text" className="w-full bg-stone-50 dark:bg-zinc-800 border-none p-3.5 rounded-xl font-bold text-sm text-slate-800 dark:text-white" value={monForm.ten_mon} onChange={e => setMonForm({ ...monForm, ten_mon: e.target.value })} required />
+                <label className="block font-bold uppercase text-muted">Tên món uống</label>
+                <input type="text" className="w-full bg-[var(--color-input-bg)] border-none p-3.5 rounded-xl font-bold text-sm text-on-surface" value={monForm.ten_mon} onChange={e => setMonForm({ ...monForm, ten_mon: e.target.value })} required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block font-bold uppercase text-stone-400">Giá bán lẻ (đ)</label>
-                  <input type="number" className="w-full bg-stone-50 dark:bg-zinc-800 border-none p-3.5 rounded-xl font-bold text-sm text-slate-800 dark:text-white" value={monForm.gia_ban} onChange={e => setMonForm({ ...monForm, gia_ban: e.target.value })} required />
+                  <label className="block font-bold uppercase text-muted">Giá bán lẻ (đ)</label>
+                  <input type="number" className="w-full bg-[var(--color-input-bg)] border-none p-3.5 rounded-xl font-bold text-sm text-on-surface" value={monForm.gia_ban} onChange={e => setMonForm({ ...monForm, gia_ban: e.target.value })} required />
                 </div>
                 <div className="space-y-1">
-                  <label className="block font-bold uppercase text-stone-400">Nhóm danh mục</label>
-                  <select className="w-full bg-stone-50 dark:bg-zinc-800 border-none p-3.5 rounded-xl font-bold text-sm text-slate-800 dark:text-white appearance-none" value={monForm.ma_danh_muc} onChange={e => setMonForm({ ...monForm, ma_danh_muc: e.target.value })} required>
+                  <label className="block font-bold uppercase text-muted">Nhóm danh mục</label>
+                  <select className="w-full bg-[var(--color-input-bg)] border-none p-3.5 rounded-xl font-bold text-sm text-on-surface appearance-none" value={monForm.ma_danh_muc} onChange={e => setMonForm({ ...monForm, ma_danh_muc: e.target.value })} required>
                     <option value="">-- Lựa chọn --</option>
                     {categories.map(c => <option key={c.ma_danh_muc} value={c.ma_danh_muc}>{c.ten_danh_muc}</option>)}
                   </select>
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="block font-bold uppercase text-stone-400">Trạng thái phục vụ</label>
-                <select className="w-full bg-stone-50 dark:bg-zinc-800 border-none p-3.5 rounded-xl font-bold text-sm text-slate-800 dark:text-white appearance-none" value={monForm.trang_thai_ban} onChange={e => setMonForm({ ...monForm, trang_thai_ban: parseInt(e.target.value) })}>
+                <label className="block font-bold uppercase text-muted">Trạng thái phục vụ</label>
+                <select className="w-full bg-[var(--color-input-bg)] border-none p-3.5 rounded-xl font-bold text-sm text-on-surface appearance-none" value={monForm.trang_thai_ban} onChange={e => setMonForm({ ...monForm, trang_thai_ban: parseInt(e.target.value) })}>
                   <option value={1}>Đang kích hoạt kinh doanh công bố</option>
                   <option value={0}>Tạm ngưng cung cấp mặt hàng này</option>
                 </select>
               </div>
               <div className="flex gap-4 pt-4 border-t border-stone-100">
-                <button type="button" onClick={() => setShowMonModal(false)} className="flex-1 font-bold uppercase text-[10px] text-stone-400">Hủy bỏ</button>
+                <button type="button" onClick={() => setShowMonModal(false)} className="flex-1 font-bold uppercase text-[10px] text-muted">Hủy bỏ</button>
                 <button type="submit" className="flex-1 bg-primary text-white py-4 rounded-xl font-black uppercase text-[11px] shadow-lg">Xác nhận Lưu</button>
               </div>
             </form>
@@ -444,28 +444,28 @@ export default function MonCongThuc() {
 
       {/* Popup 2: MODAL POPUP CẤU HÌNH CÔNG THỨC */}
       {showFormulaModal && activeMon && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 w-full max-w-xl rounded-[2.5rem] p-8 shadow-2xl border border-stone-100 dark:border-zinc-800 flex flex-col max-h-[85vh]">
+        <div className="modal-overlay animate-in fade-in duration-200">
+          <div className="modal-panel max-w-xl p-8 rounded-[2.5rem] flex flex-col max-h-[85vh]">
             <div className="flex justify-between items-start border-b pb-4 mb-4 shrink-0">
               <div>
                 <span className="text-[9px] font-black uppercase bg-primary/10 text-primary px-2 py-0.5 rounded">ID món: #{activeMon.ma_mon}</span>
                 <h4 className="text-xl font-black text-stone-800 dark:text-zinc-100 uppercase tracking-tight mt-1">Định mức công thức: {activeMon.ten_mon}</h4>
               </div>
-              <button onClick={() => { setShowFormulaModal(false); setActiveMon(null); }} className="w-8 h-8 rounded-full bg-stone-100 dark:bg-zinc-800 flex items-center justify-center text-stone-400 hover:text-stone-600"><span className="material-symbols-outlined text-base">close</span></button>
+              <button onClick={() => { setShowFormulaModal(false); setActiveMon(null); }} className="w-8 h-8 rounded-full bg-[var(--color-input-bg)] dark:bg-zinc-800 flex items-center justify-center text-muted hover:text-stone-600"><span className="material-symbols-outlined text-base">close</span></button>
             </div>
 
             {/* Ô thêm nguyên liệu liên kết động */}
-            <div className="flex gap-2 items-end text-xs mb-4 bg-stone-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-dashed shrink-0">
+            <div className="flex gap-2 items-end text-xs mb-4 bg-[var(--color-input-bg)]/40 p-3 rounded-xl border border-dashed shrink-0">
               <div className="flex-1">
-                <label className="text-[9px] font-black uppercase text-stone-400 dark:text-zinc-500 ml-0.5">Chọn vật tư nguyên liệu</label>
-                <select className="w-full bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-lg p-2.5 font-bold text-sm text-slate-800 dark:text-white mt-1" value={tempIngredient.ma_nguyen_lieu} onChange={e => setTempIngredient({...tempIngredient, ma_nguyen_lieu: e.target.value})}>
+                <label className="text-[9px] font-black uppercase text-muted dark:text-zinc-500 ml-0.5">Chọn vật tư nguyên liệu</label>
+                <select className="w-full bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-lg p-2.5 font-bold text-sm text-on-surface mt-1" value={tempIngredient.ma_nguyen_lieu} onChange={e => setTempIngredient({...tempIngredient, ma_nguyen_lieu: e.target.value})}>
                   <option value="">-- Chọn mặt hàng kho --</option>
                   {nguyenLieuList.map(n => <option key={n.ma_nguyen_lieu} value={n.ma_nguyen_lieu}>{n.ten_nguyen_lieu} ({n.don_vi_nhap === 'kg' ? 'g' : 'ml'})</option>)}
                 </select>
               </div>
               <div className="w-28">
-                <label className="text-[9px] font-black uppercase text-stone-400 dark:text-zinc-500 ml-0.5">Định lượng cần</label>
-                <input type="number" placeholder="Số ml/g..." className="w-full bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-lg p-2.5 font-bold text-sm text-slate-800 dark:text-white mt-1" value={tempIngredient.dinh_luong} onChange={e => setTempIngredient({...tempIngredient, dinh_luong: e.target.value})}/>
+                <label className="text-[9px] font-black uppercase text-muted dark:text-zinc-500 ml-0.5">Định lượng cần</label>
+                <input type="number" placeholder="Số ml/g..." className="w-full bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-lg p-2.5 font-bold text-sm text-on-surface mt-1" value={tempIngredient.dinh_luong} onChange={e => setTempIngredient({...tempIngredient, dinh_luong: e.target.value})}/>
               </div>
               <button type="button" onClick={handleAddIngredientToFormula} className="bg-primary text-white py-2.5 px-4 rounded-lg font-black uppercase text-[10px] tracking-wider h-[40px] shadow-sm">Gắn vào</button>
             </div>
@@ -473,7 +473,7 @@ export default function MonCongThuc() {
             {/* Bảng liệt kê thành phần công thức con */}
             <div className="overflow-y-auto flex-1 border rounded-xl shadow-inner bg-white dark:bg-zinc-950">
               <table className="w-full text-left text-[11px]">
-                <thead className="bg-stone-50 dark:bg-zinc-800 text-stone-500 font-black uppercase border-b sticky top-0 z-10">
+                <thead className="bg-[var(--color-input-bg)] text-stone-500 font-black uppercase border-b sticky top-0 z-10">
                   <tr>
                     <th className="p-3 pl-4">Thành phần chi tiết</th>
                     <th className="p-3 text-center">Định lượng tiêu hao</th>
@@ -493,7 +493,7 @@ export default function MonCongThuc() {
                     }
                     
                     if (formulaItems.length === 0) {
-                      return <tr><td colSpan="3" className="p-6 text-center text-stone-400 font-bold uppercase tracking-widest text-[10px] py-12 animate-pulse">Món nước này chưa cấu hình công thức pha chế!</td></tr>;
+                      return <tr><td colSpan="3" className="p-6 text-center text-muted font-bold uppercase tracking-widest text-[10px] py-12 animate-pulse">Món nước này chưa cấu hình công thức pha chế!</td></tr>;
                     }
 
                     return formulaItems.map((item, index) => (

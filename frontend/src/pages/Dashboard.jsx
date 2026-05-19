@@ -1,17 +1,11 @@
 export default function Dashboard() {
   return (
     <div className="transition-colors duration-500">
-      {/* Thay text-[#553722] bằng text-primary: 
-          Sáng sẽ là Nâu, Tối sẽ là Cam Neon rực rỡ 
-      */}
       <h1 className="text-3xl font-black text-primary uppercase tracking-tighter italic">
         Dashboard
       </h1>
 
-      {/* Thay text-gray-600 bằng text-on-surface kết hợp opacity:
-          Đảm bảo chữ luôn đọc được trên cả nền trắng và nền nâu đen
-      */}
-      <p className="text-on-surface opacity-70 mt-2 font-medium">
+      <p className="text-muted mt-2 font-medium">
         Chào mừng bạn trở lại hệ thống quản lý Nắng PR.
       </p>
 

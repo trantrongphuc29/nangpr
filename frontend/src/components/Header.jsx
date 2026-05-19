@@ -17,23 +17,10 @@ export default function Header({ setOpen }) {
       <div className="flex items-center gap-3">
         <button
           onClick={() => setOpen(true)}
-          className="lg:hidden p-2 rounded-md hover:bg-gray-200 dark:text-white"
+          className="lg:hidden p-2 rounded-xl hover:bg-primary/10 text-on-surface"
         >
           <span className="material-symbols-outlined">menu</span>
         </button>
-
-        {/* SEARCH */}
-        <div className="relative hidden sm:block">
-          <span className="absolute left-3 top-2.5 text-gray-400 material-symbols-outlined">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="Tìm kiếm..."
-            // Class input đã được định nghĩa biến ở index.css nên ko cần viết thêm dark:
-            className="pl-10 pr-4 py-2 rounded-lg border text-sm"
-          />
-        </div>
       </div>
 
       {/* RIGHT */}
@@ -44,12 +31,12 @@ export default function Header({ setOpen }) {
           onClick={toggleTheme}
           className="p-2.5 rounded-xl bg-[var(--color-main-bg)] border border-[var(--color-border)] transition-all active:scale-90 flex items-center justify-center"
         >
-          <span className={`material-symbols-outlined transition-all ${isDark ? 'text-primary' : 'text-amber-500'}`}>
+          <span className="material-symbols-outlined transition-all text-primary">
             {isDark ? 'light_mode' : 'dark_mode'}
           </span>
         </button>
 
-        <button className="p-2 rounded-full hover:bg-gray-100 dark:text-white">
+        <button className="p-2 rounded-xl hover:bg-primary/10 text-on-surface">
           <span className="material-symbols-outlined">notifications</span>
         </button>
 

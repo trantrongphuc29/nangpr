@@ -7,6 +7,11 @@ export const getNguyenLieu = async () => {
     return response.data;
 };
 
+export const getDanhMucNguyenLieu = async () => {
+    const response = await axios.get(`${API_URL}/categories`);
+    return response.data;
+};
+
 export const createNguyenLieu = async (data) => {
     const response = await axios.post(API_URL, data);
     return response.data;
@@ -36,5 +41,10 @@ export const getImportHistory = async () => {
 
 export const getCostStats = async () => {
     const response = await axios.get(`${API_URL}/stats`);
+    return response.data;
+};
+
+export const setTrangThaiNguyenLieu = async (id, trang_thai) => {
+    const response = await axios.patch(`${API_URL}/${id}/status`, { trang_thai });
     return response.data;
 };

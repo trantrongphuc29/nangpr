@@ -506,8 +506,8 @@ const { isDark } = useTheme();
                       onClick={() => toggleStaffStatus(staffDetailModal.data.ma_nhan_vien, staffDetailModal.data.trang_thai)} 
                       className={`flex-1 py-3 text-[11px] font-black rounded-xl uppercase transition-all border-2 ${
                         staffDetailModal.data.trang_thai === 1 
-                        ? 'border-amber-500/50 text-amber-600 bg-amber-50/50 dark:bg-amber-500/10' 
-                        : 'border-green-500/50 text-green-600 bg-green-50/50 dark:bg-green-500/10'
+                        ? 'border-warning/40 text-warning bg-warning-bg' 
+                        : 'border-success/40 text-success bg-success-bg'
                       }`}
                     >
                       {staffDetailModal.data.trang_thai === 1 ? 'ẨN NHÂN VIÊN' : 'HIỆN NHÂN VIÊN'}

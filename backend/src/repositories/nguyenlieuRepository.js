@@ -6,20 +6,19 @@ const NguyenLieuRepository = {
     try {
       await conn.beginTransaction();
 
+      const ngayNhap = data.ngay_nhap || new Date();
       const [resPhieu] = await conn.execute(
-        'INSERT INTO phieunhap (tong_tien, nha_cung_cap, ghi_chu) VALUES (?, ?, ?)',
-        [data.tong_tien, data.nha_cung_cap || 'Đại lý tự do', data.ghi_chu]
+        "INSERT INTO phieunhap (tong_tien, nha_cung_cap, ghi_chu, ngay_nhap) VALUES (?, ?, ?, ?)",
+        [data.tong_tien, data.nha_cung_cap || "Đại lý tự do", data.ghi_chu || null, ngayNhap]
       );
       const ma_phieu = resPhieu.insertId;
 
       for (const item of data.items) {
-        // Lưu số lượng hộp/chai thực tế nhập vào chi tiết phiếu
         await conn.execute(
-          'INSERT INTO chitiet_phieunhap (ma_phieu, ma_nguyen_lieu, so_luong_nhap, gia_nhap) VALUES (?, ?, ?, ?)',
+          "INSERT INTO chitiet_phieunhap (ma_phieu, ma_nguyen_lieu, so_luong_nhap, gia_nhap) VALUES (?, ?, ?, ?)",
           [ma_phieu, item.ma_nguyen_lieu, item.so_luong, item.gia_nhap]
         );
 
-        // LUỒNG TỰ ĐỘNG: Lấy số lượng nhập nhân với dung tích gốc của sản phẩm để cộng vào ml_thuc_te_ton
         await conn.execute(
           `UPDATE nguyenlieu 
            SET ml_thuc_te_ton = ml_thuc_te_ton + ( ? * dung_tich_san_pham ) 
@@ -45,6 +44,7 @@ const NguyenLieuRepository = {
         pn.ngay_nhap, 
         pn.nha_cung_cap, 
         pn.tong_tien,
+        pn.ghi_chu,
         JSON_ARRAYAGG(
           JSON_OBJECT(
             'ten_nguyen_lieu', nl.ten_nguyen_lieu,
@@ -64,52 +64,125 @@ const NguyenLieuRepository = {
   },
 
   getStats: async () => {
-    const [day] = await db.execute(`SELECT COALESCE(SUM(tong_tien), 0) as total FROM phieunhap WHERE DATE(ngay_nhap) = CURDATE()`);
-    const [week] = await db.execute(`SELECT COALESCE(SUM(tong_tien), 0) as total FROM phieunhap WHERE YEARWEEK(ngay_nhap, 1) = YEARWEEK(CURDATE(), 1)`);
-    const [month] = await db.execute(`SELECT COALESCE(SUM(tong_tien), 0) as total FROM phieunhap WHERE MONTH(ngay_nhap) = MONTH(CURDATE()) AND YEAR(ngay_nhap) = YEAR(CURDATE())`);
-    const [year] = await db.execute(`SELECT COALESCE(SUM(tong_tien), 0) as total FROM phieunhap WHERE YEAR(ngay_nhap) = YEAR(CURDATE())`);
-    
-    return { day: day[0].total, week: week[0].total, month: month[0].total, year: year[0].total };
+    const [day] = await db.execute(
+      `SELECT COALESCE(SUM(tong_tien), 0) as total FROM phieunhap WHERE DATE(ngay_nhap) = CURDATE()`
+    );
+    const [week] = await db.execute(
+      `SELECT COALESCE(SUM(tong_tien), 0) as total FROM phieunhap WHERE YEARWEEK(ngay_nhap, 1) = YEARWEEK(CURDATE(), 1)`
+    );
+    const [month] = await db.execute(
+      `SELECT COALESCE(SUM(tong_tien), 0) as total FROM phieunhap WHERE MONTH(ngay_nhap) = MONTH(CURDATE()) AND YEAR(ngay_nhap) = YEAR(CURDATE())`
+    );
+    const [year] = await db.execute(
+      `SELECT COALESCE(SUM(tong_tien), 0) as total FROM phieunhap WHERE YEAR(ngay_nhap) = YEAR(CURDATE())`
+    );
+
+    return {
+      day: Number(day[0].total),
+      week: Number(week[0].total),
+      month: Number(month[0].total),
+      year: Number(year[0].total),
+    };
+  },
+
+  getCategories: async () => {
+    const [rows] = await db.execute(
+      `SELECT DISTINCT COALESCE(danh_muc, 'Khác') AS danh_muc 
+       FROM nguyenlieu 
+       WHERE danh_muc IS NOT NULL AND danh_muc != ''
+       ORDER BY danh_muc ASC`
+    );
+    return rows.map((r) => r.danh_muc);
   },
 
   getAll: async () => {
-    const [rows] = await db.execute('SELECT * FROM nguyenlieu ORDER BY ma_nguyen_lieu DESC');
+    const [rows] = await db.execute(
+      `SELECT 
+        ma_nguyen_lieu, ten_nguyen_lieu,
+        COALESCE(danh_muc, 'Khác') AS danh_muc,
+        COALESCE(don_vi_tinh, IF(don_vi_nhap = 'kg', 'g', 'ml')) AS don_vi_tinh,
+        don_vi_nhap, COALESCE(don_vi_dong_goi, '') AS don_vi_dong_goi,
+        dung_tich_san_pham, ml_thuc_te_ton, nguong_canh_bao,
+        COALESCE(ghi_chu, '') AS ghi_chu,
+        COALESCE(trang_thai, 1) AS trang_thai
+      FROM nguyenlieu 
+      ORDER BY ten_nguyen_lieu ASC`
+    );
     return rows;
   },
 
   create: async (data) => {
-    const { ten_nguyen_lieu, don_vi_nhap, dung_tich_san_pham, nguong_canh_bao } = data;
+    const {
+      ten_nguyen_lieu,
+      danh_muc = "Khác",
+      don_vi_tinh = "g",
+      don_vi_nhap,
+      don_vi_dong_goi = null,
+      dung_tich_san_pham,
+      nguong_canh_bao,
+      ghi_chu = null,
+    } = data;
     const [result] = await db.execute(
-      'INSERT INTO nguyenlieu (ten_nguyen_lieu, don_vi_nhap, dung_tich_san_pham, ml_thuc_te_ton, nguong_canh_bao) VALUES (?, ?, ?, 0, ?)',
-      [ten_nguyen_lieu, don_vi_nhap, parseFloat(dung_tich_san_pham), parseFloat(nguong_canh_bao)]
+      `INSERT INTO nguyenlieu 
+        (ten_nguyen_lieu, danh_muc, don_vi_tinh, don_vi_nhap, don_vi_dong_goi, dung_tich_san_pham, ml_thuc_te_ton, nguong_canh_bao, ghi_chu, trang_thai) 
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 1)`,
+      [
+        ten_nguyen_lieu,
+        danh_muc,
+        don_vi_tinh,
+        don_vi_nhap,
+        don_vi_dong_goi,
+        parseFloat(dung_tich_san_pham),
+        parseFloat(nguong_canh_bao),
+        ghi_chu,
+      ]
     );
     return result.insertId;
   },
 
   update: async (id, data) => {
-    const { ten_nguyen_lieu, don_vi_nhap, dung_tich_san_pham, nguong_canh_bao } = data;
-    const sql = `
-      UPDATE nguyenlieu 
-      SET ten_nguyen_lieu = ?, 
-          don_vi_nhap = ?, 
-          dung_tich_san_pham = ?,
-          nguong_canh_bao = ? 
-      WHERE ma_nguyen_lieu = ?
-    `;
-    const [result] = await db.execute(sql, [
-      ten_nguyen_lieu, 
-      don_vi_nhap, 
-      parseFloat(dung_tich_san_pham), 
-      parseFloat(nguong_canh_bao), 
-      parseInt(id)
-    ]);
+    const {
+      ten_nguyen_lieu,
+      danh_muc,
+      don_vi_tinh,
+      don_vi_nhap,
+      don_vi_dong_goi,
+      dung_tich_san_pham,
+      nguong_canh_bao,
+      ghi_chu,
+    } = data;
+    const [result] = await db.execute(
+      `UPDATE nguyenlieu 
+      SET ten_nguyen_lieu = ?, danh_muc = ?, don_vi_tinh = ?, don_vi_nhap = ?, 
+          don_vi_dong_goi = ?, dung_tich_san_pham = ?, nguong_canh_bao = ?, ghi_chu = ?
+      WHERE ma_nguyen_lieu = ?`,
+      [
+        ten_nguyen_lieu,
+        danh_muc,
+        don_vi_tinh,
+        don_vi_nhap,
+        don_vi_dong_goi,
+        parseFloat(dung_tich_san_pham),
+        parseFloat(nguong_canh_bao),
+        ghi_chu,
+        parseInt(id),
+      ]
+    );
+    return result.affectedRows > 0;
+  },
+
+  setStatus: async (id, trang_thai) => {
+    const [result] = await db.execute(
+      "UPDATE nguyenlieu SET trang_thai = ? WHERE ma_nguyen_lieu = ?",
+      [trang_thai ? 1 : 0, parseInt(id)]
+    );
     return result.affectedRows > 0;
   },
 
   delete: async (id) => {
-    const [result] = await db.execute('DELETE FROM nguyenlieu WHERE ma_nguyen_lieu = ?', [id]);
+    const [result] = await db.execute("DELETE FROM nguyenlieu WHERE ma_nguyen_lieu = ?", [id]);
     return result.affectedRows > 0;
-  }
+  },
 };
 
 module.exports = NguyenLieuRepository;
