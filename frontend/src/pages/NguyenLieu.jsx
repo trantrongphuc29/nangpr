@@ -14,14 +14,15 @@ const removeVietnameseTones = (str) => {
 };
 
 const DANH_MUC_OPTIONS = [
-  'Đồ uống đóng chai/lon',
-  'Sản phẩm hết trong ngày',
-  'Hộp & Bao bì đóng gói',
+  'Nước uống đóng chai',
+  'Nguyên liệu hết trong ngày',
+  'Dụng cụ đóng gói',
   'Nguyên liệu pha chế'
 ];
 
-const DON_VI_TINH_OPTIONS = ['g', 'ml'];
+
 const DON_VI_NHAP_OPTIONS = ['kg', 'hộp', 'chai', 'gói', 'lon'];
+const DON_VI_DO_UONG_OPTIONS = ['chai', 'lon'];
 
 const EMPTY_CRUD = {
   ma_nguyen_lieu: null,
@@ -77,7 +78,7 @@ export default function NguyenLieu() {
   const [list, setList] = useState([]);
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState({ month: 0 });
-  const [categoryOptions, setCategoryOptions] = useState(DANH_MUC_OPTIONS);
+
   const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,24 +110,23 @@ export default function NguyenLieu() {
   };
 
   const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [data, histData, statsData, cats] = await Promise.all([
-        nlService.getNguyenLieu(),
-        nlService.getImportHistory(),
-        nlService.getCostStats(),
-        nlService.getDanhMucNguyenLieu().catch(() => []),
-      ]);
-      setList((data || []).map(enrichItem));
-      setHistory(histData || []);
-      setStats(statsData || { month: 0 });
-      setCategoryOptions([...new Set([...DANH_MUC_OPTIONS, ...(cats || [])])]);
-    } catch (err) {
-      toast(err.response?.data?.message || 'Không tải được dữ liệu kho.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+  try {
+    setLoading(true);
+    const [data, histData, statsData] = await Promise.all([
+      nlService.getNguyenLieu(),
+      nlService.getImportHistory(),
+      nlService.getCostStats(),
+    ]);
+    setList((data || []).map(enrichItem));
+    setHistory(histData || []);
+    setStats(statsData || { month: 0 });
+    // Dòng setCategoryOptions(...) đã được xóa
+  } catch (err) {
+    toast(err.response?.data?.message || 'Không tải được dữ liệu kho.', 'error');
+  } finally {
+    setLoading(false);
+  }
+}, [toast]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -136,22 +136,31 @@ export default function NguyenLieu() {
   const handleDanhMucFormChange = (targetCat) => {
     let updateFields = { danh_muc: targetCat };
 
-    if (targetCat === 'Hộp & Bao bì đóng gói') {
-      updateFields.don_vi_nhap = 'cái';
-      updateFields.don_vi_tinh = 'cái';
-      updateFields.dung_tich_san_pham = 1;
-    } else if (targetCat === 'Đồ uống đóng chai/lon') {
-      updateFields.don_vi_nhap = 'chai/lon';
-      updateFields.don_vi_tinh = 'chai/lon';
-      updateFields.dung_tich_san_pham = 1;
-    } else if (targetCat === 'Sản phẩm hết trong ngày') {
-      updateFields.don_vi_nhap = 'kg';
-      updateFields.don_vi_tinh = 'g';
-      updateFields.dung_tich_san_pham = 1000; // Giữ tỷ lệ nhân quy đổi hệ g để tính công thức ly nước
-    } else {
-      updateFields.don_vi_nhap = 'kg';
-      updateFields.don_vi_tinh = 'g';
-      updateFields.dung_tich_san_pham = 1000;
+    switch (targetCat) {
+      case 'Nước uống đóng chai':
+        updateFields.don_vi_nhap = 'chai'; // Hoặc 'lon' tùy mặc định
+        updateFields.don_vi_tinh = 'chai'; // Sẽ dùng combobox để đổi sau
+        updateFields.dung_tich_san_pham = 1;
+        break;
+
+      case 'Dụng cụ đóng gói':
+        updateFields.don_vi_nhap = 'cái';
+        updateFields.don_vi_tinh = 'cái';
+        updateFields.dung_tich_san_pham = 1;
+        break;
+
+      case 'Nguyên liệu hết trong ngày':
+        updateFields.don_vi_nhap = 'kg';
+        updateFields.don_vi_tinh = 'g';
+        updateFields.dung_tich_san_pham = 1000;
+        break;
+
+      case 'Nguyên liệu pha chế':
+      default:
+        updateFields.don_vi_nhap = 'kg';
+        updateFields.don_vi_tinh = 'g';
+        updateFields.dung_tich_san_pham = 1000;
+        break;
     }
 
     setCrudData(prev => ({ ...prev, ...updateFields }));
@@ -177,10 +186,10 @@ export default function NguyenLieu() {
     }));
   };
 
-  const categories = useMemo(() => {
-    const fromData = [...new Set(list.map((i) => i.danh_muc).filter(Boolean))];
-    return ['all', ...new Set([...categoryOptions, ...fromData])];
-  }, [list, categoryOptions]);
+  // Thay đổi hoàn toàn đoạn categories cũ thành:
+const categories = useMemo(() => {
+  return ['all', ...DANH_MUC_OPTIONS];
+}, []);
 
   const statsSummary = useMemo(() => {
     const active = list.filter((i) => Number(i.trang_thai) !== 0);
@@ -274,7 +283,7 @@ export default function NguyenLieu() {
 
   const formatTonKho = (item) => {
     const ton = Number(item.so_luong_ton ?? item.ml_thuc_te_ton ?? 0);
-    const isVolumeSystem = item.danh_muc === 'Nguyên liệu pha chế' || item.danh_muc === 'Sản phẩm hết trong ngày';
+    const isVolumeSystem = item.danh_muc === 'Nguyên liệu pha chế' || item.danh_muc === 'Nguyên liệu hết trong ngày';
     const labelUnit = isVolumeSystem ? item.don_vi_tinh : item.don_vi_nhap;
     return `${ton.toLocaleString('vi-VN')} ${labelUnit}`;
   };
@@ -310,13 +319,13 @@ export default function NguyenLieu() {
     let finalCapacity = 1.00;
     if (crudData.danh_muc === 'Nguyên liệu pha chế') {
       finalCapacity = crudData.don_vi_nhap === 'kg' ? 1000 : (parseFloat(crudData.dung_tich_san_pham) || 0);
-    } else if (crudData.danh_muc === 'Sản phẩm hết trong ngày') {
+    } else if (crudData.danh_muc === 'Nguyên liệu hết trong ngày') {
       finalCapacity = 1000.00;
     }
 
     if (finalCapacity <= 0) return toast('Dung tích sản phẩm quy đổi phải lớn hơn 0.', 'error');
 
-    const isVolumeSystem = crudData.danh_muc === 'Nguyên liệu pha chế' || crudData.danh_muc === 'Sản phẩm hết trong ngày';
+    const isVolumeSystem = crudData.danh_muc === 'Nguyên liệu pha chế' || crudData.danh_muc === 'Nguyên liệu hết trong ngày';
 
     try {
       const payload = {
@@ -458,9 +467,9 @@ export default function NguyenLieu() {
                 <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('nguong_canh_bao')}>
                   <span className="inline-flex items-center gap-1">Ngưỡng cảnh báo<span className="material-symbols-outlined text-base">{getSortIcon('nguong_canh_bao')}</span></span>
                 </th>
-                <th className="px-4 py-3">Đơn vị đóng gói</th>
+                <th className="px-4 py-3">Đơn vị nhập</th>
                 <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3 text-right">Thao tác</th>
+                <th className="px-4 py-3 ">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline">
@@ -471,23 +480,37 @@ export default function NguyenLieu() {
                   <tr key={item.ma_nguyen_lieu} className={`hover:bg-primary/5 transition-colors ${Number(item.trang_thai) === 0 ? 'opacity-50' : ''}`}>
                     <td className="px-4 py-3 font-semibold">{item.ten_nguyen_lieu}</td>
                     <td className="px-4 py-3 text-muted">{item.danh_muc || '—'}</td>
-                    <td className="px-4 py-3">{item.danh_muc === 'Nguyên liệu pha chế' || item.danh_muc === 'Sản phẩm hết trong ngày' ? item.don_vi_tinh : item.don_vi_nhap}</td>
+                    <td className="px-4 py-3">{item.danh_muc === 'Nguyên liệu pha chế' || item.danh_muc === 'Nguyên liệu hết trong ngày' ? item.don_vi_tinh : item.don_vi_nhap}</td>
                     <td className="px-4 py-3 font-medium">{formatTonKho(item)}</td>
                     <td className="px-4 py-3 text-muted">
-                      {Number(item.nguong_canh_bao).toLocaleString('vi-VN')} {item.danh_muc === 'Nguyên liệu pha chế' || item.danh_muc === 'Sản phẩm hết trong ngày' ? item.don_vi_tinh : item.don_vi_nhap}
+                      {Number(item.nguong_canh_bao).toLocaleString('vi-VN')} {item.danh_muc === 'Nguyên liệu pha chế' || item.danh_muc === 'Nguyên liệu hết trong ngày' ? item.don_vi_tinh : item.don_vi_nhap}
                     </td>
                     <td className="px-4 py-3 text-muted text-xs max-w-[140px]">
                       {item.danh_muc === 'Nguyên liệu pha chế' ? (item.don_vi_dong_goi || `${Number(item.dung_tich_san_pham).toLocaleString('vi-VN')} ${item.don_vi_tinh}/${item.don_vi_nhap}`) : 'Tính lẻ trực tiếp'}
                     </td>
                     <td className="px-4 py-3"><StockStatusBadge status={item.trang_thai_ton} />{Number(item.trang_thai) === 0 && (<span className="badge-warning ml-1">Ngưng dùng</span>)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1 flex-wrap">
-                        <button type="button" title="Nhập kho" onClick={() => openImportDrawer(item.ma_nguyen_lieu)} className="btn-icon-edit"><span className="material-symbols-outlined text-base">add_shopping_cart</span></button>
-                        <button type="button" title="Sửa" onClick={() => openEditModal(item)} className="btn-icon-edit"><span className="material-symbols-outlined text-base">edit</span></button>
-                        <button type="button" title={Number(item.trang_thai) === 0 ? 'Kích hoạt' : 'Ngưng sử dụng'} onClick={() => handleToggleStatus(item)} className="btn-ghost !p-2"><span className="material-symbols-outlined text-base">{Number(item.trang_thai) === 0 ? 'visibility' : 'visibility_off'}</span></button>
-                        <button type="button" title="Xóa" onClick={() => handleDelete(item.ma_nguyen_lieu, item.ten_nguyen_lieu)} className="btn-icon-delete"><span className="material-symbols-outlined text-base">delete</span></button>
-                      </div>
-                    </td>
+                   <td className="px-4 py-3">
+                  {/* Flex giữ các nút trên một dòng, dùng gap nhỏ hơn trên mobile */}
+                  <div className="flex justify-end gap-0.5 sm:gap-1">
+                    <button title="Nhập kho" onClick={() => openImportDrawer(item.ma_nguyen_lieu)} className="btn-icon-edit p-1.5">
+                      <span className="material-symbols-outlined text-sm">add_shopping_cart</span>
+                    </button>
+                    <button title="Sửa" onClick={() => openEditModal(item)} className="btn-icon-edit p-1.5">
+                      <span className="material-symbols-outlined text-sm">edit</span>
+                    </button>
+                    {/* Ẩn các nút ít dùng trên màn hình cực nhỏ (dưới 360px) nếu cần */}
+                    <div className="hidden sm:flex gap-0.5">
+                      <button title="Trạng thái" onClick={() => handleToggleStatus(item)} className="btn-ghost p-1.5">
+                        <span className="material-symbols-outlined text-sm">
+                          {Number(item.trang_thai) === 0 ? 'visibility' : 'visibility_off'}
+                        </span>
+                      </button>
+                      <button title="Xóa" onClick={() => handleDelete(item.ma_nguyen_lieu, item.ten_nguyen_lieu)} className="btn-icon-delete p-1.5">
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </td>
                   </tr>
                 ))
               )}
@@ -540,101 +563,77 @@ export default function NguyenLieu() {
       </div>
 
       {/* Modal: Thêm / Sửa nguyên liệu */}
-      {showCrudModal && (
-        <ModalPortal>
-        <div className="modal-overlay" onClick={() => setShowCrudModal(false)}>
-          <div className="modal-panel max-w-lg p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-6"><span className="material-symbols-outlined">inventory_2</span>{crudData.ma_nguyen_lieu ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu'}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-on-surface mb-1">Tên nguyên liệu *</label>
-                <input className="input-field" value={crudData.ten_nguyen_lieu} onChange={(e) => setCrudData({ ...crudData, ten_nguyen_lieu: e.target.value })} placeholder="Ví dụ: Cà phê Arabica" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-on-surface mb-1">Danh mục nguyên liệu</label>
-                  <select className="input-field" value={crudData.danh_muc} onChange={(e) => handleDanhMucFormChange(e.target.value)} >
-                    {categoryOptions.map((d) => (<option key={d} value={d}>{d}</option>))}
-                  </select>
-                </div>
-                
-                {/* ⚡ ĐÃ SỬA: Ẩn đơn vị tính gốc cho các danh mục Cái/Lon/Chai bán lẻ */}
-                {crudData.danh_muc === 'Nguyên liệu pha chế' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-on-surface mb-1">Đơn vị tính gốc</label>
-                    <select className="input-field disabled:opacity-60 disabled:bg-slate-100 font-bold" value={crudData.don_vi_tinh} disabled={crudData.don_vi_nhap === 'kg'} onChange={(e) => setCrudData({ ...crudData, don_vi_tinh: e.target.value })}>{DON_VI_TINH_OPTIONS.map((d) => (<option key={d} value={d}>{d}</option>))}</select>
-                  </div>
-                )}
+     {showCrudModal && (
+  <ModalPortal>
+    <div className="modal-overlay" onClick={() => setShowCrudModal(false)}>
+      <div className="modal-panel max-w-lg p-6 md:p-8 h-full w-full overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-6">
+          <span className="material-symbols-outlined">inventory_2</span>
+          {crudData.ma_nguyen_lieu ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu'}
+        </h2>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-on-surface mb-1">Tên nguyên liệu *</label>
+            <input className="input-field" value={crudData.ten_nguyen_lieu} onChange={(e) => setCrudData({ ...crudData, ten_nguyen_lieu: e.target.value })} placeholder="" />
+          </div>
 
-                {crudData.danh_muc === 'Sản phẩm hết trong ngày' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-muted mb-1">Đơn vị tính gốc</label>
-                    <input className="input-field bg-slate-100 font-bold" value="g" disabled />
-                  </div>
-                )}
-                
-                {crudData.danh_muc !== 'Nguyên liệu pha chế' && crudData.danh_muc !== 'Sản phẩm hết trong ngày' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-muted mb-1">Đơn vị tính gốc</label>
-                    <input className="input-field bg-slate-100 font-bold uppercase" value={crudData.don_vi_nhap} disabled />
-                  </div>
-                )}
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-on-surface mb-1">Danh mục nguyên liệu</label>
+              <select className="input-field" value={crudData.danh_muc} onChange={(e) => handleDanhMucFormChange(e.target.value)}>
+                {DANH_MUC_OPTIONS.map((d) => (<option key={d} value={d}>{d}</option>))}
+              </select>
+            </div>
 
-              {/* ⚡ ĐÃ SỬA: Giấu hoàn toàn các cấu hình quy đổi thừa cho nhóm bán lẻ và nhóm dùng trong ngày */}
-              {crudData.danh_muc === 'Nguyên liệu pha chế' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-on-surface mb-1">Đơn vị nhập kho</label>
-                    <select className="input-field" value={crudData.don_vi_nhap} onChange={(e) => handleDonViNhapChange(e.target.value)}>{DON_VI_NHAP_OPTIONS.map((d) => (<option key={d} value={d}>{d}</option>))}</select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-on-surface mb-1">Dung tích / quy đổi</label>
-                    <input type="number" className="input-field disabled:opacity-60 disabled:bg-slate-100 font-bold" value={crudData.don_vi_nhap === 'kg' ? 1000 : crudData.dung_tich_san_pham} onChange={(e) => setCrudData({ ...crudData, dung_tich_san_pham: e.target.value })} placeholder="1000" disabled={crudData.don_vi_nhap === 'kg'} />
-                  </div>
-                </div>
+            <div>
+              <label className="block text-sm font-semibold text-on-surface mb-1">Đơn vị tính gốc</label>
+              {crudData.danh_muc === 'Nước uống đóng chai' ? (
+                <select className="input-field font-bold" value={crudData.don_vi_tinh} onChange={(e) => setCrudData({ ...crudData, don_vi_tinh: e.target.value })}>
+                  {DON_VI_DO_UONG_OPTIONS.map((d) => (<option key={d} value={d}>{d}</option>))}
+                </select>
+              ) : (
+                <input className="input-field bg-slate-100 font-bold uppercase" value={crudData.don_vi_tinh} disabled />
               )}
-
-              {crudData.danh_muc === 'Sản phẩm hết trong ngày' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-muted mb-1">Đơn vị nhập kho</label>
-                    <input className="input-field bg-slate-100 font-bold uppercase" value="kg" disabled />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-muted mb-1">Dung tích quy đổi mặc định</label>
-                    <input className="input-field bg-slate-100 font-bold" value="1.000 g" disabled />
-                  </div>
-                </div>
-              )}
-
-              {crudData.danh_muc === 'Nguyên liệu pha chế' && (
-                <div>
-                  <label className="block text-sm font-semibold text-on-surface mb-1">Đơn vị đóng gói</label>
-                  <input className="input-field" value={crudData.don_vi_dong_goi} onChange={(e) => setCrudData({ ...crudData, don_vi_dong_goi: e.target.value })} placeholder="Ví dụ: bao 1kg, thùng 24 chai" />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-semibold text-on-surface mb-1">Ngưỡng cảnh báo tồn kho</label>
-                <input type="number" min="0" className="input-field" value={crudData.nguong_canh_bao} onChange={(e) => setCrudData({ ...crudData, nguong_canh_bao: e.target.value })} />
-                <p className="text-xs text-muted mt-1">Tính theo đơn vị tồn: {crudData.danh_muc === 'Nguyên liệu pha chế' || crudData.danh_muc === 'Sản phẩm hết trong ngày' ? crudData.don_vi_tinh : crudData.don_vi_nhap}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-on-surface mb-1">Ghi chú</label>
-                <textarea className="input-field min-h-[80px]" value={crudData.ghi_chu} onChange={(e) => setCrudData({ ...crudData, ghi_chu: e.target.value })} placeholder="Ghi chú nội bộ (tuỳ chọn)" />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowCrudModal(false)} className="btn-outline flex-1">Hủy</button>
-                <button type="button" onClick={handleSaveIngredient} className="btn-primary flex-1">Lưu nguyên liệu</button>
-              </div>
             </div>
           </div>
-        </div>
-        </ModalPortal>
-      )}
 
+          {/* Chỉ hiển thị phần nhập kho/quy đổi nếu thuộc danh mục pha chế hoặc hết trong ngày */}
+          {(crudData.danh_muc === 'Nguyên liệu pha chế' || crudData.danh_muc === 'Nguyên liệu hết trong ngày') && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-on-surface mb-1">Đơn vị nhập kho</label>
+                <select className="input-field" value={crudData.don_vi_nhap} onChange={(e) => handleDonViNhapChange(e.target.value)}>{DON_VI_NHAP_OPTIONS.map((d) => (<option key={d} value={d}>{d}</option>))}</select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-on-surface mb-1">Dung tích / quy đổi</label>
+                <input type="number" className="input-field disabled:opacity-60 disabled:bg-slate-100 font-bold" value={crudData.don_vi_nhap === 'kg' ? 1000 : crudData.dung_tich_san_pham} onChange={(e) => setCrudData({ ...crudData, dung_tich_san_pham: e.target.value })} placeholder="1000" disabled={crudData.don_vi_nhap === 'kg'} />
+              </div>
+            </div>
+          )}
+
+          {crudData.danh_muc === 'Nguyên liệu pha chế' && (
+            <div>
+              <label className="block text-sm font-semibold text-on-surface mb-1">Đơn vị nhập (đóng gói)</label>
+              <input className="input-field" value={crudData.don_vi_dong_goi} onChange={(e) => setCrudData({ ...crudData, don_vi_dong_goi: e.target.value })} placeholder="" />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-on-surface mb-1">Ngưỡng cảnh báo</label>
+            <input type="number" min="0" className="input-field" value={crudData.nguong_canh_bao} onChange={(e) => setCrudData({ ...crudData, nguong_canh_bao: e.target.value })} />
+            <p className="text-xs text-muted mt-1">Tính theo đơn vị: {crudData.don_vi_tinh}</p>
+          </div>
+          
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={() => setShowCrudModal(false)} className="btn-outline flex-1">Hủy</button>
+            <button type="button" onClick={handleSaveIngredient} className="btn-primary flex-1">Lưu nguyên liệu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ModalPortal>
+)}
       {/* Drawer: Nhập kho */}
       {showImportDrawer && (
         <ModalPortal>
@@ -677,12 +676,12 @@ export default function NguyenLieu() {
               {/* DÒNG HIỂN THỊ THÔNG SỐ ĐỊNH MỨC QUY ĐỔI THỜI GIAN THỰC */}
               {selectedImportItemDetails && (
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-400 space-y-1 animate-in fade-in duration-150">
-                  <p className="font-bold uppercase tracking-tight text-[9px] opacity-70">Quy đổi định mức Nắng PR</p>
+                
                   <p className="font-medium">
-                    Tỷ lệ nhập: 1 {selectedImportItemDetails.don_vi_nhap} = {Number(selectedImportItemDetails.dung_tich_san_pham).toLocaleString('vi-VN')} {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' || selectedImportItemDetails.danh_muc === 'Sản phẩm hết trong ngày' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap}
+                    Tỷ lệ nhập: 1 {selectedImportItemDetails.don_vi_nhap} = {Number(selectedImportItemDetails.dung_tich_san_pham).toLocaleString('vi-VN')} {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' || selectedImportItemDetails.danh_muc === 'Nguyên liệu hết trong ngày' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap}
                   </p>
                   <p className="font-bold text-sm mt-1">
-                    ➡️ Tổng cộng thêm: <span className="underline font-black text-primary text-base">{actualVolumeToImport.toLocaleString('vi-VN')}</span> {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' || selectedImportItemDetails.danh_muc === 'Sản phẩm hết trong ngày' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap} vào tổng tồn kho gốc.
+                     Tổng cộng thêm: <span className="underline font-black text-primary text-base">{actualVolumeToImport.toLocaleString('vi-VN')}</span> {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' || selectedImportItemDetails.danh_muc === 'Nguyên liệu hết trong ngày' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap} vào tổng tồn kho gốc.
                   </p>
                 </div>
               )}
@@ -710,7 +709,7 @@ export default function NguyenLieu() {
       {showHistory && (
   <ModalPortal>
     <div className="modal-overlay print:hidden" onClick={() => setShowHistory(false)}>
-      <div className="modal-panel max-w-4xl w-full max-h-[90vh] flex flex-col min-h-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-panel max-w-4xl w-full h-full flex flex-col min-h-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
         
         {/* Header Modal */}
         <div className="p-5 border-b border-outline flex items-start justify-between gap-4 shrink-0">
