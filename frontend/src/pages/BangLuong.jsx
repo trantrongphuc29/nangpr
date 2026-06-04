@@ -8,6 +8,7 @@ import {
   markKyLuongPaid,
 } from "../services/payrollService";
 import { exportBangLuongExcel, exportBangLuongPDF } from "../utils/bangLuongExport";
+import ModalPortal from "../components/ModalPortal";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -21,16 +22,74 @@ function formatNumber(n) {
   return Number(n || 0).toLocaleString("vi-VN");
 }
 
-function shiftHoursInput(n) {
+function toInt(n) {
   const v = Number(n);
   if (!Number.isFinite(v)) return 0;
   return Math.round(v);
 }
 
-function toInt(n) {
-  const v = Number(n);
-  if (!Number.isFinite(v)) return 0;
-  return Math.round(v);
+function parseMoneyInput(str) {
+  const digits = String(str ?? "").replace(/[^\d]/g, "");
+  if (!digits) return 0;
+  return parseInt(digits, 10);
+}
+
+function formatMoneyInput(n) {
+  return formatMoney(n);
+}
+
+const EDIT_FIELDS = ["phu_cap", "thuong", "khau_tru", "tam_ung"];
+
+function mapRowsFromApi(list) {
+  return (list || []).map((r) => ({
+    ...r,
+    phu_cap: toInt(r.phu_cap),
+    thuong: toInt(r.thuong),
+    khau_tru: toInt(r.khau_tru),
+    tam_ung: toInt(r.tam_ung),
+  }));
+}
+
+function snapshotRows(list) {
+  return list.map((r) => ({
+    ma_nhan_vien: r.ma_nhan_vien,
+    phu_cap: toInt(r.phu_cap),
+    thuong: toInt(r.thuong),
+    khau_tru: toInt(r.khau_tru),
+    tam_ung: toInt(r.tam_ung),
+  }));
+}
+
+function countDirtyChanges(rows, savedRows) {
+  let n = 0;
+  for (const r of rows) {
+    const base = savedRows.find((b) => b.ma_nhan_vien === r.ma_nhan_vien);
+    if (!base) continue;
+    for (const f of EDIT_FIELDS) {
+      if (toInt(r[f]) !== toInt(base[f])) n += 1;
+    }
+  }
+  return n;
+}
+
+function MoneyEditInput({ ma_nhan_vien, field, value, disabled, editingField, setEditingField, onValueChange }) {
+  const editKey = `${ma_nhan_vien}-${field}`;
+  const isEditing = editingField === editKey;
+  const displayValue = isEditing ? String(toInt(value)) : formatMoneyInput(value);
+
+  return (
+    <input
+      className="input-field !p-2 !text-right tabular-nums"
+      style={{ maxWidth: 160 }}
+      type="text"
+      inputMode="numeric"
+      value={displayValue}
+      disabled={disabled}
+      onFocus={() => setEditingField(editKey)}
+      onBlur={() => setEditingField(null)}
+      onChange={(e) => onValueChange(parseMoneyInput(e.target.value))}
+    />
+  );
 }
 
 export default function BangLuong() {
@@ -43,6 +102,8 @@ export default function BangLuong() {
   const [ky, setKy] = useState(null);
   const [totals, setTotals] = useState(null);
   const [rows, setRows] = useState([]);
+  const [savedRows, setSavedRows] = useState([]);
+  const [editingField, setEditingField] = useState(null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -54,6 +115,9 @@ export default function BangLuong() {
 
   const kyTrangThai = ky?.trang_thai;
   const isChuaChot = kyTrangThai === "chua_chot";
+
+  const changeCount = useMemo(() => countDirtyChanges(rows, savedRows), [rows, savedRows]);
+  const hasUnsavedChanges = changeCount > 0;
 
   const employeeOptions = useMemo(() => {
     return rows.map((r) => ({ ma_nhan_vien: r.ma_nhan_vien, ten: r.ten }));
@@ -70,20 +134,17 @@ export default function BangLuong() {
       });
       setKy(res.ky);
       setTotals(res.totals);
-      setRows(
-        (res.rows || []).map((r) => ({
-          ...r,
-          phu_cap: toInt(r.phu_cap),
-          thuong: toInt(r.thuong),
-          khau_tru: toInt(r.khau_tru),
-          tam_ung: toInt(r.tam_ung),
-        }))
-      );
+      const mapped = mapRowsFromApi(res.rows);
+      setRows(mapped);
+      setSavedRows(snapshotRows(mapped));
+      setEditingField(null);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Không tải được bảng lương");
       setKy(null);
       setTotals(null);
       setRows([]);
+      setSavedRows([]);
+      setEditingField(null);
     } finally {
       setLoading(false);
     }
@@ -113,23 +174,30 @@ export default function BangLuong() {
   };
 
   const handleSaveEdits = async () => {
-    if (!isChuaChot) return;
+    if (!isChuaChot || !hasUnsavedChanges) return;
     setSaving(true);
     try {
-      // Cập nhật lần lượt từng nhân viên
+      const changedIds = new Set();
       for (const r of rows) {
+        const base = savedRows.find((b) => b.ma_nhan_vien === r.ma_nhan_vien);
+        if (!base) continue;
+        if (EDIT_FIELDS.some((f) => toInt(r[f]) !== toInt(base[f]))) {
+          changedIds.add(r.ma_nhan_vien);
+        }
+      }
+      for (const r of rows.filter((row) => changedIds.has(row.ma_nhan_vien))) {
         await updateBangLuongEmployee({
           thang,
           nam,
           ma_nhan_vien: r.ma_nhan_vien,
-          phu_cap: shiftHoursInput(r.phu_cap),
-          thuong: shiftHoursInput(r.thuong),
-          khau_tru: shiftHoursInput(r.khau_tru),
-          tam_ung: shiftHoursInput(r.tam_ung),
+          phu_cap: toInt(r.phu_cap),
+          thuong: toInt(r.thuong),
+          khau_tru: toInt(r.khau_tru),
+          tam_ung: toInt(r.tam_ung),
         });
       }
       await load();
-      alert("Đã lưu chỉnh sửa bảng lương");
+      alert(`Đã lưu ${changeCount} thay đổi`);
     } catch (err) {
       alert(err.response?.data?.message || err.message || "Không thể lưu");
     } finally {
@@ -138,6 +206,14 @@ export default function BangLuong() {
   };
 
   const handleLock = async () => {
+    if (hasUnsavedChanges) {
+      alert("Vui lòng lưu chỉnh sửa trước khi chốt lương.");
+      return;
+    }
+    const ok = window.confirm(
+      `Chốt lương tháng ${pad2(thang)}/${nam}?\n\nSau khi chốt, bảng lương sẽ khóa chỉnh sửa cho đến khi mở chốt (admin).`
+    );
+    if (!ok) return;
     try {
       await lockKyLuong({ thang, nam });
       await load();
@@ -289,9 +365,23 @@ export default function BangLuong() {
           <div className="flex flex-wrap items-center gap-2">
             {isChuaChot ? (
               <>
-                <button className="btn-primary !py-2 !px-4 !text-sm" onClick={handleSaveEdits} disabled={saving}>
+                <button
+                  type="button"
+                  className={
+                    hasUnsavedChanges
+                      ? "btn-primary !py-2 !px-4 !text-sm"
+                      : "btn-outline !py-2 !px-4 !text-sm opacity-50 cursor-not-allowed"
+                  }
+                  onClick={handleSaveEdits}
+                  disabled={saving || !hasUnsavedChanges}
+                  title={hasUnsavedChanges ? "Lưu các ô đã chỉnh" : "Chưa có thay đổi cần lưu"}
+                >
                   <span className="material-symbols-outlined text-lg">save</span>
-                  {saving ? "Đang lưu..." : "Lưu chỉnh sửa"}
+                  {saving
+                    ? "Đang lưu..."
+                    : hasUnsavedChanges
+                      ? `Lưu ${changeCount} thay đổi`
+                      : "Lưu chỉnh sửa"}
                 </button>
                 <button className="btn-outline !py-2 !px-4 !text-sm border-2 border-primary" onClick={handleLock}>
                   <span className="material-symbols-outlined text-lg">lock</span>
@@ -344,7 +434,7 @@ export default function BangLuong() {
       </div>
 
       {/* Totals */}
-      <div className="grid grid-cols-2 lg:grid-cols-7 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
           <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng nhân viên</p>
           <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{totals?.tong_nhan_vien || 0}</p>
@@ -356,18 +446,7 @@ export default function BangLuong() {
         <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
           <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng lương cơ bản</p>
           <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{formatMoney(totals?.tong_luong_co_ban || 0)}</p>
-        </div>
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng phụ cấp</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{formatMoney(totals?.tong_phu_cap || 0)}</p>
-        </div>
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng thưởng</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{formatMoney(totals?.tong_thuong || 0)}</p>
-        </div>
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng khấu trừ</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{formatMoney(totals?.tong_khau_tru || 0)}</p>
+          <p className="text-[10px] text-muted mt-1 leading-snug">Chưa gồm phụ cấp/thưởng/khấu trừ</p>
         </div>
         <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
           <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng tiền phải trả</p>
@@ -418,51 +497,47 @@ export default function BangLuong() {
                       <td className="px-4 py-3 text-right font-bold">{formatMoney(r.luong_co_ban)}</td>
 
                       <td className="px-1 py-3 text-right">
-                        <input
-                          className="input-field !p-2 !text-right"
-                          style={{ maxWidth: 160 }}
-                          type="number"
-                          step="1"
-                          min="0"
+                        <MoneyEditInput
+                          ma_nhan_vien={r.ma_nhan_vien}
+                          field="phu_cap"
                           value={r.phu_cap}
                           disabled={!isChuaChot}
-                          onChange={(e) => handleChangeField(r.ma_nhan_vien, "phu_cap", e.target.value)}
+                          editingField={editingField}
+                          setEditingField={setEditingField}
+                          onValueChange={(v) => handleChangeField(r.ma_nhan_vien, "phu_cap", v)}
                         />
                       </td>
                       <td className="px-2 py-3 text-right">
-                        <input
-                          className="input-field !p-2 !text-right"
-                          style={{ maxWidth: 160 }}
-                          type="number"
-                          step="1"
-                          min="0"
+                        <MoneyEditInput
+                          ma_nhan_vien={r.ma_nhan_vien}
+                          field="thuong"
                           value={r.thuong}
                           disabled={!isChuaChot}
-                          onChange={(e) => handleChangeField(r.ma_nhan_vien, "thuong", e.target.value)}
+                          editingField={editingField}
+                          setEditingField={setEditingField}
+                          onValueChange={(v) => handleChangeField(r.ma_nhan_vien, "thuong", v)}
                         />
                       </td>
                       <td className="px-2 py-3 text-right">
-                        <input
-                          className="input-field !p-2 !text-right"
-                          style={{ maxWidth: 160 }}
-                          type="number"
-                          step="1"
-                          min="0"
+                        <MoneyEditInput
+                          ma_nhan_vien={r.ma_nhan_vien}
+                          field="khau_tru"
                           value={r.khau_tru}
                           disabled={!isChuaChot}
-                          onChange={(e) => handleChangeField(r.ma_nhan_vien, "khau_tru", e.target.value)}
+                          editingField={editingField}
+                          setEditingField={setEditingField}
+                          onValueChange={(v) => handleChangeField(r.ma_nhan_vien, "khau_tru", v)}
                         />
                       </td>
                       <td className="px-2 py-3 text-right">
-                        <input
-                          className="input-field !p-2 !text-right"
-                          style={{ maxWidth: 160 }}
-                          type="number"
-                          step="1"
-                          min="0"
+                        <MoneyEditInput
+                          ma_nhan_vien={r.ma_nhan_vien}
+                          field="tam_ung"
                           value={r.tam_ung}
                           disabled={!isChuaChot}
-                          onChange={(e) => handleChangeField(r.ma_nhan_vien, "tam_ung", e.target.value)}
+                          editingField={editingField}
+                          setEditingField={setEditingField}
+                          onValueChange={(v) => handleChangeField(r.ma_nhan_vien, "tam_ung", v)}
                         />
                       </td>
                       <td className="px-4 py-3 text-right font-bold">{formatMoney(r.luong_thuc_nhan)}</td>
@@ -490,61 +565,84 @@ export default function BangLuong() {
 
       {/* Detail Modal */}
       {detailOpen && (
-        <div className="modal-overlay print:hidden" onClick={() => setDetailOpen(false)}>
-          <div className="modal-panel max-w-5xl p-5 md:p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-outline">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-primary">Chi tiết công - {detailEmployee?.ten || ""}</h2>
-                <p className="text-muted text-sm mt-1">
-                  {pad2(thang)}/{nam}
-                </p>
+        <ModalPortal>
+          <div className="modal-overlay print:hidden" onClick={() => setDetailOpen(false)}>
+            <div
+              className="modal-panel max-w-5xl w-full max-h-[90vh] flex flex-col min-h-0 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="shrink-0 p-5 md:p-6 pb-4 border-b border-outline flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-primary">Chi tiết lương - {detailEmployee?.ten || ""}</h2>
+                  <p className="text-muted text-sm mt-1">
+                    {pad2(thang)}/{nam}
+                  </p>
+                </div>
+                <button type="button" className="btn-ghost !p-2 shrink-0" onClick={() => setDetailOpen(false)} aria-label="Đóng">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
               </div>
-              <button className="btn-ghost !p-2" onClick={() => setDetailOpen(false)}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
 
-            {detailLoading ? (
-              <div className="flex justify-center py-10">
-                <div className="w-10 h-10 border-4 border-primary border-dashed rounded-full animate-spin" />
-              </div>
-            ) : (
-              <div className="overflow-x-auto custom-scrollbar mt-4">
-                <table className="w-full text-left text-sm min-w-[750px]">
-                  <thead className="table-head">
-                    <tr>
-                      <th className="px-4 py-3">Ngày làm việc</th>
-                      <th className="px-4 py-3">Tên ca</th>
-                      <th className="px-4 py-3">Thời gian ca</th>
-                      <th className="px-4 py-3 text-right">Số giờ được tính</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline">
-                    {detailRows.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-12 text-center text-muted">
-                          Không có dữ liệu.
-                        </td>
-                      </tr>
-                    ) : (
-                      detailRows.map((r, idx) => (
-                        <tr key={`${r.ngay}-${r.ma_ca}-${idx}`} className="hover:bg-primary/5 transition-colors">
-                          <td className="px-4 py-3">{new Date(r.ngay).toLocaleDateString("vi-VN")}</td>
-                          <td className="px-4 py-3 font-semibold text-primary">{r.ten_ca}</td>
-                          <td className="px-4 py-3 text-muted">{r.thoi_gian_ca}</td>
-                          <td className="px-4 py-3 text-right font-bold">
-                            {Number(r.so_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}{" "}
-                            <span className="text-muted text-xs">giờ</span>
-                          </td>
+              {detailEmployee && (
+                <div className="shrink-0 px-5 md:px-6 py-4 border-b border-outline grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="rounded-xl bg-primary/5 px-3 py-2.5">
+                    <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Lương/giờ</p>
+                    <p className="text-base font-bold text-primary tabular-nums mt-0.5">{formatMoney(detailEmployee.luong_gio)}</p>
+                  </div>
+                  <div className="rounded-xl bg-primary/5 px-3 py-2.5">
+                    <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Lương cơ bản</p>
+                    <p className="text-base font-bold text-primary tabular-nums mt-0.5">{formatMoney(detailEmployee.luong_co_ban)}</p>
+                  </div>
+                  <div className="rounded-xl bg-primary/5 px-3 py-2.5 col-span-2 sm:col-span-1">
+                    <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Lương thực nhận</p>
+                    <p className="text-base font-bold text-primary tabular-nums mt-0.5">{formatMoney(detailEmployee.luong_thuc_nhan)}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 md:p-6 pt-4">
+                {detailLoading ? (
+                  <div className="flex justify-center py-10">
+                    <div className="w-10 h-10 border-4 border-primary border-dashed rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left text-sm min-w-[750px]">
+                      <thead className="table-head">
+                        <tr>
+                          <th className="px-4 py-3">Ngày làm việc</th>
+                          <th className="px-4 py-3">Tên ca</th>
+                          <th className="px-4 py-3">Thời gian ca</th>
+                          <th className="px-4 py-3 text-right">Số giờ</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-outline">
+                        {detailRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-4 py-12 text-center text-muted">
+                              Không có dữ liệu.
+                            </td>
+                          </tr>
+                        ) : (
+                          detailRows.map((r, idx) => (
+                            <tr key={`${r.ngay}-${r.ma_ca}-${idx}`} className="hover:bg-primary/5 transition-colors">
+                              <td className="px-4 py-3">{new Date(r.ngay).toLocaleDateString("vi-VN")}</td>
+                              <td className="px-4 py-3 font-semibold text-primary">{r.ten_ca}</td>
+                              <td className="px-4 py-3 text-muted">{r.thoi_gian_ca}</td>
+                              <td className="px-4 py-3 text-right font-bold tabular-nums">
+                                {Number(r.so_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

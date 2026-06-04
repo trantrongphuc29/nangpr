@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getLuongNhanVien, upsertLuongNhanVienBulk } from "../services/payrollService";
 
 function toInteger(v) {
@@ -6,30 +6,96 @@ function toInteger(v) {
   return Number.isFinite(n) ? Math.round(n) : 0;
 }
 
+function formatMoney(n) {
+  return `${Number(n || 0).toLocaleString("vi-VN")}đ`;
+}
+
+function parseMoneyInput(str) {
+  const digits = String(str ?? "").replace(/[^\d]/g, "");
+  if (!digits) return 0;
+  return parseInt(digits, 10);
+}
+
+const CONFIG_FIELDS = ["luong_gio", "phu_cap_mac_dinh", "trang_thai"];
+
 function normalizeRow(r) {
   return {
     ...r,
     luong_gio: toInteger(r.luong_gio),
     phu_cap_mac_dinh: toInteger(r.phu_cap_mac_dinh),
+    trang_thai: r.trang_thai || "dang_lam",
   };
+}
+
+function snapshotRows(list) {
+  return list.map((r) => ({
+    ma_nhan_vien: r.ma_nhan_vien,
+    luong_gio: toInteger(r.luong_gio),
+    phu_cap_mac_dinh: toInteger(r.phu_cap_mac_dinh),
+    trang_thai: r.trang_thai || "dang_lam",
+  }));
+}
+
+function countDirtyChanges(rows, savedRows) {
+  let n = 0;
+  for (const r of rows) {
+    const base = savedRows.find((b) => b.ma_nhan_vien === r.ma_nhan_vien);
+    if (!base) continue;
+    for (const f of CONFIG_FIELDS) {
+      if (f === "trang_thai") {
+        if ((r.trang_thai || "dang_lam") !== (base.trang_thai || "dang_lam")) n += 1;
+      } else if (toInteger(r[f]) !== toInteger(base[f])) {
+        n += 1;
+      }
+    }
+  }
+  return n;
+}
+
+function MoneyEditInput({ ma_nhan_vien, field, value, editingField, setEditingField, onValueChange }) {
+  const editKey = `${ma_nhan_vien}-${field}`;
+  const isEditing = editingField === editKey;
+  const displayValue = isEditing ? String(toInteger(value)) : formatMoney(value);
+
+  return (
+    <input
+      className="input-field !p-2 !text-right tabular-nums w-full max-w-[200px]"
+      type="text"
+      inputMode="numeric"
+      value={displayValue}
+      onFocus={() => setEditingField(editKey)}
+      onBlur={() => setEditingField(null)}
+      onChange={(e) => onValueChange(parseMoneyInput(e.target.value))}
+    />
+  );
 }
 
 export default function CauHinhLuongNhanVien() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingField, setEditingField] = useState(null);
 
   const [rows, setRows] = useState([]);
+  const [savedRows, setSavedRows] = useState([]);
+
+  const changeCount = useMemo(() => countDirtyChanges(rows, savedRows), [rows, savedRows]);
+  const hasUnsavedChanges = changeCount > 0;
 
   const load = async () => {
     setLoading(true);
     setError("");
     try {
       const res = await getLuongNhanVien();
-      setRows((res || []).map(normalizeRow));
+      const mapped = (res || []).map(normalizeRow);
+      setRows(mapped);
+      setSavedRows(snapshotRows(mapped));
+      setEditingField(null);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Không tải được cấu hình lương");
       setRows([]);
+      setSavedRows([]);
+      setEditingField(null);
     } finally {
       setLoading(false);
     }
@@ -40,37 +106,46 @@ export default function CauHinhLuongNhanVien() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleChange = (ma_nhan_vien, field, value) => {
-    let next = value;
-    if (field === "luong_gio" || field === "phu_cap_mac_dinh") {
-      if (value === "") {
-        next = "";
-      } else {
-        const n = Number(value);
-        next = Number.isFinite(n) ? Math.round(n) : value;
-      }
-    }
+  const handleMoneyChange = (ma_nhan_vien, field, value) => {
     setRows((prev) =>
-      prev.map((r) => (r.ma_nhan_vien === ma_nhan_vien ? { ...r, [field]: next } : r))
+      prev.map((r) => (r.ma_nhan_vien === ma_nhan_vien ? { ...r, [field]: toInteger(value) } : r))
+    );
+  };
+
+  const handleStatusChange = (ma_nhan_vien, value) => {
+    setRows((prev) =>
+      prev.map((r) => (r.ma_nhan_vien === ma_nhan_vien ? { ...r, trang_thai: value } : r))
     );
   };
 
   const handleSave = async () => {
+    if (!hasUnsavedChanges) return;
     setSaving(true);
     try {
-      const items = rows.map((r) => ({
+      const changedRows = rows.filter((r) => {
+        const base = savedRows.find((b) => b.ma_nhan_vien === r.ma_nhan_vien);
+        if (!base) return true;
+        return CONFIG_FIELDS.some((f) => {
+          if (f === "trang_thai") {
+            return (r.trang_thai || "dang_lam") !== (base.trang_thai || "dang_lam");
+          }
+          return toInteger(r[f]) !== toInteger(base[f]);
+        });
+      });
+
+      const items = changedRows.map((r) => ({
         ma_nhan_vien: r.ma_nhan_vien,
         luong_gio: toInteger(r.luong_gio),
         phu_cap_mac_dinh: toInteger(r.phu_cap_mac_dinh),
         trang_thai: r.trang_thai || "dang_lam",
       }));
+
       const res = await upsertLuongNhanVienBulk({ items });
       await load();
       const dongBo = res?.bang_luong_dong_bo ?? 0;
       alert(
-        res?.message
-          ? `${res.message} (đã đồng bộ ${dongBo} dòng bảng lương kỳ chưa chốt)`
-          : "Đã lưu cấu hình lương nhân viên"
+        `Đã lưu ${changeCount} thay đổi` +
+          (dongBo ? ` (đồng bộ ${dongBo} dòng bảng lương kỳ chưa chốt)` : "")
       );
     } catch (err) {
       alert(err.response?.data?.message || err.message || "Không thể lưu cấu hình");
@@ -85,10 +160,6 @@ export default function CauHinhLuongNhanVien() {
         <h1 className="text-2xl md:text-3xl font-bold text-primary tracking-tight">
           Cấu hình lương nhân viên
         </h1>
-        <p className="text-muted text-sm mt-1">
-          Nhập lương theo giờ và phụ cấp mặc định. Cập nhật trạng thái nhân viên để hệ thống dùng khi tính
-          bảng công/bảng lương.
-        </p>
       </div>
 
       {loading ? (
@@ -109,9 +180,23 @@ export default function CauHinhLuongNhanVien() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="btn-primary !py-2 !px-4 !text-sm" onClick={handleSave} disabled={saving}>
+              <button
+                type="button"
+                className={
+                  hasUnsavedChanges
+                    ? "btn-primary !py-2 !px-4 !text-sm"
+                    : "btn-outline !py-2 !px-4 !text-sm opacity-50 cursor-not-allowed"
+                }
+                onClick={handleSave}
+                disabled={saving || !hasUnsavedChanges}
+                title={hasUnsavedChanges ? "Lưu các thay đổi cấu hình" : "Chưa có thay đổi cần lưu"}
+              >
                 <span className="material-symbols-outlined text-lg">save</span>
-                {saving ? "Đang lưu..." : "Lưu cấu hình"}
+                {saving
+                  ? "Đang lưu..."
+                  : hasUnsavedChanges
+                    ? `Lưu ${changeCount} thay đổi`
+                    : "Lưu cấu hình"}
               </button>
             </div>
           </div>
@@ -139,25 +224,25 @@ export default function CauHinhLuongNhanVien() {
                       <td className="px-4 py-3 font-semibold">{r.ten}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center">
-                          <input
-                            className="input-field !p-2 w-full max-w-[180px]"
-                            type="number"
-                            min="0"
-                            step="1000"
+                          <MoneyEditInput
+                            ma_nhan_vien={r.ma_nhan_vien}
+                            field="luong_gio"
                             value={r.luong_gio}
-                            onChange={(e) => handleChange(r.ma_nhan_vien, "luong_gio", e.target.value)}
+                            editingField={editingField}
+                            setEditingField={setEditingField}
+                            onValueChange={(v) => handleMoneyChange(r.ma_nhan_vien, "luong_gio", v)}
                           />
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center">
-                          <input
-                            className="input-field !p-2 w-full max-w-[200px]"
-                            type="number"
-                            min="0"
-                            step="1000"
+                          <MoneyEditInput
+                            ma_nhan_vien={r.ma_nhan_vien}
+                            field="phu_cap_mac_dinh"
                             value={r.phu_cap_mac_dinh}
-                            onChange={(e) => handleChange(r.ma_nhan_vien, "phu_cap_mac_dinh", e.target.value)}
+                            editingField={editingField}
+                            setEditingField={setEditingField}
+                            onValueChange={(v) => handleMoneyChange(r.ma_nhan_vien, "phu_cap_mac_dinh", v)}
                           />
                         </div>
                       </td>
@@ -166,7 +251,7 @@ export default function CauHinhLuongNhanVien() {
                           <select
                             className="input-field !py-2 !pr-9 w-full max-w-[200px]"
                             value={r.trang_thai || "dang_lam"}
-                            onChange={(e) => handleChange(r.ma_nhan_vien, "trang_thai", e.target.value)}
+                            onChange={(e) => handleStatusChange(r.ma_nhan_vien, e.target.value)}
                           >
                             <option value="dang_lam">đang làm</option>
                             <option value="tam_nghi">tạm nghỉ</option>
@@ -185,4 +270,3 @@ export default function CauHinhLuongNhanVien() {
     </div>
   );
 }
-

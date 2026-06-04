@@ -60,13 +60,14 @@ async function recalculateBangCong({ ky_luong_id, thang, nam }) {
 
   const insertSummarySql = `
     INSERT INTO bang_cong_thang
-      (ky_luong_id, ma_nhan_vien, so_ca_sang, so_ca_chieu, so_ca_toi, tong_ca, tong_gio, last_recalc_at)
+      (ky_luong_id, ma_nhan_vien, so_ca_sang, so_ca_chieu, so_ca_toi, so_ngay_lam, tong_ca, tong_gio, last_recalc_at)
     SELECT
       ky_luong_id,
       ma_nhan_vien,
       SUM(CASE ma_ca WHEN 1 THEN 1 ELSE 0 END) AS so_ca_sang,
       SUM(CASE ma_ca WHEN 2 THEN 1 ELSE 0 END) AS so_ca_chieu,
       SUM(CASE ma_ca WHEN 3 THEN 1 ELSE 0 END) AS so_ca_toi,
+      COUNT(DISTINCT ngay) AS so_ngay_lam,
       COUNT(*) AS tong_ca,
       SUM(CASE ma_ca WHEN 1 THEN 6 WHEN 2 THEN 6 WHEN 3 THEN 5 ELSE 0 END) AS tong_gio,
       NOW() AS last_recalc_at
@@ -176,6 +177,7 @@ async function getBangCongSummary({ ky_luong_id, ma_nhan_vien }) {
         COALESCE(bc.so_ca_sang, 0) AS so_ca_sang,
         COALESCE(bc.so_ca_chieu, 0) AS so_ca_chieu,
         COALESCE(bc.so_ca_toi, 0) AS so_ca_toi,
+        COALESCE(bc.so_ngay_lam, 0) AS so_ngay_lam,
         COALESCE(bc.tong_ca, 0) AS tong_ca,
         COALESCE(bc.tong_gio, 0) AS tong_gio
       FROM nhanvien nv
@@ -308,7 +310,7 @@ async function getBangLuongRow({ ky_luong_id, ma_nhan_vien }) {
   return rows[0] || null;
 }
 
-async function updateBangLuongEmployee({ ky_luong_id, ma_nhan_vien, phu_cap, thuong, khau_tru, tam_ung, adminId }) {
+async function updateBangLuongEmployee({ ky_luong_id, ma_nhan_vien, phu_cap, thuong, khau_tru, tam_ung }) {
   const [result] = await db.execute(
     `
       UPDATE bang_luong_thang bl
@@ -318,8 +320,7 @@ async function updateBangLuongEmployee({ ky_luong_id, ma_nhan_vien, phu_cap, thu
         bl.thuong = ?,
         bl.khau_tru = ?,
         bl.tam_ung = ?,
-        bl.luong_thuc_nhan = bl.luong_co_ban + ? + ? - ? - ?,
-        bl.updated_by_admin_id = ?
+        bl.luong_thuc_nhan = bl.luong_co_ban + ? + ? - ? - ?
       WHERE bl.ky_luong_id = ?
         AND bl.ma_nhan_vien = ?
         AND kl.trang_thai = 'chua_chot'
@@ -333,7 +334,6 @@ async function updateBangLuongEmployee({ ky_luong_id, ma_nhan_vien, phu_cap, thu
       thuong,
       khau_tru,
       tam_ung,
-      adminId || null,
       ky_luong_id,
       ma_nhan_vien,
     ]

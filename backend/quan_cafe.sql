@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS `bang_cong_thang` (
   `so_ca_sang` int NOT NULL DEFAULT '0',
   `so_ca_chieu` int NOT NULL DEFAULT '0',
   `so_ca_toi` int NOT NULL DEFAULT '0',
+  `so_ngay_lam` int NOT NULL DEFAULT '0',
   `tong_ca` int NOT NULL DEFAULT '0',
   `tong_gio` decimal(6,2) NOT NULL DEFAULT '0.00',
   `last_recalc_at` datetime DEFAULT NULL,

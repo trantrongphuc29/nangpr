@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getBangCong, getBangCongChiTiet } from "../services/payrollService";
 import { getNhanVienList } from "../services/nhanVienService";
+import ModalPortal from "../components/ModalPortal";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -169,7 +170,7 @@ export default function BangCong() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng nhân viên có công</p>
+          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Nhân viên có công</p>
           <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{totals.tong_nhan_vien_co_cong || 0}</p>
         </div>
         <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
@@ -179,7 +180,6 @@ export default function BangCong() {
         <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
           <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng giờ làm</p>
           <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{hours(totals.tong_gio_lam || 0).replace(" giờ", "")}</p>
-          <p className="text-xs text-muted mt-1">giờ</p>
         </div>
         <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
           <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng ca sáng/chiều/tối</p>
@@ -201,13 +201,14 @@ export default function BangCong() {
       ) : (
         <div className="card border-none overflow-hidden">
           <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left text-sm min-w-[950px]">
+            <table className="w-full text-left text-sm min-w-[1020px]">
               <thead className="table-head">
                 <tr>
                   <th className="px-4 py-3">Tên nhân viên</th>
-                  <th className="px-4 py-3 text-center">Số ca sáng</th>
-                  <th className="px-4 py-3 text-center">Số ca chiều</th>
-                  <th className="px-4 py-3 text-center">Số ca tối</th>
+                  <th className="px-4 py-3 text-center">Ngày làm</th>
+                  <th className="px-4 py-3 text-center">Ca sáng</th>
+                  <th className="px-4 py-3 text-center">Ca chiều</th>
+                  <th className="px-4 py-3 text-center">Ca tối</th>
                   <th className="px-4 py-3 text-center">Tổng số ca</th>
                   <th className="px-4 py-3 text-center">Tổng giờ làm</th>
                   <th className="px-4 py-3 text-center">Thao tác</th>
@@ -216,7 +217,7 @@ export default function BangCong() {
               <tbody className="divide-y divide-outline">
                 {sortedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-muted">
+                    <td colSpan={8} className="px-4 py-12 text-center text-muted">
                       Không có dữ liệu cho bộ lọc này.
                     </td>
                   </tr>
@@ -224,6 +225,7 @@ export default function BangCong() {
                   sortedRows.map((row) => (
                     <tr key={row.ma_nhan_vien} className="hover:bg-primary/5 transition-colors">
                       <td className="px-4 py-3 font-semibold">{row.ten}</td>
+                      <td className="px-4 py-3 text-center font-bold tabular-nums">{row.so_ngay_lam ?? 0}</td>
                       <td className="px-4 py-3 text-center text-muted">{row.so_ca_sang}</td>
                       <td className="px-4 py-3 text-center text-muted">{row.so_ca_chieu}</td>
                       <td className="px-4 py-3 text-center text-muted">{row.so_ca_toi}</td>
@@ -253,66 +255,70 @@ export default function BangCong() {
 
       {/* Detail Modal */}
       {detailOpen && (
-        <div className="modal-overlay print:hidden" onClick={() => setDetailOpen(false)}>
-          <div
-            className="modal-panel max-w-5xl p-5 md:p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-outline">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-primary">
-                  Chi tiết công - {detailEmployee?.ten || ""}
-                </h2>
-                <p className="text-muted text-sm mt-1">
-                  {pad2(thang)}/{nam}
-                </p>
+        <ModalPortal>
+          <div className="modal-overlay print:hidden" onClick={() => setDetailOpen(false)}>
+            <div
+              className="modal-panel max-w-5xl w-full max-h-[90vh] flex flex-col min-h-0 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="shrink-0 p-5 md:p-6 pb-4 border-b border-outline flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-primary">
+                    Chi tiết công - {detailEmployee?.ten || ""}
+                  </h2>
+                  <p className="text-muted text-sm mt-1">
+                    {pad2(thang)}/{nam}
+                  </p>
+                </div>
+                <button type="button" className="btn-ghost !p-2 shrink-0" onClick={() => setDetailOpen(false)} aria-label="Đóng">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
               </div>
-              <button className="btn-ghost !p-2" onClick={() => setDetailOpen(false)}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
 
-            {detailLoading ? (
-              <div className="flex justify-center py-10">
-                <div className="w-10 h-10 border-4 border-primary border-dashed rounded-full animate-spin" />
-              </div>
-            ) : (
-              <div className="overflow-x-auto custom-scrollbar mt-4">
-                <table className="w-full text-left text-sm min-w-[750px]">
-                  <thead className="table-head">
-                    <tr>
-                      <th className="px-4 py-3">Ngày làm việc</th>
-                      <th className="px-4 py-3">Tên ca</th>
-                      <th className="px-4 py-3">Thời gian ca</th>
-                      <th className="px-4 py-3 text-right">Số giờ được tính</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline">
-                    {(detailRows || []).length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-12 text-center text-muted">
-                          Không có ca nào được tính cho nhân viên này.
-                        </td>
-                      </tr>
-                    ) : (
-                      (detailRows || []).map((r, idx) => (
-                        <tr key={`${r.ngay}-${r.ma_ca}-${idx}`} className="hover:bg-primary/5 transition-colors">
-                          <td className="px-4 py-3">{new Date(r.ngay).toLocaleDateString("vi-VN")}</td>
-                          <td className="px-4 py-3 font-semibold text-primary">{r.ten_ca}</td>
-                          <td className="px-4 py-3 text-muted">{r.thoi_gian_ca}</td>
-                          <td className="px-4 py-3 text-right font-bold">
-                            {Number(r.so_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}{" "}
-                            <span className="text-muted text-xs">giờ</span>
-                          </td>
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 md:p-6 pt-4">
+                {detailLoading ? (
+                  <div className="flex justify-center py-10">
+                    <div className="w-10 h-10 border-4 border-primary border-dashed rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left text-sm min-w-[750px]">
+                      <thead className="table-head">
+                        <tr>
+                          <th className="px-4 py-3">Ngày làm việc</th>
+                          <th className="px-4 py-3">Tên ca</th>
+                          <th className="px-4 py-3">Thời gian ca</th>
+                          <th className="px-4 py-3 text-right">Số giờ</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-outline">
+                        {(detailRows || []).length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-4 py-12 text-center text-muted">
+                              Không có ca nào được tính cho nhân viên này.
+                            </td>
+                          </tr>
+                        ) : (
+                          (detailRows || []).map((r, idx) => (
+                            <tr key={`${r.ngay}-${r.ma_ca}-${idx}`} className="hover:bg-primary/5 transition-colors">
+                              <td className="px-4 py-3">{new Date(r.ngay).toLocaleDateString("vi-VN")}</td>
+                              <td className="px-4 py-3 font-semibold text-primary">{r.ten_ca}</td>
+                              <td className="px-4 py-3 text-muted">{r.thoi_gian_ca}</td>
+                              <td className="px-4 py-3 text-right font-bold">
+                                {Number(r.so_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}{" "}
+                                <span className="text-muted text-xs">giờ</span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

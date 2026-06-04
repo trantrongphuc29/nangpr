@@ -34,7 +34,7 @@ async function getBangLuong({ thang, nam, ma_nhan_vien }) {
   return { ky, ...result };
 }
 
-async function updateBangLuongEmployee({ thang, nam, ma_nhan_vien, phu_cap, thuong, khau_tru, tam_ung, adminId }) {
+async function updateBangLuongEmployee({ thang, nam, ma_nhan_vien, phu_cap, thuong, khau_tru, tam_ung }) {
   const ky = await payrollRepository.ensureKyLuong({ thang, nam });
   if (ky.trang_thai !== "chua_chot") {
     throw { status: 400, message: "Kỳ lương đã chốt. Chỉ có thể sửa khi mở chốt." };
@@ -51,7 +51,6 @@ async function updateBangLuongEmployee({ thang, nam, ma_nhan_vien, phu_cap, thuo
     thuong,
     khau_tru,
     tam_ung,
-    adminId,
   });
 
   // Trả lại dữ liệu row sau update

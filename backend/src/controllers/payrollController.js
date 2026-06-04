@@ -81,7 +81,6 @@ async function updateBangLuongEmployee(req, res) {
       thuong: normalizeMoneyInt(thuong),
       khau_tru: normalizeMoneyInt(khau_tru),
       tam_ung: normalizeMoneyInt(tam_ung),
-      adminId: req.user?.ma_admin,
     });
     return res.json(result);
   } catch (err) {

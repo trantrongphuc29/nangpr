@@ -36,6 +36,7 @@ async function ensurePayrollSchema() {
       so_ca_sang INT NOT NULL DEFAULT 0,
       so_ca_chieu INT NOT NULL DEFAULT 0,
       so_ca_toi INT NOT NULL DEFAULT 0,
+      so_ngay_lam INT NOT NULL DEFAULT 0,
       tong_ca INT NOT NULL DEFAULT 0,
       tong_gio DECIMAL(6,2) NOT NULL DEFAULT 0,
       last_recalc_at DATETIME NULL,
@@ -85,7 +86,6 @@ async function ensurePayrollSchema() {
       tam_ung DECIMAL(12,2) NOT NULL DEFAULT 0,
 
       luong_thuc_nhan DECIMAL(12,2) NOT NULL DEFAULT 0,
-      updated_by_admin_id INT NULL,
       last_recalc_at DATETIME NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -104,6 +104,32 @@ async function ensurePayrollSchema() {
 
   for (const stmt of statements) {
     await db.execute(stmt);
+  }
+
+  const [colRows] = await db.execute(
+    `
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'bang_cong_thang'
+        AND COLUMN_NAME = 'so_ngay_lam'
+      LIMIT 1
+    `
+  );
+  if (!colRows.length) {
+    await db.execute(
+      `ALTER TABLE bang_cong_thang ADD COLUMN so_ngay_lam INT NOT NULL DEFAULT 0 AFTER so_ca_toi`
+    );
+    await db.execute(
+      `
+        UPDATE bang_cong_thang bc
+        SET bc.so_ngay_lam = (
+          SELECT COUNT(DISTINCT bcc.ngay)
+          FROM bang_cong_chi_tiet bcc
+          WHERE bcc.ky_luong_id = bc.ky_luong_id
+            AND bcc.ma_nhan_vien = bc.ma_nhan_vien
+        )
+      `
+    );
   }
 
   console.log("✅ Đã đảm bảo schema payroll");
