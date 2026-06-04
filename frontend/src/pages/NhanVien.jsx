@@ -1,15 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   createNhanVien,
   createPhanCong,
-  deleteNhanVien,
   deletePhanCong,
   getLichPhanCong,
   getNhanVienList,
   updateNhanVien,
   updateNhanVienStatus, 
 } from "../services/nhanVienService";
-import { useTheme } from "../context/ThemeContext";
+import {
+  TRANG_THAI_LABELS,
+  normalizeTrangThai,
+  isDangLam,
+  canSelectInAssignModal,
+  shouldShowAssignmentOnSchedule,
+} from "../utils/nhanVienStatus";
 
 // =====================================================================
 // NOTE 1: KHU VỰC XỬ LÝ NGÀY THÁNG (GIỮ NGUYÊN)
@@ -26,6 +31,25 @@ const formatDateString = (val) => {
   if (typeof val === 'string') return val.substring(0, 10); 
   return getLocalDateString(val);
 };
+
+/** Chuẩn hóa ngày — xử lý cả chuỗi YYYY-MM-DD và ISO UTC từ MySQL */
+const toYmd = (val) => {
+  if (!val) return "";
+  if (typeof val === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    if (val.includes("T")) return formatDateString(new Date(val)) || val.substring(0, 10);
+    return val.substring(0, 10);
+  }
+  return formatDateString(val) || "";
+};
+
+const normalizeAssignments = (rows) =>
+  (Array.isArray(rows) ? rows : []).map((a) => ({
+    ...a,
+    ma_nhan_vien: Number(a.ma_nhan_vien),
+    ma_ca: Number(a.ma_ca),
+    ngay: toYmd(a.ngay),
+  }));
 
 const getStartOfWeek = (dateString) => {
   const dateStrSafe = dateString.includes('T') ? dateString : `${dateString}T00:00:00`;
@@ -46,8 +70,6 @@ const getWeekRange = (dateString) => {
 };
 
 const NhanVien = () => {
-  // eslint-disable-next-line no-unused-vars
-const { isDark } = useTheme();
   // =====================================================================
   // NOTE 2: KHAI BÁO TRẠNG THÁI (STATES)
   // =====================================================================
@@ -56,8 +78,8 @@ const { isDark } = useTheme();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [staffListModal, setStaffListModal] = useState(false);
   const [staffDetailModal, setStaffDetailModal] = useState({ isOpen: false, data: null, isEditing: false });
+  const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({ ten: '', ngay_sinh: '', so_dien_thoai: '', dia_chi: '' });
   
@@ -66,6 +88,9 @@ const { isDark } = useTheme();
   
   const [filterDate, setFilterDate] = useState(today);
   const [viewMode, setViewMode] = useState('week');
+  const [loadError, setLoadError] = useState("");
+  const [statusDraft, setStatusDraft] = useState("dang_lam");
+  const [statusSaving, setStatusSaving] = useState(false);
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(getStartOfWeek(filterDate));
@@ -77,16 +102,22 @@ const { isDark } = useTheme();
   // NOTE 3: GỌI API TẢI DỮ LIỆU
   // =====================================================================
   const fetchData = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
     try {
       const { startStr, endStr } = getWeekRange(filterDate);
       const [staffRes, assignRes] = await Promise.all([
         getNhanVienList(),
         getLichPhanCong({ startDate: startStr, endDate: endStr }),
       ]);
-      setStaffList(staffRes);
-      setAssignments(assignRes);
+      setStaffList(Array.isArray(staffRes) ? staffRes : []);
+      setAssignments(normalizeAssignments(assignRes));
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
+      setLoadError(error.response?.data?.message || error.message || "Không tải được dữ liệu phân công");
+      setAssignments([]);
+    } finally {
+      setLoading(false);
     }
   }, [filterDate]); 
 
@@ -97,23 +128,33 @@ const { isDark } = useTheme();
   // =====================================================================
   // NOTE 4: CÁC HÀM XỬ LÝ SỰ KIỆN (THÊM CHỨC NĂNG ẨN/HIỆN)
   // =====================================================================
-  const toggleStaffStatus = async (id, currentStatus) => {
-    const newStatus = currentStatus === 1 ? 0 : 1;
-    const actionText = newStatus === 1 ? "hiện" : "ẩn";
-    
-    if (window.confirm(`Bạn có chắc chắn muốn ${actionText} nhân viên này?`)) {
-      try {
-        await updateNhanVienStatus(id, newStatus);
-        await fetchData(); 
-        if (staffDetailModal.isOpen && staffDetailModal.data.ma_nhan_vien === id) {
-          setStaffDetailModal({
-            ...staffDetailModal,
-            data: { ...staffDetailModal.data, trang_thai: newStatus }
-          });
-        }
-      } catch (error) {
-        alert("Lỗi khi cập nhật trạng thái");
-      }
+  const changeStaffStatus = async (id, newStatus) => {
+    const normalized = normalizeTrangThai(newStatus);
+    const label = TRANG_THAI_LABELS[normalized] || normalized;
+    if (!window.confirm(`Đổi trạng thái nhân viên thành "${label}"?`)) return false;
+    setStatusSaving(true);
+    try {
+      await updateNhanVienStatus(id, normalized);
+      setStaffList((prev) =>
+        prev.map((s) =>
+          String(s.ma_nhan_vien) === String(id) ? { ...s, trang_thai: normalized } : s
+        )
+      );
+      setStaffDetailModal((prev) =>
+        prev.isOpen && String(prev.data?.ma_nhan_vien) === String(id)
+          ? { ...prev, data: { ...prev.data, trang_thai: normalized } }
+          : prev
+      );
+      setStatusDraft(normalized);
+      const { startStr, endStr } = getWeekRange(filterDate);
+      const assignRes = await getLichPhanCong({ startDate: startStr, endDate: endStr });
+      setAssignments(normalizeAssignments(assignRes));
+      return true;
+    } catch (error) {
+      alert(error.response?.data?.message || "Lỗi khi cập nhật trạng thái");
+      return false;
+    } finally {
+      setStatusSaving(false);
     }
   };
 
@@ -149,18 +190,6 @@ const { isDark } = useTheme();
     }
   };
 
-  const deleteStaff = async (id) => {
-    if (window.confirm("Xóa nhân viên này sẽ xóa luôn lịch trực liên quan. Tiếp tục?")) {
-      try {
-        await deleteNhanVien(id);
-        setStaffDetailModal({ isOpen: false, data: null, isEditing: false });
-        fetchData();
-      } catch (error) {
-        alert("Lỗi khi xóa nhân viên");
-      }
-    }
-  };
-
   const handleAssignStaff = async (e) => {
     e.preventDefault();
     try {
@@ -189,7 +218,10 @@ const { isDark } = useTheme();
 
   const openStaffDetails = (staffId) => {
     const staff = staffList.find(s => String(s.ma_nhan_vien) === String(staffId));
-    if(staff) setStaffDetailModal({ isOpen: true, data: staff, isEditing: false });
+    if (staff) {
+      setStatusDraft(normalizeTrangThai(staff.trang_thai));
+      setStaffDetailModal({ isOpen: true, data: staff, isEditing: false });
+    }
   };
 
   const openAssignModalForDay = (shiftId, dayStr) => {
@@ -203,11 +235,108 @@ const { isDark } = useTheme();
     { id: 3, label: 'Ca Tối', time: '18:00-23:00', icon: 'nights_stay', theme: 'primary-container' }
   ];
 
+  const weekRange = useMemo(() => getWeekRange(filterDate), [filterDate]);
+
+  const getStaffStatus = useCallback(
+    (maNhanVien) => {
+      const staff = staffList.find((s) => String(s.ma_nhan_vien) === String(maNhanVien));
+      return normalizeTrangThai(staff?.trang_thai);
+    },
+    [staffList]
+  );
+
+  /**
+   * Quá khứ & hôm nay: luôn hiện ca đã gán.
+   * Tương lai: ẩn nếu NV tạm nghỉ / đã nghỉ.
+   */
+  const getAssignmentsForCell = useCallback(
+    (shiftId, dayStr) => {
+      const ngay = toYmd(dayStr);
+      const ca = Number(shiftId);
+      if (!ngay || !Number.isFinite(ca)) return [];
+      return assignments.filter((a) => {
+        if (toYmd(a.ngay) !== ngay || Number(a.ma_ca) !== ca) return false;
+        return shouldShowAssignmentOnSchedule({
+          assignmentDate: a.ngay,
+          cellDate: ngay,
+          today,
+          currentStatus: getStaffStatus(a.ma_nhan_vien),
+        });
+      });
+    },
+    [assignments, getStaffStatus, today]
+  );
+
+  const shiftPeriod = (delta) => {
+    const base = new Date(`${filterDate}T12:00:00`);
+    if (Number.isNaN(base.getTime())) return;
+    base.setDate(base.getDate() + delta * (viewMode === "week" ? 7 : 1));
+    setFilterDate(getLocalDateString(base));
+  };
+
+  const renderAssigneeList = (shiftId, dayStr) => {
+    const assignedStaff = getAssignmentsForCell(shiftId, dayStr);
+    return (
+      <>
+        {assignedStaff.map((assign, assignIdx) => {
+          const staffName =
+            assign.ten ||
+            staffList.find((s) => String(s.ma_nhan_vien) === String(assign.ma_nhan_vien))?.ten ||
+            `#${assign.ma_nhan_vien}`;
+          return (
+            <div
+              key={`${assign.ma_nhan_vien}-${assignIdx}`}
+              className="assignee-pill group/pill inline-flex items-center gap-0.5 pl-2 pr-0.5 py-0.5 rounded-lg bg-primary/10 border border-outline/40 text-sm font-medium w-max max-w-full min-h-[1.75rem]"
+            >
+              <span className="assignee-name hidden print:inline text-left leading-snug">{staffName}</span>
+              <button
+                type="button"
+                onClick={() => openStaffDetails(assign.ma_nhan_vien)}
+                className="assignee-name text-left leading-snug hover:text-primary print:hidden py-0.5"
+              >
+                {staffName}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => handleDeleteAssignment(assign.ma_nhan_vien, shiftId, dayStr, e)}
+                className="print:hidden opacity-0 group-hover/pill:opacity-100 inline-flex items-center justify-center w-6 h-6 shrink-0 ml-auto text-error hover:bg-error/15 rounded-md transition-opacity"
+                aria-label="Gỡ ca"
+              >
+                <span className="material-symbols-outlined text-[18px] leading-none">close</span>
+              </button>
+            </div>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => openAssignModalForDay(shiftId, dayStr)}
+          className="print:hidden inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-outline text-primary text-sm hover:bg-primary/10 shrink-0"
+          title="Thêm phân công"
+        >
+          <span className="material-symbols-outlined text-base">add</span>
+        </button>
+      </>
+    );
+  };
+
+  const formatDisplayDate = (ymd) => {
+    if (!ymd) return "";
+    const [y, m, d] = ymd.split("-");
+    return `${d}/${m}/${y}`;
+  };
+
+  const statusBadgeClass = (status) => {
+    const s = normalizeTrangThai(status);
+    if (s === "dang_lam") return "bg-primary/15 text-primary";
+    if (s === "tam_nghi") return "bg-warning/15 text-warning";
+    return "bg-on-surface/15 text-on-surface";
+  };
+
   // =====================================================================
   // NOTE 5: GIAO DIỆN HIỂN THỊ
   // =====================================================================
   return (
-    <div className="font-body animate-in fade-in duration-500 w-full text-on-surface transition-colors duration-500 print:bg-white print:m-0 print:p-0">
+    <div className="font-body w-full text-on-surface pb-8 print:bg-white print:m-0 print:p-0">
       
       <style>
   {`
@@ -245,12 +374,44 @@ const { isDark } = useTheme();
         font-weight: 900 !important;
       }
 
-      /* 5. Ép tên nhân viên hiện rõ, không bị mờ do opacity của Dark Mode */
-      .group/pill {
+      /* 5. Tên nhân viên in đủ, không ba chấm */
+      .assignee-pill,
+      .group\\/pill {
+        display: block !important;
+        max-width: none !important;
+        width: 100% !important;
         border: 1px solid black !important;
         color: black !important;
         opacity: 1 !important;
         background: white !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
+      }
+      .assignee-name {
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        max-width: none !important;
+        width: auto !important;
+        display: inline !important;
+      }
+      .schedule-board {
+        height: auto !important;
+        grid-template-rows: auto repeat(3, auto) !important;
+      }
+      .schedule-board .schedule-body,
+      .schedule-board .schedule-cell {
+        overflow: visible !important;
+        min-height: auto !important;
+      }
+      .schedule-board .schedule-assignees {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 2pt !important;
+        height: auto !important;
+        overflow: visible !important;
       }
 
       /* 6. Loại bỏ hoàn toàn các hiệu ứng màu mè/mờ ảo của chế độ tối */
@@ -263,210 +424,289 @@ const { isDark } = useTheme();
         color: black !important;
       }
 
-      /* 8. Ẩn nút và các thành phần thừa */
-      .print:hidden, button, .no-print {
+      /* 8. Ẩn nút thao tác (giữ span.assignee-name hiển thị đủ tên) */
+      .print\\:hidden,
+      button:not(.assignee-name),
+      .no-print {
         display: none !important;
+      }
+    }
+
+    .schedule-board {
+      display: grid;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      border: 1px solid color-mix(in srgb, var(--color-outline, #ccc) 40%, transparent);
+    }
+    .schedule-board .schedule-cell {
+      min-width: 0;
+      min-height: 0;
+      border-right: 1px solid color-mix(in srgb, var(--color-outline, #ccc) 35%, transparent);
+      border-bottom: 1px solid color-mix(in srgb, var(--color-outline, #ccc) 35%, transparent);
+    }
+    .schedule-board .schedule-head {
+      background: color-mix(in srgb, var(--color-primary, #2d5a3d) 8%, transparent);
+      font-size: clamp(0.625rem, 1.1vw, 0.75rem);
+    }
+    .schedule-board .schedule-shift {
+      background: color-mix(in srgb, var(--color-primary, #2d5a3d) 6%, transparent);
+      font-size: clamp(0.625rem, 1vw, 0.75rem);
+    }
+    .schedule-board .schedule-body {
+      overflow: auto;
+    }
+    .schedule-day-card {
+      transition: border-color 0.15s ease;
+    }
+    .schedule-day-card:hover {
+      border-color: color-mix(in srgb, var(--color-primary, #2d5a3d) 35%, transparent);
+    }
+    @media print {
+      .schedule-board,
+      .schedule-day-board {
+        border: none !important;
+        height: auto !important;
+      }
+      .schedule-board {
+        border: 1.5pt solid black !important;
+      }
+      .schedule-board .schedule-cell,
+      .schedule-day-card {
+        border: 1pt solid black !important;
+        break-inside: avoid;
+      }
+      .schedule-day-board {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+      @page {
+        size: landscape;
+        margin: 12mm;
       }
     }
   `}
 </style>
 
-      <div className="p-4 md:p-6 space-y-6 max-w-[1400px] mx-auto print:max-w-none print:p-0 print:m-0 print:space-y-0 print:w-full">
-        
-        {/* --- KHỐI THỐNG KÊ & TÌM KIẾM --- */}
-        <section className="print:hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
-          <div className="lg:col-span-3 bg-primary/10 p-6 rounded-2xl flex justify-between items-center relative overflow-hidden border border-outline/10">
-            <div className="relative z-10">
-              <h2 className="text-2xl font-headline font-extrabold text-primary mb-2">Quản lý Nhân sự</h2>
-              <p className="text-on-surface opacity-80 text-sm font-medium max-w-md leading-relaxed">
-                Có tổng cộng {staffList.length} nhân sự. Quản lý hồ sơ và lịch làm việc trực quan.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                {/* Nút Thêm nhân viên - Nút hành động chính */}
-                <button onClick={() => setIsModalOpen(true)} className="btn-primary !py-2.5 !px-5 !text-xs md:!text-sm">
-                  <span className="material-symbols-outlined !text-lg">person_add</span> 
-                  <span className="hidden sm:inline">Thêm nhân viên</span>
-                  <span className="sm:hidden">Thêm NV</span>
-                </button>
-
-                {/* Nút Hồ sơ NV - Nút hành động phụ */}
-                <button onClick={() => setStaffListModal(true)} className="btn-outline !py-2.5 !px-5 !text-xs md:!text-sm bg-card">
-                  <span className="material-symbols-outlined !text-lg">badge</span> 
-                  <span>Hồ sơ NV</span>
-                </button>
-              </div>
-            </div>
-            <div className="hidden md:block opacity-10 absolute -right-8 -bottom-10">
-              <span className="material-symbols-outlined text-[140px] text-primary">groups</span>
-            </div>
+      <div className="w-full min-w-0 flex flex-col gap-4 md:gap-5 min-h-[calc(100dvh-7.5rem)] print:min-h-0 print:block print:space-y-4">
+        {/* Tiêu đề trang */}
+        <div className="print:hidden shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold text-primary tracking-tight">
+              Quản lý nhân sự
+            </h1>
           </div>
-          
-          <div className="card p-6 flex flex-col justify-center border-none shadow-sm">
-            <p className="text-on-surface opacity-50 font-bold text-[11px] uppercase mb-2 tracking-widest">Tra cứu lịch</p>
-            <input 
-              type="date" 
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="mb-3"
-            />
-            <div className="flex bg-primary/5 p-1 rounded-lg">
-              <button onClick={() => setViewMode('day')} className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${viewMode === 'day' ? 'bg-card text-primary shadow-sm' : 'opacity-40'}`}>Ngày</button>
-              <button onClick={() => setViewMode('week')} className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${viewMode === 'week' ? 'bg-card text-primary shadow-sm' : 'opacity-40'}`}>Tuần</button>
-            </div>
-          </div>
-        </section>
-
-        {/* --- KHỐI BẢNG PHÂN CÔNG --- */}
-<section className="card overflow-hidden border-2 border-[var(--color-border)] shadow-lg print:shadow-none print:border-2 print:border-black transition-colors duration-500">
-  <div className="print:hidden p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-[var(--color-border)]">
-    <div>
-      <h3 className="text-xl font-headline font-extrabold text-primary">
-        Bảng Phân Công {viewMode === 'week' ? 'Tuần' : 'Ngày'}
-      </h3>
-      <p className="text-sm text-on-surface opacity-70 font-medium mt-1 italic">
-        {viewMode === 'day' ? formatDateString(filterDate).split('-').reverse().join('/') : `Từ ${getWeekRange(filterDate).startStr.split('-').reverse().join('/')} đến ${getWeekRange(filterDate).endStr.split('-').reverse().join('/')}`}
-      </p>
-    </div>
-    <div className="flex items-center">
-      <button onClick={handlePrint} className="btn-outline !py-2 !px-4 !text-xs flex items-center gap-1.5 bg-card border-2">
-        <span className="material-symbols-outlined text-sm">print</span> In Bảng
-      </button>
-    </div>
-  </div>
-
-  <div className="overflow-x-auto w-full print:overflow-visible custom-scrollbar">
-    {/* Thêm border-2 và border-collapse vào table để đảm bảo khi in viền không bị mất */}
-    <table className="min-w-[1000px] lg:w-full border-collapse text-left print:border-2 print:border-black">
-      <thead>
-        <tr className="bg-primary/10 print:bg-gray-100">
-          <th className="p-3 border-2 border-[var(--color-border)] print:border-black font-headline font-extrabold text-primary text-[11px] uppercase tracking-widest w-36 text-center">
-            CA / THỜI GIAN
-          </th>
-          {viewMode === 'week' ? (
-            weekDays.map((d, index) => {
-              const isToday = formatDateString(d) === today;
-              return (
-                <th key={index} className={`p-3 text-center border-2 border-[var(--color-border)] print:border-black min-w-[140px] ${isToday ? 'bg-primary/10' : ''}`}>
-                  <p className={`text-[10px] font-bold text-on-surface uppercase`}>
-                    {index === 6 ? 'Chủ Nhật' : `Thứ ${index + 2}`}
-                  </p>
-                  <p className={`font-black text-base mt-1 text-on-surface`}>
-                    {d.getDate()}/{d.getMonth() + 1}
-                  </p>
-                </th>
-              )
-            })
-          ) : (
-            <th className="p-3 text-center border-2 border-[var(--color-border)] print:border-black min-w-[300px]">
-              <p className="text-[11px] font-bold text-on-surface uppercase tracking-widest">Danh sách nhân sự</p>
-            </th>
-          )}
-        </tr>
-      </thead>
-      
-      <tbody>
-        {shiftsConfig.map((shift) => (
-          <tr key={shift.id} className="hover:bg-primary/5 transition-colors print:break-inside-avoid">
-            <td className="p-3 border-2 border-[var(--color-border)] print:border-black align-middle">
-              <div className="flex flex-col gap-1 items-start px-2">
-                <div className={`print:hidden w-6 h-6 rounded flex items-center justify-center`}>
-                  <span className={`material-symbols-outlined text-[14px] text-primary`}>{shift.icon}</span>
-                </div>
-                <p className={`font-extrabold text-primary text-[12px] uppercase mt-1`}>{shift.label}</p>
-                <p className="text-[10px] font-medium text-on-surface opacity-70 italic">{shift.time}</p>
-              </div>
-            </td>
-
-            {viewMode === 'week' ? (
-              weekDays.map((day, idx) => {
-                const dayStr = formatDateString(day);
-                const assignedStaff = assignments.filter(a => formatDateString(a.ngay) === dayStr && (String(a.ma_ca) === String(shift.id) || a.buoi?.includes(shift.label.split(' ')[1])));
-                
-                return (
-                  <td key={idx} className={`p-2 border-2 border-[var(--color-border)] print:border-black align-top ${dayStr === today ? 'bg-primary/5' : ''}`}>
-                    <div className="flex flex-wrap gap-1.5 p-1">
-                      {assignedStaff.map((assign, assignIdx) => {
-                        const staffName = assign.ten || staffList.find(s => String(s.ma_nhan_vien) === String(assign.ma_nhan_vien))?.ten || `NV #${assign.ma_nhan_vien}`;
-                        return (
-                          <div key={`${assign.ma_nhan_vien}-${assignIdx}`} className="group/pill flex items-center gap-1 px-2 py-1 rounded bg-primary/10 border border-[var(--color-border)] transition-all print:border-none print:bg-transparent print:p-0 print:block">
-                            <div onClick={() => openStaffDetails(assign.ma_nhan_vien)} className="cursor-pointer flex-1 flex items-center text-on-surface">
-                              <span className="text-[11px] font-bold uppercase print:text-[13px] print:font-bold">
-                                • {staffName}
-                              </span>
-                            </div>
-                            <button onClick={(e) => handleDeleteAssignment(assign.ma_nhan_vien, shift.id, dayStr, e)} className="print:hidden w-[18px] h-[18px] flex items-center justify-center rounded-full bg-error/20 text-error hover:bg-error hover:text-white opacity-0 group-hover/pill:opacity-100 ml-1">
-                              <span className="material-symbols-outlined text-[10px] font-bold">close</span>
-                            </button>
-                          </div>
-                        )
-                      })}
-                      <button onClick={() => openAssignModalForDay(shift.id, dayStr)} className="print:hidden w-[24px] h-[24px] rounded border-2 border-dashed border-[var(--color-border)] text-primary hover:bg-primary/10 transition-all flex items-center justify-center">+</button>
-                    </div>
-                  </td>
-                )
-              })
-            ) : (
-              <td className="p-3 border-2 border-[var(--color-border)] print:border-black align-top">
-                <div className="flex flex-wrap gap-2 p-1">
-                  {assignments.filter(a => formatDateString(a.ngay) === filterDate && (String(a.ma_ca) === String(shift.id))).map((assign, assignIdx) => (
-                    <div key={assignIdx} className="group/pill flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary/10 border border-[var(--color-border)] print:border-none print:bg-transparent print:p-0">
-                      <span className="text-xs font-bold uppercase print:text-[13px] print:font-bold">• {assign.ten}</span>
-                      <button onClick={(e) => handleDeleteAssignment(assign.ma_nhan_vien, shift.id, filterDate, e)} className="print:hidden text-error ml-1 opacity-0 group-hover/pill:opacity-100">×</button>
-                    </div>
-                  ))}
-                </div>
-              </td>
-            )}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-</section>
-      </div>
-
-      {/* --- CÁC MODALS --- */}
-      
-      {/* Modal Xem Danh Sách NV */}
-      {staffListModal && (
-        <div className="print:hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="card w-full max-w-xl p-6 shadow-2xl relative max-h-[80vh] flex flex-col border-none">
-            <button onClick={() => setStaffListModal(false)} className="absolute top-5 right-5 text-on-surface opacity-40 hover:opacity-100"><span className="material-symbols-outlined">close</span></button>
-            <h3 className="text-lg font-black text-primary mb-4 font-headline uppercase tracking-widest">Hồ sơ nhân sự</h3>
-            <div className="overflow-y-auto pr-1 flex-1 space-y-2 custom-scrollbar">
-              {staffList.map(nv => (
-                <div key={nv.ma_nhan_vien} className={`p-3 rounded-lg border flex items-center justify-between transition-all ${nv.trang_thai === 0 ? 'bg-on-surface/5 opacity-50' : 'bg-primary/5 border-outline/10 hover:border-primary/30'}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded flex items-center justify-center font-black uppercase ${nv.trang_thai === 0 ? 'bg-on-surface/20 text-on-surface' : 'bg-primary/20 text-primary'}`}>
-                      {nv.ten.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-on-surface uppercase">
-                        {nv.ten} 
-                        {nv.trang_thai === 0 && <span className="ml-2 text-[9px] bg-on-surface/50 text-card px-1.5 py-0.5 rounded uppercase font-black tracking-widest">Đã ẩn</span>}
-                      </p>
-                      <p className="text-[10px] text-on-surface opacity-50 tracking-widest">{nv.so_dien_thoai}</p>
-                    </div>
-                  </div>
-                 <button 
-                      onClick={() => openStaffDetails(nv.ma_nhan_vien)} 
-                      className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-card text-[10px] font-black rounded-lg transition-all uppercase tracking-widest" >
-                      Chi tiết
-                    </button>
-                </div>
-              ))}
-              {staffList.length === 0 && <p className="text-center text-on-surface opacity-40 py-4 text-sm uppercase">Chưa có dữ liệu</p>}
-            </div>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <button type="button" onClick={() => setIsModalOpen(true)} className="btn-primary !py-2 !px-4 !text-sm">
+              <span className="material-symbols-outlined text-lg">person_add</span>
+              Thêm nhân viên
+            </button>
+            <button type="button" onClick={handlePrint} className="btn-outline !py-2 !px-4 !text-sm">
+              <span className="material-symbols-outlined text-lg">print</span>
+              In lịch
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Modal Chi Tiết / Sửa Nhân Viên */}
+        {/* Lịch phân công — co giãn theo kích thước màn hình */}
+        <section className="card border-none overflow-hidden print:border print:border-black w-full min-w-0 flex-1 flex flex-col min-h-0 print:flex-none">
+          <div className="print:hidden p-3 md:p-4 border-b border-outline shrink-0">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-primary">
+                  Lịch phân công {viewMode === "week" ? "theo tuần" : "theo ngày"}
+                </h2>
+                <p className="text-sm text-muted mt-0.5 truncate">
+                  {viewMode === "week"
+                    ? `${formatDisplayDate(weekRange.startStr)} – ${formatDisplayDate(weekRange.endStr)}`
+                    : formatDisplayDate(filterDate)}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex bg-primary/5 p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("week")}
+                    className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${viewMode === "week" ? "bg-card text-primary shadow-sm" : "text-muted"}`}
+                  >
+                    Tuần
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("day")}
+                    className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${viewMode === "day" ? "bg-card text-primary shadow-sm" : "text-muted"}`}
+                  >
+                    Ngày
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => shiftPeriod(-1)}
+                  className="btn-ghost !p-2"
+                  title={viewMode === "week" ? "Tuần trước" : "Ngày trước"}
+                >
+                  <span className="material-symbols-outlined">chevron_left</span>
+                </button>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="input-field !py-2 !w-auto !min-w-[10.5rem]"
+                />
+                <button
+                  type="button"
+                  onClick={() => shiftPeriod(1)}
+                  className="btn-ghost !p-2"
+                  title={viewMode === "week" ? "Tuần sau" : "Ngày sau"}
+                >
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </button>
+                <button type="button" onClick={() => setFilterDate(today)} className="btn-outline !py-2 !px-3 !text-xs">
+                  Hôm nay
+                </button>
+              </div>
+            </div>
+            {loadError && <p className="text-sm text-error mt-2">{loadError}</p>}
+          </div>
+
+          {loading ? (
+            <div className="flex flex-1 justify-center items-center py-16 print:hidden">
+              <div className="w-10 h-10 border-4 border-primary border-dashed rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0 w-full p-2 md:p-3 print:p-0">
+              {viewMode === "week" ? (
+                <div
+                  className="schedule-board print-table h-full"
+                  style={{
+                    gridTemplateColumns: "minmax(3rem, 5%) repeat(7, minmax(0, 1fr))",
+                    gridTemplateRows: `minmax(2.25rem, auto) repeat(${shiftsConfig.length}, minmax(0, 1fr))`,
+                  }}
+                >
+                  <div className="schedule-cell schedule-head px-1 py-2 flex items-center justify-center font-semibold uppercase tracking-wide">
+                    Ca
+                  </div>
+                  {weekDays.map((d, index) => {
+                    const dayStr = formatDateString(d);
+                    const isTodayCol = dayStr === today;
+                    return (
+                      <div
+                        key={index}
+                        className={`schedule-cell schedule-head px-1 py-2 text-center ${isTodayCol ? "bg-primary/15" : ""}`}
+                      >
+                        <p className="font-semibold text-muted uppercase leading-tight">
+                          {index === 6 ? "CN" : `T${index + 2}`}
+                        </p>
+                        <p className="font-bold text-on-surface leading-tight mt-0.5 text-[clamp(0.65rem,1.2vw,0.875rem)]">
+                          {formatDisplayDate(dayStr)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                  {shiftsConfig.map((shift) => (
+                    <React.Fragment key={shift.id}>
+                      <div className="schedule-cell schedule-shift px-1 py-2 flex flex-col items-center justify-center text-center gap-0.5 print:bg-gray-50">
+                        <span className="material-symbols-outlined text-primary text-[clamp(1rem,2vw,1.25rem)] print:hidden">{shift.icon}</span>
+                        <span className="font-bold text-primary leading-tight">{shift.label}</span>
+                        <span className="text-muted leading-tight">{shift.time}</span>
+                      </div>
+                      {weekDays.map((day, idx) => {
+                        const dayStr = formatDateString(day);
+                        return (
+                          <div
+                            key={idx}
+                            className={`schedule-cell schedule-body px-1.5 py-1.5 ${dayStr === today ? "bg-primary/5" : ""}`}
+                          >
+                            <div className="schedule-assignees flex flex-wrap gap-1 justify-start content-start h-full min-h-0 items-start text-left">
+                              {renderAssigneeList(shift.id, dayStr)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
+                </div>
+              ) : (
+                <div className="schedule-day-board print-table h-full grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 auto-rows-fr">
+                  {shiftsConfig.map((shift) => {
+                    const count = getAssignmentsForCell(shift.id, filterDate).length;
+                    return (
+                      <div
+                        key={shift.id}
+                        className="schedule-day-card flex flex-col rounded-xl border border-outline/40 overflow-hidden min-h-[10rem] bg-primary/[0.03]"
+                      >
+                        <div className="px-3 py-3 border-b border-outline/30 bg-primary/5 flex items-center gap-3 shrink-0">
+                          <span className="material-symbols-outlined text-primary text-2xl print:hidden">{shift.icon}</span>
+                          <div className="min-w-0">
+                            <p className="font-bold text-primary">{shift.label}</p>
+                            <p className="text-xs text-muted">{shift.time}</p>
+                          </div>
+                          <span className="ml-auto text-xs font-semibold tabular-nums text-muted shrink-0">
+                            {count} NV
+                          </span>
+                        </div>
+                        <div className="flex-1 p-3 schedule-assignees flex flex-wrap gap-2 justify-start content-start items-start text-left min-h-[5rem]">
+                          {count === 0 ? (
+                            <p className="text-sm text-muted w-full py-2">Chưa phân ca</p>
+                          ) : null}
+                          {renderAssigneeList(shift.id, filterDate)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* Danh sách nhân viên — dưới lịch */}
+        <aside className="card border-none overflow-hidden print:hidden shrink-0">
+          <div className="p-3 md:p-4 border-b border-outline">
+            <h2 className="font-bold text-primary text-sm">Danh sách nhân viên</h2>
+          </div>
+          <div className="p-3 md:p-4 max-h-[220px] overflow-y-auto custom-scrollbar">
+            {staffList.length === 0 ? (
+              <p className="text-center text-muted text-sm py-6">Chưa có nhân viên</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+                {staffList.map((nv) => (
+                  <button
+                    key={nv.ma_nhan_vien}
+                    type="button"
+                    onClick={() => openStaffDetails(nv.ma_nhan_vien)}
+                    className="text-left p-2.5 rounded-xl border border-outline/30 hover:border-primary/40 hover:bg-primary/5 transition-colors flex items-center gap-2 min-w-0"
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${!isDangLam(nv.trang_thai) ? "bg-on-surface/10 text-on-surface" : "bg-primary/15 text-primary"}`}
+                    >
+                      {(nv.ten || "?").charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm truncate">{nv.ten}</p>
+                      <p className="text-[11px] text-muted truncate">{nv.so_dien_thoai || "—"}</p>
+                    </div>
+                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${statusBadgeClass(nv.trang_thai)}`}>
+                      {TRANG_THAI_LABELS[normalizeTrangThai(nv.trang_thai)]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {/* --- MODALS --- */}
+
+      {/* Modal Chi tiết / Sửa nhân viên */}
       {staffDetailModal.isOpen && (
-        <div className="print:hidden fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="card w-full max-w-sm p-6 shadow-2xl relative border-none">
-            <button onClick={() => setStaffDetailModal({ isOpen: false, data: null, isEditing: false })} className="absolute top-5 right-5 text-on-surface opacity-40 hover:opacity-100"><span className="material-symbols-outlined">close</span></button>
-            <h3 className="text-lg font-headline font-black text-primary mb-4 uppercase tracking-widest">{staffDetailModal.isEditing ? "Sửa hồ sơ" : "Thông tin chi tiết"}</h3>
+        <div className="print:hidden modal-overlay" onClick={() => setStaffDetailModal({ isOpen: false, data: null, isEditing: false })}>
+          <div className="modal-panel max-w-md p-5 md:p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setStaffDetailModal({ isOpen: false, data: null, isEditing: false })} className="absolute top-4 right-4 btn-ghost !p-2">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="text-lg font-bold text-primary pr-8">{staffDetailModal.isEditing ? "Sửa hồ sơ" : "Chi tiết nhân viên"}</h3>
 
             {staffDetailModal.isEditing ? (
               <form onSubmit={handleUpdateStaff} className="space-y-3">
@@ -484,7 +724,7 @@ const { isDark } = useTheme();
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center gap-4 border-b border-outline/10 pb-4">
-                  <div className={`w-14 h-14 rounded-lg flex items-center justify-center text-2xl font-black uppercase ${staffDetailModal.data.trang_thai === 0 ? 'bg-on-surface/10 text-on-surface' : 'bg-primary/20 text-primary'}`}>
+                  <div className={`w-14 h-14 rounded-lg flex items-center justify-center text-2xl font-black uppercase ${!isDangLam(staffDetailModal.data.trang_thai) ? 'bg-on-surface/10 text-on-surface' : 'bg-primary/20 text-primary'}`}>
                     {staffDetailModal.data.ten.charAt(0)}
                   </div>
                   <div>
@@ -495,39 +735,45 @@ const { isDark } = useTheme();
                 <div className="grid grid-cols-2 gap-y-3">
                   <div><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Số điện thoại</p><p className="text-sm font-medium mt-0.5">{staffDetailModal.data.so_dien_thoai}</p></div>
                   <div><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Ngày sinh</p><p className="text-sm font-medium mt-0.5">{formatDateString(staffDetailModal.data.ngay_sinh) ? formatDateString(staffDetailModal.data.ngay_sinh).split('-').reverse().join('/') : '---'}</p></div>
-                  <div className="col-span-1"><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Trạng thái</p><p className={`text-[10px] font-black mt-0.5 px-2 py-0.5 rounded inline-block ${staffDetailModal.data.trang_thai === 1 ? 'bg-primary/20 text-primary' : 'bg-on-surface/10 text-on-surface'}`}>{staffDetailModal.data.trang_thai === 1 ? 'ĐANG HIỆN' : 'ĐANG ẨN'}</p></div>
+                  <div className="col-span-2">
+                    <p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Trạng thái</p>
+                    <select
+                      className="input-field !py-1.5 !text-[11px] mt-1 font-black uppercase w-full"
+                      value={statusDraft}
+                      onChange={(e) => setStatusDraft(e.target.value)}
+                      disabled={statusSaving}
+                    >
+                      <option value="dang_lam">Đang làm</option>
+                      <option value="tam_nghi">Tạm nghỉ</option>
+                      <option value="da_nghi">Đã nghỉ</option>
+                    </select>
+                    <button
+                      type="button"
+                      disabled={
+                        statusSaving ||
+                        statusDraft === normalizeTrangThai(staffDetailModal.data.trang_thai)
+                      }
+                      onClick={async () => {
+                        const ok = await changeStaffStatus(
+                          staffDetailModal.data.ma_nhan_vien,
+                          statusDraft
+                        );
+                        if (ok) alert("Đã cập nhật trạng thái nhân viên");
+                      }}
+                      className="btn-outline w-full mt-2 !py-2 !text-[10px] uppercase disabled:opacity-40"
+                    >
+                      {statusSaving ? "Đang lưu..." : "Lưu trạng thái"}
+                    </button>
+                  </div>
                   <div className="col-span-2"><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Địa chỉ</p><p className="text-sm font-medium mt-0.5">{staffDetailModal.data.dia_chi || '---'}</p></div>
                 </div>
                 
                 <div className="flex flex-col gap-2 mt-6">
-                  <div className="flex gap-2">
-                    {/* Nút Ẩn/Hiện: Dùng màu trung tính để không quá chói */}
-                    <button 
-                      onClick={() => toggleStaffStatus(staffDetailModal.data.ma_nhan_vien, staffDetailModal.data.trang_thai)} 
-                      className={`flex-1 py-3 text-[11px] font-black rounded-xl uppercase transition-all border-2 ${
-                        staffDetailModal.data.trang_thai === 1 
-                        ? 'border-warning/40 text-warning bg-warning-bg' 
-                        : 'border-success/40 text-success bg-success-bg'
-                      }`}
-                    >
-                      {staffDetailModal.data.trang_thai === 1 ? 'ẨN NHÂN VIÊN' : 'HIỆN NHÂN VIÊN'}
-                    </button>
-
-                    {/* Nút Sửa: Dùng btn-primary nhưng thu nhỏ lại */}
-                    <button 
-                      onClick={() => setStaffDetailModal({...staffDetailModal, isEditing: true})} 
-                      className="btn-primary flex-1 !py-3 !text-[11px] !rounded-xl"
-                    >
-                      SỬA HỒ SƠ
-                    </button>
-                  </div>
-
-                  {/* Nút Xóa: Dùng btn-error định nghĩa sẵn */}
-                  <button 
-                    onClick={() => deleteStaff(staffDetailModal.data.ma_nhan_vien)} 
-                    className="btn-error w-full !py-2.5 !text-[10px] !rounded-xl opacity-80 hover:opacity-100"
+                  <button
+                    onClick={() => setStaffDetailModal({ ...staffDetailModal, isEditing: true })}
+                    className="btn-primary w-full !py-3 !text-[11px] !rounded-xl uppercase"
                   >
-                    XÓA VĨNH VIỄN
+                    Sửa hồ sơ
                   </button>
                 </div>
               </div>
@@ -536,63 +782,75 @@ const { isDark } = useTheme();
         </div>
       )}
 
-      {/* Modal Thêm Nhân Viên */}
+      {/* Modal thêm nhân viên */}
       {isModalOpen && (
-         <div className="print:hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-         <div className="card w-full max-w-sm p-6 shadow-2xl relative border-none">
-           <button onClick={() => setIsModalOpen(false)} className="absolute top-5 right-5 text-on-surface opacity-40 hover:opacity-100"><span className="material-symbols-outlined">close</span></button>
-           <h3 className="text-lg font-headline font-black text-primary mb-4 uppercase tracking-widest text-center italic">Thêm nhân viên mới</h3>
-           <form onSubmit={handleAddStaff} className="space-y-3">
-             <div><label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">Họ và tên</label><input required type="text" value={formData.ten} onChange={e => setFormData({...formData, ten: e.target.value})} /></div>
-             <div className="grid grid-cols-2 gap-3">
-               <div><label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">Ngày sinh</label><input type="date" value={formData.ngay_sinh} onChange={e => setFormData({...formData, ngay_sinh: e.target.value})} /></div>
-               <div><label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">SĐT</label><input required type="text" value={formData.so_dien_thoai} onChange={e => setFormData({...formData, so_dien_thoai: e.target.value})} /></div>
-             </div>
-             <div><label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">Địa chỉ</label><input type="text" value={formData.dia_chi} onChange={e => setFormData({...formData, dia_chi: e.target.value})} /></div>
-             <button type="submit" className="btn-primary w-full mt-5 uppercase tracking-widest text-xs py-4 shadow-xl">LƯU HỒ SƠ</button>
-           </form>
-         </div>
-       </div>
+        <div className="print:hidden modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-panel max-w-md p-5 md:p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 btn-ghost !p-2">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="text-lg font-bold text-primary mb-4">Thêm nhân viên mới</h3>
+            <form onSubmit={handleAddStaff} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-muted">Họ và tên</label>
+                <input required type="text" className="mt-1" value={formData.ten} onChange={(e) => setFormData({ ...formData, ten: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted">Ngày sinh</label>
+                  <input type="date" className="mt-1" value={formData.ngay_sinh} onChange={(e) => setFormData({ ...formData, ngay_sinh: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted">Số điện thoại</label>
+                  <input required type="text" className="mt-1" value={formData.so_dien_thoai} onChange={(e) => setFormData({ ...formData, so_dien_thoai: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted">Địa chỉ</label>
+                <input type="text" className="mt-1" value={formData.dia_chi} onChange={(e) => setFormData({ ...formData, dia_chi: e.target.value })} />
+              </div>
+              <button type="submit" className="btn-primary w-full !py-3">Lưu hồ sơ</button>
+            </form>
+          </div>
+        </div>
       )}
 
-      {/* Modal Phân Ca */}
+      {/* Modal phân ca */}
       {isAssignModalOpen && (
-        <div className="print:hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div className="card w-full max-w-sm p-6 shadow-2xl relative border-none">
-          <button onClick={() => setIsAssignModalOpen(false)} className="absolute top-5 right-5 text-on-surface opacity-40 hover:opacity-100"><span className="material-symbols-outlined">close</span></button>
-          <h3 className="text-lg font-headline font-black text-primary mb-4 uppercase tracking-widest text-center italic">Xếp ca làm việc</h3>
-          <form onSubmit={handleAssignStaff} className="space-y-4">
-            <div>
-              <label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">Ngày làm việc</label>
-              <input type="date" required value={assignForm.ngay} onChange={e => setAssignForm({...assignForm, ngay: e.target.value})} />
-            </div>
-            <div>
-              <label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">Ca làm</label>
-              <select required className="w-full bg-surface-container-low border border-outline/30 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none appearance-none" value={assignForm.ma_ca} onChange={e => setAssignForm({...assignForm, ma_ca: e.target.value})}>
-                <option value="" disabled>-- Chọn ca --</option>
-                {shiftsConfig.map(shift => (
-                   <option key={shift.id} value={shift.id}>{shift.label} ({shift.time})</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">Nhân viên</label>
-              <select required className="w-full bg-surface-container-low border border-outline/30 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none appearance-none" value={assignForm.ma_nhan_vien} onChange={e => setAssignForm({...assignForm, ma_nhan_vien: e.target.value})}>
-                <option value="" disabled>-- Chọn nhân viên --</option>
-                {staffList.filter(nv => nv.trang_thai === 1).map(nv => (
-                  <option key={nv.ma_nhan_vien} value={nv.ma_nhan_vien}>{nv.ten}</option>
-                ))}
-              </select>
-            </div>
-            {/* Dành cho Modal Thêm NV, Modal Sửa NV, Modal Gán Ca */}
-            <button 
-              type="submit" 
-              className="btn-primary w-full mt-6 !py-4 !text-xs uppercase tracking-[0.2em] shadow-xl hover:translate-y-[-2px]">
-              Xác nhận hoàn tất
+        <div className="print:hidden modal-overlay" onClick={() => setIsAssignModalOpen(false)}>
+          <div className="modal-panel max-w-md p-5 md:p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setIsAssignModalOpen(false)} className="absolute top-4 right-4 btn-ghost !p-2">
+              <span className="material-symbols-outlined">close</span>
             </button>
-          </form>
+            <h3 className="text-lg font-bold text-primary mb-1">Phân công ca</h3>
+            <p className="text-sm text-muted mb-4">{formatDisplayDate(assignForm.ngay)}</p>
+            <form onSubmit={handleAssignStaff} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-muted">Ngày làm việc</label>
+                <input type="date" required className="mt-1" value={assignForm.ngay} onChange={(e) => setAssignForm({ ...assignForm, ngay: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted">Ca làm</label>
+                <select required className="input-field mt-1" value={assignForm.ma_ca} onChange={(e) => setAssignForm({ ...assignForm, ma_ca: e.target.value })}>
+                  <option value="" disabled>Chọn ca</option>
+                  {shiftsConfig.map((shift) => (
+                    <option key={shift.id} value={shift.id}>{shift.label} ({shift.time})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted">Nhân viên</label>
+                <select required className="input-field mt-1" value={assignForm.ma_nhan_vien} onChange={(e) => setAssignForm({ ...assignForm, ma_nhan_vien: e.target.value })}>
+                  <option value="" disabled>Chọn nhân viên</option>
+                  {staffList.filter((nv) => canSelectInAssignModal(nv.trang_thai, assignForm.ngay, today)).map((nv) => (
+                    <option key={nv.ma_nhan_vien} value={nv.ma_nhan_vien}>{nv.ten}</option>
+                  ))}
+                </select>
+              </div>
+              <button type="submit" className="btn-primary w-full !py-3">Xác nhận phân công</button>
+            </form>
+          </div>
         </div>
-      </div>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 const nhanVienRepository = require("../repositories/nhanVienRepository");
+const { isValidTrangThai, normalizeTrangThai } = require("../utils/nhanVienStatus");
 
 const getList = async () => await nhanVienRepository.getAll();
 
@@ -14,16 +15,32 @@ const createStaff = async (payload) => {
 
 const toggleStatus = async (id, payload) => {
   const { trang_thai } = payload;
-  if (trang_thai === undefined) {
-    throw { status: 400, message: "Thiếu trạng thái (0 hoặc 1)" };
+  if (trang_thai === undefined || !isValidTrangThai(trang_thai)) {
+    throw { status: 400, message: "Trạng thái không hợp lệ (dang_lam, tam_nghi, da_nghi)" };
   }
-  return await nhanVienRepository.updateStatus(id, trang_thai);
+  const ok = await nhanVienRepository.updateStatus(id, normalizeTrangThai(trang_thai));
+  if (!ok) {
+    throw { status: 404, message: "Không tìm thấy nhân viên hoặc không cập nhật được trạng thái" };
+  }
+  return ok;
 };
 
 const createAssignment = async (payload) => {
   const { ma_nhan_vien, ma_ca, ngay } = payload;
   if (!ma_nhan_vien || !ma_ca || !ngay) {
     throw { status: 400, message: "Vui lòng chọn đủ nhân viên, ca làm và ngày" };
+  }
+  const staffList = await nhanVienRepository.getAll();
+  const staff = staffList.find((s) => String(s.ma_nhan_vien) === String(ma_nhan_vien));
+  const status = normalizeTrangThai(staff?.trang_thai);
+  const ngayStr = String(ngay).substring(0, 10);
+  const d = new Date();
+  const todayStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().substring(0, 10);
+  if (status !== "dang_lam" && ngayStr >= todayStr) {
+    throw {
+      status: 400,
+      message: "Chỉ nhân viên đang làm mới được phân công từ hôm nay trở đi",
+    };
   }
   return await nhanVienRepository.createAssignment(payload);
 };

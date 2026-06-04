@@ -7,9 +7,10 @@ export const getNhanVienList = async () => {
 
 export const getLichPhanCong = async ({ startDate, endDate }) => {
   const response = await axiosClient.get(
-    `/api/nhanvien/lich-phan-cong?startDate=${startDate}&endDate=${endDate}`
+    `/api/nhanvien/lich-phan-cong?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`
   );
-  return response.data;
+  const data = response.data;
+  return Array.isArray(data) ? data : [];
 };
 
 export const createNhanVien = async (payload) => {

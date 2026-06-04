@@ -11,6 +11,9 @@ export default function Sidebar({ open, setOpen }) {
     { name: "Nguyên liệu", path: "/nguyenlieu", icon: "inventory_2" },
     { name: "Quản lý Bàn", path: "/ban", icon: "table_restaurant" },
     { name: "Doanh thu", path: "/doanhthu", icon: "payments" },
+    { name: "Bảng công", path: "/bangcong", icon: "schedule" },
+    { name: "Bảng lương", path: "/bangluong", icon: "payments" },
+    { name: "Cấu hình lương", path: "/luongnhanvien", icon: "tune" },
   ];
 
   const handleLogout = async () => {

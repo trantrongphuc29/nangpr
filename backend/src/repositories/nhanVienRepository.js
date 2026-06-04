@@ -6,19 +6,39 @@ const getAll = async () => {
   return rows;
 };
 
+function normalizeNgayYmd(value) {
+  if (!value) return "";
+  if (value instanceof Date) {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(value);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+  const parsed = new Date(s);
+  if (!Number.isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, "0");
+    const d = String(parsed.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  return s.substring(0, 10);
+}
+
 const getAssignments = async (queryOptions) => {
   const { startDate, endDate, name } = queryOptions;
   let sql = `
-    SELECT pc.ma_nhan_vien, pc.ma_ca, DATE_FORMAT(pc.ngay, '%Y-%m-%d') as ngay, nv.ten, cl.buoi
+    SELECT pc.ma_nhan_vien, pc.ma_ca, DATE_FORMAT(pc.ngay, '%Y-%m-%d') AS ngay, nv.ten, cl.buoi
     FROM phancong pc
-    JOIN nhanvien nv ON pc.ma_nhan_vien = nv.ma_nhan_vien
+    INNER JOIN nhanvien nv ON pc.ma_nhan_vien = nv.ma_nhan_vien
     LEFT JOIN calam cl ON pc.ma_ca = cl.ma_ca
-    WHERE nv.trang_thai = 1
+    WHERE 1=1
   `;
   const params = [];
 
   if (startDate && endDate) {
-    sql += " AND pc.ngay BETWEEN ? AND ?";
+    sql += " AND pc.ngay >= ? AND pc.ngay <= ?";
     params.push(startDate, endDate);
   } else if (startDate) {
     sql += " AND pc.ngay = ?";
@@ -34,19 +54,26 @@ const getAssignments = async (queryOptions) => {
 
   sql += " ORDER BY pc.ngay ASC, pc.ma_ca ASC";
   const [rows] = await db.execute(sql, params);
-  return rows;
+  return rows.map((row) => ({
+    ...row,
+    ma_ca: Number(row.ma_ca),
+    ma_nhan_vien: Number(row.ma_nhan_vien),
+    ngay: normalizeNgayYmd(row.ngay),
+  }));
 };
 
 const createStaff = async (staff) => {
   const { ten, ngay_sinh, so_dien_thoai, dia_chi } = staff;
-  const sql = "INSERT INTO nhanvien (ten, ngay_sinh, so_dien_thoai, dia_chi, trang_thai) VALUES (?, ?, ?, ?, 1)";
+  const sql = "INSERT INTO nhanvien (ten, ngay_sinh, so_dien_thoai, dia_chi, trang_thai) VALUES (?, ?, ?, ?, 'dang_lam')";
   const [result] = await db.execute(sql, [ten, ngay_sinh, so_dien_thoai, dia_chi]);
   return result;
 };
 
 const updateStatus = async (id, trang_thai) => {
+  const maNhanVien = parseInt(id, 10);
+  if (!Number.isFinite(maNhanVien)) return false;
   const sql = "UPDATE nhanvien SET trang_thai = ? WHERE ma_nhan_vien = ?";
-  const [result] = await db.execute(sql, [trang_thai, id]);
+  const [result] = await db.execute(sql, [trang_thai, maNhanVien]);
   return result.affectedRows > 0;
 };
 

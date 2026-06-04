@@ -30,7 +30,12 @@ const createStaff = async (req, res) => {
 const toggleStatus = async (req, res) => {
   try {
     await nhanVienService.toggleStatus(req.params.id, req.body);
-    return res.json({ message: "Cập nhật trạng thái thành công" });
+    const list = await nhanVienService.getList();
+    const staff = list.find((s) => String(s.ma_nhan_vien) === String(req.params.id));
+    return res.json({
+      message: "Cập nhật trạng thái thành công",
+      nhan_vien: staff || null,
+    });
   } catch (err) {
     return res.status(err.status || 500).json({ message: err.message });
   }
