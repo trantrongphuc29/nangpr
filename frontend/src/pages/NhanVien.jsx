@@ -671,7 +671,7 @@ const NhanVien = () => {
           <div className="p-3 md:p-4 border-b border-outline">
             <h2 className="font-bold text-primary text-sm">Danh sách nhân viên</h2>
           </div>
-          <div className="p-3 md:p-4 max-h-[220px] overflow-y-auto custom-scrollbar">
+          <div className="p-3 md:p-4">
             {staffList.length === 0 ? (
               <p className="text-center text-muted text-sm py-6">Chưa có nhân viên</p>
             ) : (
@@ -681,7 +681,7 @@ const NhanVien = () => {
                     key={nv.ma_nhan_vien}
                     type="button"
                     onClick={() => openStaffDetails(nv.ma_nhan_vien)}
-                    className="text-left p-3 rounded-xl border border-outline/30 hover:border-primary/40 hover:bg-primary/5 transition-colors flex flex-col gap-2 min-w-0"
+                    className="text-left p-3 rounded-xl border border-outline/30 hover:border-primary/40 hover:bg-primary/5 transition-colors min-w-0"
                   >
                     <div className="flex items-start gap-2.5 min-w-0 w-full">
                       <div
@@ -695,8 +695,10 @@ const NhanVien = () => {
                           {formatPhoneDisplay(nv.so_dien_thoai)}
                         </p>
                       </div>
+                      <div className="shrink-0 self-start">
+                        <StaffStatusBadge status={nv.trang_thai} />
+                      </div>
                     </div>
-                    <StaffStatusBadge status={nv.trang_thai} />
                   </button>
                 ))}
               </div>
