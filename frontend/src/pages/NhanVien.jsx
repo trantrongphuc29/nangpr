@@ -15,6 +15,7 @@ import {
   canSelectInAssignModal,
   shouldShowAssignmentOnSchedule,
 } from "../utils/nhanVienStatus";
+import { formatPhoneDisplay } from "../utils/formatPhone";
 
 // =====================================================================
 // NOTE 1: KHU VỰC XỬ LÝ NGÀY THÁNG (GIỮ NGUYÊN)
@@ -68,6 +69,18 @@ const getWeekRange = (dateString) => {
     endStr: getLocalDateString(end),
   };
 };
+
+function StaffStatusBadge({ status }) {
+  const s = normalizeTrangThai(status);
+  const label = TRANG_THAI_LABELS[s] || s;
+  if (s === "dang_lam") return <span className="badge-success">{label}</span>;
+  if (s === "tam_nghi") return <span className="badge-warning">{label}</span>;
+  return (
+    <span className="badge bg-on-surface/10 text-on-surface border border-outline/50">
+      {label}
+    </span>
+  );
+}
 
 const NhanVien = () => {
   // =====================================================================
@@ -323,13 +336,6 @@ const NhanVien = () => {
     if (!ymd) return "";
     const [y, m, d] = ymd.split("-");
     return `${d}/${m}/${y}`;
-  };
-
-  const statusBadgeClass = (status) => {
-    const s = normalizeTrangThai(status);
-    if (s === "dang_lam") return "bg-primary/15 text-primary";
-    if (s === "tam_nghi") return "bg-warning/15 text-warning";
-    return "bg-on-surface/15 text-on-surface";
   };
 
   // =====================================================================
@@ -669,26 +675,28 @@ const NhanVien = () => {
             {staffList.length === 0 ? (
               <p className="text-center text-muted text-sm py-6">Chưa có nhân viên</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-2.5">
                 {staffList.map((nv) => (
                   <button
                     key={nv.ma_nhan_vien}
                     type="button"
                     onClick={() => openStaffDetails(nv.ma_nhan_vien)}
-                    className="text-left p-2.5 rounded-xl border border-outline/30 hover:border-primary/40 hover:bg-primary/5 transition-colors flex items-center gap-2 min-w-0"
+                    className="text-left p-3 rounded-xl border border-outline/30 hover:border-primary/40 hover:bg-primary/5 transition-colors flex flex-col gap-2 min-w-0"
                   >
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${!isDangLam(nv.trang_thai) ? "bg-on-surface/10 text-on-surface" : "bg-primary/15 text-primary"}`}
-                    >
-                      {(nv.ten || "?").charAt(0)}
+                    <div className="flex items-start gap-2.5 min-w-0 w-full">
+                      <div
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${!isDangLam(nv.trang_thai) ? "bg-on-surface/10 text-on-surface" : "bg-primary/15 text-primary"}`}
+                      >
+                        {(nv.ten || "?").charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm leading-snug break-words">{nv.ten}</p>
+                        <p className="text-[11px] text-muted tabular-nums mt-0.5 tracking-wide">
+                          {formatPhoneDisplay(nv.so_dien_thoai)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate">{nv.ten}</p>
-                      <p className="text-[11px] text-muted truncate">{nv.so_dien_thoai || "—"}</p>
-                    </div>
-                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${statusBadgeClass(nv.trang_thai)}`}>
-                      {TRANG_THAI_LABELS[normalizeTrangThai(nv.trang_thai)]}
-                    </span>
+                    <StaffStatusBadge status={nv.trang_thai} />
                   </button>
                 ))}
               </div>
@@ -733,7 +741,7 @@ const NhanVien = () => {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-y-3">
-                  <div><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Số điện thoại</p><p className="text-sm font-medium mt-0.5">{staffDetailModal.data.so_dien_thoai}</p></div>
+                  <div><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Số điện thoại</p><p className="text-sm font-medium mt-0.5 tabular-nums tracking-wide">{formatPhoneDisplay(staffDetailModal.data.so_dien_thoai)}</p></div>
                   <div><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Ngày sinh</p><p className="text-sm font-medium mt-0.5">{formatDateString(staffDetailModal.data.ngay_sinh) ? formatDateString(staffDetailModal.data.ngay_sinh).split('-').reverse().join('/') : '---'}</p></div>
                   <div className="col-span-2">
                     <p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Trạng thái</p>
