@@ -25,3 +25,9 @@ export const deleteMonCu = async (id) => {
   const response = await axiosClient.delete(`/api/mon/${id}`); //  Sửa thành `/api/mon/${id}`
   return response.data;
 };
+
+/** POS: lấy thực đơn kèm ước lượng tồn kho */
+export const getMenuPos = async () => {
+  const response = await axiosClient.get("/api/mon/pos");
+  return response.data;
+};

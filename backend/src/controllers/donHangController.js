@@ -1,0 +1,135 @@
+const DonHangService = require("../services/donHangService");
+
+const DonHangController = {
+  /** Lấy danh sách bàn cho POS */
+  banList: async (req, res) => {
+    try {
+      const data = await DonHangService.getBanPosList();
+      res.json(data);
+    } catch (e) {
+      res.status(500).json({ message: e.message || "Lỗi danh sách bàn" });
+    }
+  },
+
+  openOrder: async (req, res) => {
+    try {
+      const data = await DonHangService.openOrder(req.body);
+      res.status(201).json(data);
+    } catch (e) {
+      res.status(e.status || 400).json({ message: e.message || "Lỗi mở đơn" });
+    }
+  },
+
+  getOrder: async (req, res) => {
+    try {
+      const data = await DonHangService.getOrder(parseInt(req.params.id, 10));
+      res.json(data);
+    } catch (e) {
+      res.status(e.status || 500).json({ message: e.message });
+    }
+  },
+
+  addItem: async (req, res) => {
+    try {
+      const data = await DonHangService.addItem(parseInt(req.params.id, 10), req.body);
+      res.json(data);
+    } catch (e) {
+      res.status(400).json({ message: e.message || "Không thêm được món" });
+    }
+  },
+
+  updateItem: async (req, res) => {
+    try {
+      const data = await DonHangService.updateItem(
+        parseInt(req.params.id, 10),
+        req.params.ma_mon,
+        req.body.so_luong
+      );
+      res.json(data);
+    } catch (e) {
+      res.status(400).json({ message: e.message || "Lỗi cập nhật" });
+    }
+  },
+
+  removeItem: async (req, res) => {
+    try {
+      const data = await DonHangService.removeItem(parseInt(req.params.id, 10), req.params.ma_mon);
+      res.json(data);
+    } catch (e) {
+      res.status(400).json({ message: e.message || "Lỗi xóa món" });
+    }
+  },
+
+  cancel: async (req, res) => {
+    try {
+      const data = await DonHangService.cancel(parseInt(req.params.id, 10));
+      res.json(data);
+    } catch (e) {
+      res.status(400).json({ message: e.message || "Không hủy được đơn" });
+    }
+  },
+
+  checkout: async (req, res) => {
+    try {
+      const data = await DonHangService.checkout(
+        parseInt(req.params.id, 10),
+        req.body.hinh_thuc_thanh_toan
+      );
+      res.json({ message: "Thanh toán thành công!", data });
+    } catch (e) {
+      res.status(400).json({ message: e.message || "Thanh toán thất bại" });
+    }
+  },
+
+  sendToBar: async (req, res) => {
+    try {
+      const data = await DonHangService.sendToBar(parseInt(req.params.id, 10));
+      res.json({ message: "Đã gửi món xuống bar", data });
+    } catch (e) {
+      res.status(e.status || 400).json({ message: e.message });
+    }
+  },
+
+  moveBan: async (req, res) => {
+    try {
+      const data = await DonHangService.moveOrder(parseInt(req.params.id, 10), req.body);
+      res.json({ message: "Đã chuyển bàn thành công", data });
+    } catch (e) {
+      res.status(e.status || 400).json({ message: e.message || "Không thể chuyển bàn" });
+    }
+  },
+
+  barQueue: async (req, res) => {
+    try {
+      res.json(await DonHangService.getBarQueue());
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  },
+
+  updatePhiGiaoHang: async (req, res) => {
+    try {
+      const data = await DonHangService.updatePhiGiaoHang(
+        parseInt(req.params.id, 10),
+        req.body.phi_giao_hang
+      );
+      res.json({ message: "Đã cập nhật phí giao hàng", data });
+    } catch (e) {
+      res.status(e.status || 400).json({ message: e.message || "Lỗi cập nhật phí giao hàng" });
+    }
+  },
+
+  updateDeliveryInfo: async (req, res) => {
+    try {
+      const data = await DonHangService.updateDeliveryInfo(
+        parseInt(req.params.id, 10),
+        req.body
+      );
+      res.json({ message: "Đã cập nhật thông tin giao hàng", data });
+    } catch (e) {
+      res.status(400).json({ message: e.message || "Lỗi cập nhật thông tin giao hàng" });
+    }
+  },
+};
+
+module.exports = DonHangController;

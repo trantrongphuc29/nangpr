@@ -167,7 +167,7 @@ export default function NguyenLieu() {
   };
 
   const handleDonViNhapChange = (val) => {
-    if (crudData.danh_muc !== 'Nguyên liệu pha chế') return;
+    if (crudData.danh_muc !== 'Nguyên liệu pha chế' && crudData.danh_muc !== 'Nguyên liệu hết trong ngày') return;
     let autoTinh = 'g';
     let autoDungTich = crudData.dung_tich_san_pham;
 
@@ -417,6 +417,12 @@ const categories = useMemo(() => {
         <h1 className="text-2xl md:text-3xl font-bold text-primary tracking-tight">Quản lý nguyên liệu</h1>
         <p className="text-muted text-sm mt-1">Khai báo nguyên liệu, theo dõi tồn kho và nhập hàng — tách biệt với món bán trên thực đơn.</p>
       </div>
+      
+      <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={openCreateModal} className="btn-primary !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">add</span>Thêm nguyên liệu</button>
+          <button type="button" onClick={() => openImportDrawer()} className="btn-secondary !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">inventory</span>Nhập kho</button>
+          <button type="button" onClick={() => setShowHistory(true)} className="btn-outline !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">history</span>Lịch sử nhập kho</button>
+        </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
@@ -430,8 +436,8 @@ const categories = useMemo(() => {
       <div className="card p-4 md:p-5 border-none space-y-4">
         <div className="flex flex-col lg:flex-row gap-3">
           <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xl">search</span>
-            <input type="text" placeholder="Tìm kiếm..." className="input-field !pl-10 !py-2.5" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input type="text" placeholder="Tìm kiếm..." className="peer input-field !pr-10 !py-2.5" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xl pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">search</span>
           </div>
           <select className="input-field !w-auto lg:min-w-[140px] !py-2.5" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">Tất cả trạng thái</option>
@@ -443,11 +449,7 @@ const categories = useMemo(() => {
             {categories.map((c) => (<option key={c} value={c}>{c === 'all' ? 'Tất cả danh mục' : c}</option>))}
           </select>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={openCreateModal} className="btn-primary !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">add</span>Thêm nguyên liệu</button>
-          <button type="button" onClick={() => openImportDrawer()} className="btn-secondary !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">inventory</span>Nhập kho</button>
-          <button type="button" onClick={() => setShowHistory(true)} className="btn-outline !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">history</span>Lịch sử nhập kho</button>
-        </div>
+        
       </div>
 
       {/* Table */}
@@ -591,6 +593,11 @@ const categories = useMemo(() => {
               {crudData.danh_muc === 'Nước uống đóng chai' ? (
                 <select className="input-field font-bold" value={crudData.don_vi_tinh} onChange={(e) => setCrudData({ ...crudData, don_vi_tinh: e.target.value })}>
                   {DON_VI_DO_UONG_OPTIONS.map((d) => (<option key={d} value={d}>{d}</option>))}
+                </select>
+              ) : crudData.don_vi_nhap === 'hộp' ? (
+                <select className="input-field font-bold" value={crudData.don_vi_tinh} onChange={(e) => setCrudData({ ...crudData, don_vi_tinh: e.target.value })}>
+                  <option value="g">g</option>
+                  <option value="ml">ml</option>
                 </select>
               ) : (
                 <input className="input-field bg-slate-100 font-bold uppercase" value={crudData.don_vi_tinh} disabled />
@@ -741,8 +748,8 @@ const categories = useMemo(() => {
             </div>
           </div>
           <div className="relative w-full">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none">search</span>
-            <input className="input-field !pl-9 !py-2 text-sm w-full" placeholder="Tìm trong lịch sử..." value={historySearch} onChange={(e) => setHistorySearch(e.target.value)} />
+            <input className="peer input-field !pr-9 !py-2 text-sm w-full" placeholder="Tìm kiếm..." value={historySearch} onChange={(e) => setHistorySearch(e.target.value)} />
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">search</span>
           </div>
         </div>
 

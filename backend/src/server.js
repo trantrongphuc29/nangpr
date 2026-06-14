@@ -3,6 +3,7 @@ const { PORT } = require("./config/constants");
 const { ensureNguyenLieuSchema } = require("./config/ensureSchema");
 const { ensurePayrollSchema } = require("./config/ensurePayrollSchema");
 const { ensureNhanVienSchema } = require("./config/ensureNhanVienSchema");
+const { ensurePOSSchema } = require("./config/ensurePOSSchema");
 
 async function start() {
   try {
@@ -21,6 +22,12 @@ async function start() {
     await ensurePayrollSchema();
   } catch (err) {
     console.error("⚠️ Kiểm tra schema payroll:", err.message);
+  }
+
+  try {
+    await ensurePOSSchema();
+  } catch (err) {
+    console.error("⚠️ Kiểm tra schema POS:", err.message);
   }
 
   app.listen(PORT, () => {

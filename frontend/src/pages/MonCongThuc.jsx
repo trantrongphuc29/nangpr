@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import * as monService from '../services/monService';
-import * as nguyenlieuService from '../services/nguyenlieuService';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import * as monService from "../services/monService";
+import * as nguyenlieuService from "../services/nguyenlieuService";
+import * as congThucService from "../services/congThucService";
+import { dishImage } from "../utils/shared";
+import { ToastContainer, useToast } from "../components/Toast";
 
 const removeVietnameseTones = (str) => {
   if (!str) return '';
@@ -18,7 +21,572 @@ const removeVietnameseTones = (str) => {
     .trim();
 };
 
+/* ──────── Modal: Thêm / Sửa món ──────── */
+/* ──────── Modal: Thêm / Sửa món ──────── */
+function MonFormModal({ mon, categories, onClose, onSaved }) {
+  const isEdit = Boolean(mon?.ma_mon);
+
+  const [form, setForm] = useState({
+    ma_mon: mon?.ma_mon || null,
+    ten_mon: mon?.ten_mon || "",
+    gia_ban: mon?.gia_ban ? parseInt(mon.gia_ban) : "",
+    ma_danh_muc: mon?.ma_danh_muc || "",
+    trang_thai_ban: mon?.trang_thai_ban ?? 1,
+    hinh_anh: (mon?.hinh_anh && mon.hinh_anh !== "{}") ? mon.hinh_anh : "",
+    hinh_anh_file: null,
+    mo_ta: mon?.mo_ta || "",
+  });
+
+  const [preview, setPreview] = useState(
+    mon?.hinh_anh && mon.hinh_anh !== "{}" ? dishImage(mon.hinh_anh) : ""
+  );
+
+  const [busy, setBusy] = useState(false);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setForm((prev) => ({
+      ...prev,
+      hinh_anh_file: file,
+      hinh_anh: file.name,
+    }));
+
+    setPreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!form.ten_mon.trim()) {
+      alert("Vui lòng nhập tên món");
+      return;
+    }
+
+    if (!form.gia_ban || Number(form.gia_ban) < 0) {
+      alert("Giá bán không hợp lệ");
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      const payload = new FormData();
+
+      payload.append("ten_mon", form.ten_mon);
+      payload.append("gia_ban", form.gia_ban);
+      payload.append("ma_danh_muc", form.ma_danh_muc);
+      payload.append("trang_thai_ban", form.trang_thai_ban);
+      payload.append("mo_ta", form.mo_ta || "");
+
+      if (form.hinh_anh_file) {
+        payload.append("hinh_anh", form.hinh_anh_file);
+      }
+
+      if (isEdit && form.hinh_anh && form.hinh_anh !== "{}") {
+        payload.append("hinh_anh_cu", form.hinh_anh);
+      }
+
+      if (isEdit) {
+        await monService.updateMonCu(form.ma_mon, payload);
+      } else {
+        await monService.createMonMoi(payload);
+      }
+
+      onSaved?.(isEdit ? "Cập nhật món thành công!" : "Thêm món mới thành công!");
+      onClose();
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || "Lỗi lưu món");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[rgba(250,250,245,0.7)] backdrop-blur-md">
+      <div className="bg-surface-container-lowest w-full max-w-2xl rounded-2xl shadow-[0_12px_32px_-4px_rgba(85,55,34,0.12)] overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="px-8 pt-8 pb-4 flex justify-between items-start">
+          <div>
+            <span className="text-secondary font-bold text-xs uppercase tracking-widest block mb-2">
+              Solaris Atelier
+            </span>
+            <h2 className="font-headline text-2xl font-black text-primary tracking-tight">
+              {isEdit ? "Cập nhật món" : "Thêm món mới"}
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="p-2 hover:bg-surface-container-low rounded-full transition-colors active:scale-95"
+          >
+            <span className="material-symbols-outlined text-on-surface-variant">
+              close
+            </span>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="col-span-2 md:col-span-1">
+              <label className="block font-label text-sm font-semibold text-on-surface-variant mb-2">
+                Tên món
+              </label>
+              <input
+                type="text"
+                className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-outline-variant/60"
+                placeholder="VD: Latte Hạnh Nhân"
+                value={form.ten_mon}
+                onChange={(e) => setForm({ ...form, ten_mon: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="col-span-2 md:col-span-1">
+              <label className="block font-label text-sm font-semibold text-on-surface-variant mb-2">
+                Phân loại
+              </label>
+
+              <div className="relative">
+                <select
+                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/40 appearance-none transition-all"
+                  value={form.ma_danh_muc}
+                  onChange={(e) =>
+                    setForm({ ...form, ma_danh_muc: e.target.value })
+                  }
+                  required
+                >
+                  <option value="">-- Chọn danh mục --</option>
+                  {categories.map((c) => (
+                    <option key={c.ma_danh_muc} value={c.ma_danh_muc}>
+                      {c.ten_danh_muc}
+                    </option>
+                  ))}
+                </select>
+
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
+                  expand_more
+                </span>
+              </div>
+            </div>
+
+            <div className="col-span-2 md:col-span-1">
+              <label className="block font-label text-sm font-semibold text-on-surface-variant mb-2">
+                Giá bán
+              </label>
+
+              <div className="relative">
+                <input
+                  type="number"
+                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 pr-16 focus:ring-2 focus:ring-primary/40 transition-all"
+                  placeholder="0"
+                  value={form.gia_ban}
+                  onChange={(e) =>
+                    setForm({ ...form, gia_ban: e.target.value })
+                  }
+                  required
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-primary">
+                  VNĐ
+                </span>
+              </div>
+            </div>
+
+            <div className="col-span-2 md:col-span-1">
+              <label className="block font-label text-sm font-semibold text-on-surface-variant mb-2">
+                Hình ảnh
+              </label>
+
+              <div className="group relative h-[160px] border-2 border-dashed border-outline-variant/30 rounded-xl flex items-center justify-center cursor-pointer hover:bg-surface-container-low transition-all overflow-hidden">
+                {preview ? (
+                  <img
+                  src={preview}
+                  alt="Xem trước món"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                ) : (
+                  <div className="flex items-center gap-2 text-on-surface-variant/60 group-hover:text-primary transition-colors">
+                    <span className="material-symbols-outlined text-xl">
+                      cloud_upload
+                    </span>
+                    <span className="text-sm font-medium">Tải ảnh lên</span>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={handleFileSelect}
+                />
+              </div>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block font-label text-sm font-semibold text-on-surface-variant mb-2">
+                Trạng thái phục vụ
+              </label>
+
+              <div className="relative">
+                <select
+                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/40 appearance-none transition-all"
+                  value={form.trang_thai_ban}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      trang_thai_ban: parseInt(e.target.value),
+                    })
+                  }
+                >
+                  <option value={1}>Đang bán</option>
+                  <option value={0}>Tạm ngưng</option>
+                </select>
+
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
+                  expand_more
+                </span>
+              </div>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block font-label text-sm font-semibold text-on-surface-variant mb-2">
+                Mô tả ngắn
+              </label>
+
+              <textarea
+                className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-outline-variant/60 resize-none"
+                placeholder="Nhập vài dòng giới thiệu về hương vị của món..."
+                rows="3"
+                value={form.mo_ta}
+                onChange={(e) => setForm({ ...form, mo_ta: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 flex flex-col md:flex-row gap-4 items-center justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={busy}
+              className="w-full md:w-auto px-6 py-3 text-on-surface-variant font-semibold hover:bg-surface-container-high rounded-lg transition-all active:scale-95"
+            >
+              Hủy
+            </button>
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full md:w-auto bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-lg font-bold shadow-lg shadow-primary/20 transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <span>
+                {busy
+                  ? "Đang lưu..."
+                  : isEdit
+                  ? "Lưu thay đổi"
+                  : "Lưu & Tiếp tục tạo Công thức"}
+              </span>
+
+              {!busy && (
+                <span className="material-symbols-outlined text-lg">
+                  arrow_forward
+                </span>
+              )}
+            </button>
+          </div>
+        </form>
+
+        <div className="h-1 w-full bg-gradient-to-r from-secondary-container via-primary-container to-secondary" />
+      </div>
+    </div>
+  );
+}
+
+/* ──────── Modal: Quản lý công thức nguyên liệu ──────── */
+function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
+  const [busy, setBusy] = useState(false);
+  const [selectedNL, setSelectedNL] = useState("");
+  const [qty, setQty] = useState("");
+  const [unit, setUnit] = useState("ml");
+  const [error, setError] = useState("");
+
+  const [formulaItems, setFormulaItems] = useState(
+    Array.isArray(mon.chi_tiet_cong_thuc) ? mon.chi_tiet_cong_thuc : []
+  );
+
+  const selectedIngredient = nguyenLieuList.find(
+    (nl) => Number(nl.ma_nguyen_lieu) === Number(selectedNL)
+  );
+
+  const handleAdd = () => {
+    if (!selectedIngredient) {
+      setError("Vui lòng chọn nguyên liệu.");
+      return;
+    }
+
+    if (!qty || Number(qty) <= 0) {
+      setError("Vui lòng nhập số lượng hợp lệ.");
+      return;
+    }
+
+    const existed = formulaItems.some(
+      (item) => Number(item.ma_nguyen_lieu) === Number(selectedIngredient.ma_nguyen_lieu)
+    );
+
+    if (existed) {
+      setError("Nguyên liệu này đã có trong công thức.");
+      return;
+    }
+
+    setFormulaItems((prev) => [
+      ...prev,
+      {
+        ma_nguyen_lieu: Number(selectedIngredient.ma_nguyen_lieu),
+        ten_nguyen_lieu: selectedIngredient.ten_nguyen_lieu,
+        dinh_luong: Number(qty),
+        don_vi_tinh_chi_tiet: unit,
+      },
+    ]);
+
+    setSelectedNL("");
+    setQty("");
+    setUnit("ml");
+    setError("");
+  };
+
+  const handleRemove = (maNL) => {
+    setFormulaItems((prev) =>
+      prev.filter((item) => Number(item.ma_nguyen_lieu) !== Number(maNL))
+    );
+  };
+
+  const handleSave = async () => {
+    if (formulaItems.length === 0) {
+      setError("Món phải có ít nhất 1 nguyên liệu.");
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+
+    try {
+      await congThucService.saveCongThuc(mon.ma_mon, formulaItems);
+      onSaved?.("Cập nhật công thức thành công!");
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || "Lỗi lưu công thức");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-[rgba(250,250,245,0.7)] backdrop-blur-md"
+        onClick={onClose}
+      />
+
+      <div className="relative w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="px-6 py-5 flex items-center justify-between border-b border-surface-container">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-primary-fixed text-on-primary-fixed flex items-center justify-center">
+              <span className="material-symbols-outlined text-sm">assignment</span>
+            </div>
+
+            <h3 className="font-display text-xl font-extrabold text-primary truncate">
+              Gán Công thức:{" "}
+              <span className="text-primary-container">{mon.ten_mon}</span>
+            </h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-low text-on-surface-variant"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="p-8 overflow-y-auto custom-scrollbar">
+          {error && (
+            <div className="mb-5 p-3 rounded-lg bg-error-container text-error text-xs font-bold">
+              {error}
+            </div>
+          )}
+
+          <section className="mb-8">
+            <label className="block text-sm font-semibold text-on-surface-variant mb-3">
+              Chọn Nguyên liệu từ Kho
+            </label>
+
+            <div className="flex items-center bg-surface-container-low rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-primary/20">
+              <span className="material-symbols-outlined text-outline-variant mr-3">
+                inventory
+              </span>
+
+              <select
+                className="w-full bg-transparent border-none focus:ring-0 text-on-surface font-medium appearance-none cursor-pointer"
+                value={selectedNL}
+                onChange={(e) => {
+                  setSelectedNL(e.target.value);
+                  setError("");
+                }}
+              >
+                <option value="">Tìm nguyên liệu...</option>
+                {nguyenLieuList.map((nl) => (
+                  <option key={nl.ma_nguyen_lieu} value={nl.ma_nguyen_lieu}>
+                    {nl.ten_nguyen_lieu}
+                  </option>
+                ))}
+              </select>
+
+              <span className="material-symbols-outlined text-outline-variant">
+                arrow_drop_down
+              </span>
+            </div>
+          </section>
+
+          <section className="mb-10 p-6 bg-surface-container-low rounded-xl">
+            <h4 className="text-xs font-bold text-primary uppercase tracking-widest mb-4">
+              Định lượng thành phần
+            </h4>
+
+            <div className="flex flex-wrap md:flex-nowrap gap-4">
+              <div className="flex-1">
+                <label className="block text-[10px] font-bold text-outline uppercase mb-1 px-1">
+                  Số lượng
+                </label>
+
+                <input
+                  className="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 font-semibold text-primary"
+                  placeholder="25"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={qty}
+                  onChange={(e) => setQty(e.target.value)}
+                />
+              </div>
+
+              <div className="w-32">
+                <label className="block text-[10px] font-bold text-outline uppercase mb-1 px-1">
+                  Đơn vị
+                </label>
+
+                <select
+                  className="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 font-medium appearance-none"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                >
+                  <option value="ml">ml</option>
+                  <option value="g">g</option>
+                  <option value="lon">lon</option>
+                  <option value="chai">chai</option>
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={handleAdd}
+                  disabled={busy}
+                  className="bg-primary text-white h-[48px] px-6 rounded-lg font-bold shadow-sm flex items-center gap-2 hover:scale-[1.02] transition-transform disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined">add</span>
+                  Thêm
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div className="flex justify-between items-center mb-4 px-2">
+              <h4 className="text-sm font-bold text-on-surface">
+                Thành phần đã thêm
+              </h4>
+
+              <span className="text-xs font-medium text-on-surface-variant">
+                Tổng cộng: {formulaItems.length} nguyên liệu
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              {formulaItems.length === 0 ? (
+                <div className="p-8 text-center bg-surface-container-low rounded-lg text-outline-variant text-sm font-bold">
+                  Chưa có nguyên liệu nào
+                </div>
+              ) : (
+                formulaItems.map((item) => (
+                  <div
+                    key={item.ma_nguyen_lieu}
+                    className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg group hover:bg-surface-container transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-2 h-2 rounded-full bg-secondary-container" />
+
+                      <div>
+                        <p className="font-bold text-primary text-sm">
+                          {item.ten_nguyen_lieu}
+                        </p>
+                        <p className="text-[10px] text-on-surface-variant font-medium">
+                          Nguyên liệu trong kho
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-8">
+                      <span className="font-display font-extrabold text-primary">
+                        {item.dinh_luong} {item.don_vi_tinh_chi_tiet}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(item.ma_nguyen_lieu)}
+                        disabled={busy}
+                        className="text-outline-variant hover:text-error transition-colors"
+                      >
+                        <span className="material-symbols-outlined">
+                          delete_outline
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="px-8 py-6 bg-surface-container-low/50 flex justify-end items-center gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors"
+          >
+            Hủy
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={busy}
+            className="bg-primary text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
+          >
+            {busy ? "Đang lưu..." : "Lưu Công thức"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ──────── Trang chính: Quản lý món & công thức ──────── */
 export default function MonCongThuc() {
+  const { toasts, show: toast, dismiss } = useToast();
   const [monList, setMonList] = useState([]);
   const [nguyenLieuList, setNguyenLieuList] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -37,175 +605,64 @@ export default function MonCongThuc() {
   // Món hiện hành được chọn để nạp công thức
   const [activeMon, setActiveMon] = useState(null);
 
-  // Khung Form lưu trữ thông tin cơ bản của món uống
-  const [monForm, setMonForm] = useState({ ma_mon: null, ten_mon: '', gia_ban: '', ma_danh_muc: '', trang_thai_ban: 1, hinh_anh: null });
-  
-  // Khối đệm thêm nhanh nguyên liệu vào công thức
-  const [tempIngredient, setTempIngredient] = useState({ ma_nguyen_lieu: '', dinh_luong: '' });
+  const [editMon, setEditMon] = useState(null);
 
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     try {
       setLoading(true);
       const [dataMon, dataNL, dataCate] = await Promise.all([
         monService.getDanhSachMon(),
         nguyenlieuService.getNguyenLieu(),
-        monService.getDanhMucMenu()
+        monService.getDanhMucMenu(),
       ]);
-      
-      // ĐN ĐỒNG BỘ: Chuẩn hóa bọc an toàn mảng tránh lỗi null từ API
       setMonList(dataMon || []);
       setNguyenLieuList(dataNL || []);
       setCategories(dataCate || []);
-
-      if (activeMon) {
-        const updated = (dataMon || []).find(m => m.ma_mon === activeMon.ma_mon);
-        if (updated) setActiveMon(updated);
-      }
     } catch (err) {
-      console.error("Lỗi đồng bộ kho dữ liệu thực đơn Nắng PR:", err);
+      toast(err.response?.data?.message || "Không tải được dữ liệu thực đơn.", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  useEffect(() => { loadAllData(); }, []);
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
 
-  // ========================================================
-  // 🍎 QUẢN LÝ MÓN (THÊM - SỬA - XÓA)
-  // ========================================================
-  const handleOpenCreateModal = () => {
-    setMonForm({ ma_mon: null, ten_mon: '', gia_ban: '', ma_danh_muc: '', trang_thai_ban: 1, hinh_anh: null });
+  // ─── Handlers ───
+  const handleOpenCreate = () => {
+    setEditMon(null);
     setShowMonModal(true);
   };
 
-  const handleOpenEditModal = (mon) => {
-    setMonForm({
-      ma_mon: mon.ma_mon,
-      ten_mon: mon.ten_mon,
-      gia_ban: mon.gia_ban ? parseInt(mon.gia_ban) : '',
-      ma_danh_muc: mon.ma_danh_muc || '',
-      trang_thai_ban: mon.trang_thai_ban,
-      hinh_anh: mon.hinh_anh
-    });
+  const handleOpenEdit = (mon) => {
+    setEditMon(mon);
     setShowMonModal(true);
   };
 
-  const handleSaveMon = async (e) => {
-    e.preventDefault();
-    try {
-      if (monForm.ma_mon) {
-        await monService.updateMonCu(monForm.ma_mon, monForm);
-        alert("✨ Cập nhật thông tin món nước thành công!");
-      } else {
-        await monService.createMonMoi(monForm);
-        alert("✅ Thêm món mới vào danh mục thành công!");
-      }
-      setShowMonModal(false);
-      loadAllData();
-    } catch (err) {
-      alert("❌ Lỗi hệ thống khi lưu trữ món!");
-    }
-  };
-
-  const handleDeleteMon = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn loại bỏ món nước này khỏi thực đơn?")) {
-      try {
-        await monService.deleteMonCu(id);
-        alert("✅ Đã xóa món nước thành công!");
-        if (activeMon && activeMon.ma_mon === id) {
-          setActiveMon(null);
-          setShowFormulaModal(false);
-        }
-        loadAllData();
-      } catch (err) {
-        alert("Lỗi khi xóa món!");
-      }
-    }
-  };
-
-  // ========================================================
-  // 🧪 QUẢN LÝ CÔNG THỨC (LIÊN KẾT KHO VẬT TƯ)
-  // ========================================================
-  const handleOpenFormulaModal = (mon) => {
+  const handleOpenFormula = (mon) => {
     setActiveMon(mon);
     setShowFormulaModal(true);
   };
 
-  const handleAddIngredientToFormula = async () => {
-    if (!tempIngredient.ma_nguyen_lieu || !tempIngredient.dinh_luong) {
-      return alert("Vui lòng lựa chọn nguyên liệu và định lượng cần dùng!");
-    }
-
-    let formulaItems = [];
-    if (activeMon && activeMon.chi_tiet_cong_thuc) {
-      try {
-        const rawFormula = typeof activeMon.chi_tiet_cong_thuc === 'string'
-          ? JSON.parse(activeMon.chi_tiet_cong_thuc)
-          : activeMon.chi_tiet_cong_thuc;
-        formulaItems = Array.isArray(rawFormula) ? rawFormula.filter(item => item && item.ma_nguyen_lieu !== null) : [];
-      } catch (e) {
-        formulaItems = [];
-      }
-    }
-
-    const selectedNL = nguyenLieuList.find(n => n.ma_nguyen_lieu === parseInt(tempIngredient.ma_nguyen_lieu));
-    if (formulaItems.some(c => c.ma_nguyen_lieu === selectedNL.ma_nguyen_lieu)) {
-      return alert("Nguyên liệu này đã được cấu hình trong công thức của món!");
-    }
-
-    const newFormula = [
-      ...formulaItems,
-      {
-        ma_nguyen_lieu: selectedNL.ma_nguyen_lieu,
-        dinh_luong: parseFloat(tempIngredient.dinh_luong),
-        don_vi_tinh_chi_tiet: selectedNL.don_vi_nhap === 'kg' ? 'g' : 'ml'
-      }
-    ];
-
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Xóa món "${name}"?`)) return;
     try {
-      await monService.updateMonCu(activeMon.ma_mon, {
-        ten_mon: activeMon.ten_mon,
-        gia_ban: activeMon.gia_ban,
-        ma_danh_muc: activeMon.ma_danh_muc,
-        trang_thai_ban: activeMon.trang_thai_ban,
-        cong_thuc: newFormula
-      });
-      alert("✅ Đã cập nhật công thức thành công!");
-      setTempIngredient({ ma_nguyen_lieu: '', dinh_luong: '' });
+      await monService.deleteMonCu(id);
+      toast(`Đã xóa món "${name}"`);
+      if (activeMon?.ma_mon === id) {
+        setActiveMon(null);
+        setShowFormulaModal(false);
+      }
       await loadAllData();
     } catch (err) {
-      alert("Lỗi hệ thống khi cập nhật công thức!");
+      toast(err.response?.data?.message || "Không thể xóa món.", "error");
     }
   };
 
-  const handleRemoveIngredientFromFormula = async (maNL) => {
-    if (!window.confirm("Xóa nguyên liệu này khỏi công thức món?")) return;
-
-    let formulaItems = [];
-    try {
-      const rawFormula = typeof activeMon.chi_tiet_cong_thuc === 'string'
-        ? JSON.parse(activeMon.chi_tiet_cong_thuc)
-        : activeMon.chi_tiet_cong_thuc;
-      formulaItems = Array.isArray(rawFormula) ? rawFormula.filter(item => item && item.ma_nguyen_lieu !== null) : [];
-    } catch (e) {
-      formulaItems = [];
-    }
-
-    const newFormula = formulaItems.filter(c => c.ma_nguyen_lieu !== maNL);
-
-    try {
-      await monService.updateMonCu(activeMon.ma_mon, {
-        ten_mon: activeMon.ten_mon,
-        gia_ban: activeMon.gia_ban,
-        ma_danh_muc: activeMon.ma_danh_muc,
-        trang_thai_ban: activeMon.trang_thai_ban,
-        cong_thuc: newFormula
-      });
-      alert("🗑️ Đã gỡ bỏ thành phần khỏi công thức!");
-      await loadAllData();
-    } catch (err) {
-      alert("Gặp lỗi khi lưu công thức mới!");
-    }
+  const handleMonSaved = (msg) => {
+    toast(msg);
+    loadAllData();
   };
 
   // --- BỘ LỌC TÌM KIẾM THEO DANH MỤC TABS VÀ TÊN KHÔNG DẤU ---
@@ -248,12 +705,19 @@ export default function MonCongThuc() {
 
   const totalPages = Math.ceil(filteredMonList.length / itemsPerPage) || 1;
 
-  if (loading) return <div className="p-20 text-center font-bold text-primary animate-pulse tracking-widest uppercase text-xs">Đang đồng bộ thực đơn Nắng PR...</div>;
+  if (loading) {
+    return (
+      <div className="p-20 text-center font-bold text-primary animate-pulse tracking-widest uppercase text-xs">
+        Đang đồng bộ thực đơn...
+      </div>
+    );
+  }
 
   return (
     <div className="p-10 max-w-7xl mx-auto space-y-6">
-      
-      {/* HEADER BANNER TOP APP BAR */}
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+
+      {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full pb-6 border-b gap-4">
         <div>
           <h2 className="text-2xl font-extrabold text-primary tracking-tight">Thực đơn Atelier</h2>
@@ -261,46 +725,25 @@ export default function MonCongThuc() {
         </div>
         <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-none group">
-            <span className="absolute inset-y-0 left-3 flex items-center text-muted">
-              <span className="material-symbols-outlined text-xl">search</span>
-            </span>
             <input 
-              className="pl-10 pr-4 py-2.5 bg-surface-container-low border-none rounded-lg text-sm w-full sm:w-64 focus:ring-2 focus:ring-primary/40 transition-all" 
-              placeholder="Tìm kiếm món nước uống..." 
+              className="peer pl-4 pr-10 py-2.5 bg-surface-container-low border-none rounded-lg text-sm w-full sm:w-64 focus:ring-2 focus:ring-primary/40 transition-all" 
+              placeholder="Tìm kiếm..." 
               type="text"
               value={searchTerm}
               onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             />
+            <span className="absolute inset-y-0 right-3 flex items-center text-muted pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">
+              <span className="material-symbols-outlined text-xl">search</span>
+            </span>
           </div>
-          <button onClick={handleOpenCreateModal} className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary px-6 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all">
+          <button onClick={handleOpenCreate} className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary px-6 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all">
             <span className="material-symbols-outlined">add</span>
             <span>Thêm món mới</span>
           </button>
         </div>
       </header>
 
-      {/* HERO BANNER TÓM TẮT TRỰC QUAN THEO MẪU MỚI */}
-      <div className="p-8 rounded-xl bg-tertiary-container/20 flex flex-col md:flex-row items-start md:items-center justify-between border border-tertiary-container/20 gap-6">
-        <div className="space-y-1">
-          <p className="text-on-tertiary-container font-bold uppercase tracking-widest text-[10px]">Tóm tắt thực đơn</p>
-          <h3 className="text-3xl font-extrabold text-on-tertiary-container">{statsCounters.total} Món Khả Dụng</h3>
-          <p className="text-on-tertiary-container/80 text-sm">Hệ thống phân rã định lượng kho tự động</p>
-        </div>
-        <div className="flex flex-wrap gap-4 w-full md:w-auto">
-          <div className="stat-chip min-w-[110px] flex-1 sm:flex-none">
-            <span className="block text-xs font-bold text-on-surface-variant mb-1">CAFÉ</span>
-            <span className="text-2xl font-extrabold text-primary">{statsCounters.cafe}</span>
-          </div>
-          <div className="stat-chip min-w-[110px] flex-1 sm:flex-none">
-            <span className="block text-xs font-bold text-on-surface-variant mb-1">TRÀ/LATTE</span>
-            <span className="text-2xl font-extrabold text-primary">{statsCounters.tra}</span>
-          </div>
-          <div className="stat-chip min-w-[110px] flex-1 sm:flex-none">
-            <span className="block text-xs font-bold text-on-surface-variant mb-1">NƯỚC NGỌT/SODA</span>
-            <span className="text-2xl font-extrabold text-primary">{statsCounters.nuocngot}</span>
-          </div>
-        </div>
-      </div>
+     
 
       {/* TRÌNH CUỘN DANH MỤC TABS ASYMMETRIC */}
       <div className="flex items-center gap-6 overflow-x-auto pb-2 border-b border-outline whitespace-nowrap custom-scrollbar">
@@ -320,42 +763,61 @@ export default function MonCongThuc() {
         {paginatedMonList.map((mon) => {
           if (!mon) return null;
           
-          // Kiểm tra số lượng công thức an toàn
-          let formulaCount = 0;
-          try {
-            const rawFormula = typeof mon.chi_tiet_cong_thuc === 'string'
-              ? JSON.parse(mon.chi_tiet_cong_thuc)
-              : mon.chi_tiet_cong_thuc;
-            if (Array.isArray(rawFormula)) {
-              formulaCount = rawFormula.filter(item => item && item.ma_nguyen_lieu !== null).length;
-            }
-          } catch (e) {
-            formulaCount = 0;
-          }
-
-          const hasFormula = formulaCount > 0;
+          // Formula items — backend đã parse JSON_ARRAYAGG thành array
+          const formulaItems = Array.isArray(mon.chi_tiet_cong_thuc) ? mon.chi_tiet_cong_thuc : [];
+          const hasFormula = formulaItems.length > 0;
 
           return (
             <div key={mon.ma_mon} className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-surface-container-lowest rounded-xl hover:bg-surface-container-low border border-outline transition-all duration-300 shadow-sm hover:shadow-md gap-4">
               <div className="flex items-center gap-5 flex-1">
-                <div className="w-16 h-16 rounded-lg bg-surface-container border flex items-center justify-center text-2xl shadow-inner shrink-0">
-                  {mon.ten_danh_muc?.includes('Café') ? '☕' : mon.ten_danh_muc?.includes('Soda') ? '🍹' : '🥤'}
+                <div className="w-16 h-16 rounded-lg bg-surface-container border flex items-center justify-center text-2xl shadow-inner shrink-0 overflow-hidden">
+                  {mon.hinh_anh ? (
+                    <img
+                      src={dishImage(mon.hinh_anh)}
+                      alt={mon.ten_mon}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <span className={`${mon.hinh_anh ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                    {mon.ten_danh_muc?.includes('Café') ? '☕' : mon.ten_danh_muc?.includes('Soda') ? '🍹' : '🥤'}
+                  </span>
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[9px] font-black uppercase bg-primary/10 text-primary px-2 py-0.5 rounded">{mon.ten_danh_muc || 'Chưa phân nhóm'}</span>
                     
                     {/* KHỐI HIỂN THỊ TRẠNG THÁI ẨN/HIỆN ĐỘNG BẢO VỆ ĐƠN HÀNG */}
                     {!hasFormula && (
-                      <span className="badge-error">Ẩn - Thiếu công thức</span>
+                      <span className="badge-error">Vui lòng tạo công thức</span>
                     )}
                   </div>
                   <h4 className="text-lg font-extrabold text-primary group-hover:text-secondary transition-colors uppercase tracking-tight mt-1">{mon.ten_mon}</h4>
                   
                   <p className="text-xs font-bold text-muted mt-0.5 flex items-center gap-1">
                     <span className={`w-2 h-2 rounded-full ${hasFormula && mon.so_luong_co_the_lam > 0 ? 'bg-success' : 'bg-warning'}`}></span>
-                    {hasFormula ? `Quầy bar ước lượng làm được: ${mon.so_luong_co_the_lam} ly` : 'Cần bổ sung cấu hình vật tư trước khi mở bán'}
+                    {hasFormula ? `Quầy bar ước lượng làm được: ${mon.so_luong_co_the_lam} phần` : 'Chưa có công thức — vui lòng gán nguyên liệu'}
                   </p>
+
+                  {/* Danh sách công thức hiển thị ngay trong card */}
+                  {hasFormula && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {formulaItems.map((item, idx) => (
+                        <span
+                          key={item.ma_nguyen_lieu ?? idx}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold bg-primary/5 text-primary/80 px-2.5 py-1 rounded-full border border-primary/10"
+                          title={`${item.ten_nguyen_lieu}: ${item.dinh_luong} ${item.don_vi_tinh_chi_tiet}`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary/30" />
+                          {item.ten_nguyen_lieu}
+                          <span className="font-black text-primary">{item.dinh_luong}{item.don_vi_tinh_chi_tiet}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -365,14 +827,14 @@ export default function MonCongThuc() {
                   <span className="text-lg font-black text-primary tracking-tight">{Number(mon.gia_ban).toLocaleString('vi-VN')}đ</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleOpenFormulaModal(mon)} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${hasFormula ? 'bg-[var(--color-input-bg)] text-primary hover:bg-primary hover:text-on-primary' : 'badge-error hover:bg-error hover:text-white border-0'}`}>
+                  <button onClick={() => handleOpenFormula(mon)} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${hasFormula ? 'bg-[var(--color-input-bg)] text-primary hover:bg-primary hover:text-on-primary' : 'badge-error hover:bg-error hover:text-white border-0'}`}>
                     <span className="material-symbols-outlined text-base">menu_book</span>
                     <span>Công thức</span>
                   </button>
-                  <button onClick={() => handleOpenEditModal(mon)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-primary bg-surface-container-high border border-outline rounded-lg hover:bg-primary hover:text-on-primary transition-all">
+                  <button onClick={() => handleOpenEdit(mon)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-primary bg-surface-container-high border border-outline rounded-lg hover:bg-primary hover:text-on-primary transition-all">
                     <span className="material-symbols-outlined text-base">edit</span>
                   </button>
-                  <button onClick={() => handleDeleteMon(mon.ma_mon)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-error bg-error-container rounded-lg hover:bg-error hover:text-on-error transition-all">
+                  <button onClick={() => handleDelete(mon.ma_mon, mon.ten_mon)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-error bg-error-container rounded-lg hover:bg-error hover:text-on-error transition-all">
                     <span className="material-symbols-outlined text-base">delete</span>
                   </button>
                 </div>
@@ -400,116 +862,30 @@ export default function MonCongThuc() {
         </div>
       )}
 
-      {/* Popup 1: MODAL DIALOG THÊM / SỬA THÔNG TIN MÓN */}
+      {/* Modal: Add/Edit dish */}
       {showMonModal && (
-        <div className="modal-overlay animate-in fade-in duration-200">
-          <div className="modal-panel max-w-md p-8 rounded-[2.5rem]">
-            <h4 className="text-xl font-black text-primary uppercase italic mb-6 flex items-center gap-2">
-              <span className="material-symbols-outlined text-2xl">local_cafe</span>
-              {monForm.ma_mon ? 'Cập nhật thông tin món' : 'Khai báo món nước mới'}
-            </h4>
-            <form onSubmit={handleSaveMon} className="space-y-4 text-xs text-slate-700 dark:text-zinc-300">
-              <div className="space-y-1">
-                <label className="block font-bold uppercase text-muted">Tên món uống</label>
-                <input type="text" className="w-full bg-[var(--color-input-bg)] border-none p-3.5 rounded-xl font-bold text-sm text-on-surface" value={monForm.ten_mon} onChange={e => setMonForm({ ...monForm, ten_mon: e.target.value })} required />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block font-bold uppercase text-muted">Giá bán lẻ (đ)</label>
-                  <input type="number" className="w-full bg-[var(--color-input-bg)] border-none p-3.5 rounded-xl font-bold text-sm text-on-surface" value={monForm.gia_ban} onChange={e => setMonForm({ ...monForm, gia_ban: e.target.value })} required />
-                </div>
-                <div className="space-y-1">
-                  <label className="block font-bold uppercase text-muted">Nhóm danh mục</label>
-                  <select className="w-full bg-[var(--color-input-bg)] border-none p-3.5 rounded-xl font-bold text-sm text-on-surface appearance-none" value={monForm.ma_danh_muc} onChange={e => setMonForm({ ...monForm, ma_danh_muc: e.target.value })} required>
-                    <option value="">-- Lựa chọn --</option>
-                    {categories.map(c => <option key={c.ma_danh_muc} value={c.ma_danh_muc}>{c.ten_danh_muc}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="block font-bold uppercase text-muted">Trạng thái phục vụ</label>
-                <select className="w-full bg-[var(--color-input-bg)] border-none p-3.5 rounded-xl font-bold text-sm text-on-surface appearance-none" value={monForm.trang_thai_ban} onChange={e => setMonForm({ ...monForm, trang_thai_ban: parseInt(e.target.value) })}>
-                  <option value={1}>Đang bán</option>
-                  <option value={0}>Tạm ngưng</option>
-                </select>
-              </div>
-              <div className="flex gap-4 pt-4 border-t border-stone-100">
-                <button type="button" onClick={() => setShowMonModal(false)} className="flex-1 font-bold uppercase text-[10px] text-muted">Hủy bỏ</button>
-                <button type="submit" className="flex-1 bg-primary text-white py-4 rounded-xl font-black uppercase text-[11px] shadow-lg">Xác nhận Lưu</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <MonFormModal
+          mon={editMon}
+          categories={categories}
+          onClose={() => {
+            setShowMonModal(false);
+            setEditMon(null);
+          }}
+          onSaved={handleMonSaved}
+        />
       )}
 
-      {/* Popup 2: MODAL POPUP CẤU HÌNH CÔNG THỨC */}
+      {/* Modal: Formula management — search + add ingredients + current formula */}
       {showFormulaModal && activeMon && (
-        <div className="modal-overlay animate-in fade-in duration-200">
-          <div className="modal-panel max-w-xl p-8 rounded-[2.5rem] flex flex-col max-h-[85vh]">
-            <div className="flex justify-between items-start border-b pb-4 mb-4 shrink-0">
-              <div>
-                <span className="text-[9px] font-black uppercase bg-primary/10 text-primary px-2 py-0.5 rounded">ID món: #{activeMon.ma_mon}</span>
-                <h4 className="text-xl font-black text-stone-800 dark:text-zinc-100 uppercase tracking-tight mt-1">Định mức công thức: {activeMon.ten_mon}</h4>
-              </div>
-              <button onClick={() => { setShowFormulaModal(false); setActiveMon(null); }} className="w-8 h-8 rounded-full bg-[var(--color-input-bg)] dark:bg-zinc-800 flex items-center justify-center text-muted hover:text-stone-600"><span className="material-symbols-outlined text-base">close</span></button>
-            </div>
-
-            {/* Ô thêm nguyên liệu liên kết động */}
-            <div className="flex gap-2 items-end text-xs mb-4 bg-[var(--color-input-bg)]/40 p-3 rounded-xl border border-dashed shrink-0">
-              <div className="flex-1">
-                <label className="text-[9px] font-black uppercase text-muted dark:text-zinc-500 ml-0.5">Chọn vật tư nguyên liệu</label>
-                <select className="w-full bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-lg p-2.5 font-bold text-sm text-on-surface mt-1" value={tempIngredient.ma_nguyen_lieu} onChange={e => setTempIngredient({...tempIngredient, ma_nguyen_lieu: e.target.value})}>
-                  <option value="">-- Chọn mặt hàng kho --</option>
-                  {nguyenLieuList.map(n => <option key={n.ma_nguyen_lieu} value={n.ma_nguyen_lieu}>{n.ten_nguyen_lieu} ({n.don_vi_nhap === 'kg' ? 'g' : 'ml'})</option>)}
-                </select>
-              </div>
-              <div className="w-28">
-                <label className="text-[9px] font-black uppercase text-muted dark:text-zinc-500 ml-0.5">Định lượng cần</label>
-                <input type="number" placeholder="Số ml/g..." className="w-full bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-lg p-2.5 font-bold text-sm text-on-surface mt-1" value={tempIngredient.dinh_luong} onChange={e => setTempIngredient({...tempIngredient, dinh_luong: e.target.value})}/>
-              </div>
-              <button type="button" onClick={handleAddIngredientToFormula} className="bg-primary text-white py-2.5 px-4 rounded-lg font-black uppercase text-[10px] tracking-wider h-[40px] shadow-sm">Gắn vào</button>
-            </div>
-
-            {/* Bảng liệt kê thành phần công thức con */}
-            <div className="overflow-y-auto flex-1 border rounded-xl shadow-inner bg-white dark:bg-zinc-950">
-              <table className="w-full text-left text-[11px]">
-                <thead className="bg-[var(--color-input-bg)] text-stone-500 font-black uppercase border-b sticky top-0 z-10">
-                  <tr>
-                    <th className="p-3 pl-4">Thành phần chi tiết</th>
-                    <th className="p-3 text-center">Định lượng tiêu hao</th>
-                    <th className="p-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 font-bold text-stone-700 dark:text-zinc-300">
-                  {(() => {
-                    let formulaItems = [];
-                    if (activeMon && activeMon.chi_tiet_cong_thuc) {
-                      try {
-                        const rawFormula = typeof activeMon.chi_tiet_cong_thuc === 'string'
-                          ? JSON.parse(activeMon.chi_tiet_cong_thuc)
-                          : activeMon.chi_tiet_cong_thuc;
-                        formulaItems = Array.isArray(rawFormula) ? rawFormula.filter(item => item && item.ma_nguyen_lieu !== null) : [];
-                      } catch (e) { formulaItems = []; }
-                    }
-                    
-                    if (formulaItems.length === 0) {
-                      return <tr><td colSpan="3" className="p-6 text-center text-muted font-bold uppercase tracking-widest text-[10px] py-12 animate-pulse">Món nước này chưa cấu hình công thức pha chế!</td></tr>;
-                    }
-
-                    return formulaItems.map((item, index) => (
-                      <tr key={index} className="hover:bg-stone-50/40 transition-colors">
-                        <td className="p-3 pl-4 uppercase text-stone-600 dark:text-zinc-400">{item.ten_nguyen_lieu}</td>
-                        {/* ĐGroup SỬA ĐỒNG BỘ: Đổi sang don_vi_tinh_chi_tiet cho khớp khít câu SELECT Backend */}
-                        <td className="p-3 text-center text-primary font-black text-sm">{item.dinh_luong} {item.don_vi_tinh_chi_tiet}</td>
-                        <td className="p-3 text-right pr-4"><button type="button" onClick={() => handleRemoveIngredientFromFormula(item.ma_nguyen_lieu)} className="text-red-500 hover:underline font-black uppercase text-[10px]">Gỡ bỏ</button></td>
-                      </tr>
-                    ));
-                  })()}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <FormulaModal
+          mon={activeMon}
+          nguyenLieuList={nguyenLieuList}
+          onClose={() => {
+            setShowFormulaModal(false);
+            setActiveMon(null);
+          }}
+          onSaved={handleMonSaved}
+        />
       )}
     </div>
   );

@@ -8,6 +8,7 @@ import NhanVien from "./pages/NhanVien";
 import NguyenLieu from "./pages/NguyenLieu";
 import MonCongThuc from './pages/MonCongThuc'; // Đã xử lý sử dụng chuẩn xác dứt điểm lỗi no-unused-vars
 import BangCong from "./pages/BangCong";
+import BanHang from "./pages/BanHang";
 import BangLuong from "./pages/BangLuong";
 import CauHinhLuongNhanVien from "./pages/CauHinhLuongNhanVien";
 import { ThemeProvider } from "./context/ThemeContext"; 
@@ -35,6 +36,7 @@ function App() {
             <Route path="luongnhanvien" element={<CauHinhLuongNhanVien />} />
             {/* ĐÃ FIX: Chuyển /menu thành menu để chạy ăn khớp 100% với hệ thống định tuyến con của Layout */}
             <Route path="menu" element={<MonCongThuc />} />
+            <Route path="pos" element={<BanHang />} />
           </Route>
         </Routes>
       </BrowserRouter>

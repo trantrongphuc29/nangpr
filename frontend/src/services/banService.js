@@ -19,3 +19,9 @@ export const deleteBanById = async (id) => {
   const response = await axiosClient.delete(`/api/ban/${id}`);
   return response.data;
 };
+
+/** POS: lấy danh sách bàn kèm trạng thái đơn */
+export const getBanPosList = async () => {
+  const response = await axiosClient.get("/api/ban/pos");
+  return response.data;
+};

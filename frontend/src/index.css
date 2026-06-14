@@ -330,3 +330,12 @@ textarea:not([class*="!"]):focus {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--color-muted);
 }
+
+/* ===== No scrollbar utility ===== */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

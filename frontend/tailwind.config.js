@@ -29,6 +29,9 @@ module.exports = {
         sans: ['"Be Vietnam Pro"', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
         headline: ['"Be Vietnam Pro"', 'Inter', 'system-ui', 'sans-serif'],
         body: ['"Be Vietnam Pro"', 'Inter', 'system-ui', 'sans-serif'],
+        'price-display': ['"Playfair Display"', '"Be Vietnam Pro"', 'serif'],
+        'label-lg': ['"Be Vietnam Pro"', 'Inter', 'system-ui', 'sans-serif'],
+        'headline-sm': ['"Playfair Display"', '"Be Vietnam Pro"', 'serif'],
       },
       borderRadius: {
         '2xl': '1rem',

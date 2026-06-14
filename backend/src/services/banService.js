@@ -1,4 +1,5 @@
 const banRepository = require("../repositories/banRepository");
+const DonHangRepository = require("../repositories/donHangRepository");
 
 const getList = async (sort) => await banRepository.getAll(sort);
 
@@ -18,9 +19,13 @@ const update = async (id, ten_ban) => {
 
 const remove = async (id) => await banRepository.removeById(id);
 
+/** POS: lấy danh sách bàn kèm trạng thái đơn */
+const getPosList = async () => DonHangRepository.getBanPosList();
+
 module.exports = {
   getList,
   create,
   update,
   remove,
+  getPosList,
 };

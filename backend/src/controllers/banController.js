@@ -41,9 +41,19 @@ const remove = async (req, res) => {
   }
 };
 
+const getPosList = async (req, res) => {
+  try {
+    const result = await banService.getPosList();
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ message: "Lỗi server khi lấy danh sách bàn POS", error: err.message });
+  }
+};
+
 module.exports = {
   getList,
   create,
   update,
   remove,
+  getPosList,
 };
