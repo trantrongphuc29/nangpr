@@ -1,3 +1,7 @@
+/* ===== 🍽️ CÔNG THỨC MÓN - FRONTEND SERVICE =====
+ * API calls riêng cho Công thức (tách biệt với monService)
+ * Endpoint: /api/mon/:id/cong-thuc
+ * =============================================== */
 import axiosClient from "./axiosClient";
 
 /** Lấy danh sách công thức của một món */

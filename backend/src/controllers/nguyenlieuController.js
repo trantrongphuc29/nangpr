@@ -1,3 +1,6 @@
+/* ===== 🥬 NGUYÊN LIỆU - CONTROLLER =====
+ * Tiếp nhận request HTTP, gọi Service, trả response
+ * ========================================= */
 const NguyenLieuService = require('../services/nguyenlieuService');
 
 const NguyenLieuController = {

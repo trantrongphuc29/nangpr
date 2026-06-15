@@ -1,3 +1,7 @@
+/* ===== 🪑 BÁN HÀNG - BÀN - SERVICE =====
+ * Xử lý nghiệp vụ quản lý bàn (CRUD) + danh sách POS
+ * Liên kết: banController → banService → banRepository
+ * ======================================= */
 const banRepository = require("../repositories/banRepository");
 const DonHangRepository = require("../repositories/donHangRepository");
 

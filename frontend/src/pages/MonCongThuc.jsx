@@ -1,3 +1,7 @@
+/* ===== 🍽️ MÓN & CÔNG THỨC - TRANG CHÍNH =====
+ * Quản lý danh sách món, thêm/sửa/xóa, gán công thức nguyên liệu
+ * Components: MonFormModal, FormulaModal
+ * ============================================== */
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import * as monService from "../services/monService";
 import * as nguyenlieuService from "../services/nguyenlieuService";
@@ -684,7 +688,7 @@ export default function MonCongThuc() {
     return result;
   }, [monList, selectedCategory, searchTerm]);
 
-  // ĐÃ SỬA VÁ LỖI AN TOÀN: Bọc kiểm tra mảng tránh sập giao diện khi đếm số ly Hero Banner
+  /* Thống kê số lượng món theo danh mục */
   const statsCounters = useMemo(() => {
     const counts = { total: filteredMonList.length, cafe: 0, tra: 0, nuocngot: 0 };
     filteredMonList.forEach(m => {

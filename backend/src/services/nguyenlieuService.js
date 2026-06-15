@@ -1,3 +1,7 @@
+/* ===== 🥬 NGUYÊN LIỆU - SERVICE =====
+ * Xử lý nghiệp vụ: nhập kho, danh sách, thêm/sửa/xóa nguyên liệu
+ * Liên kết: nguyenlieuController → nguyenlieuService → nguyenlieuRepository
+ * ====================================== */
 const NguyenLieuRepository = require("../repositories/nguyenlieuRepository");
 
 function enrichNguyenLieu(row) {

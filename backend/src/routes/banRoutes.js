@@ -1,3 +1,7 @@
+/* ===== 🪑 BÁN HÀNG - BÀN - ROUTES =====
+ * Endpoint API cho Quản lý Bàn + POS
+ * Prefix: /api/ban
+ * ===================================== */
 const express = require("express");
 const banController = require("../controllers/banController");
 

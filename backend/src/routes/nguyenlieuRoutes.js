@@ -1,3 +1,7 @@
+/* ===== 🥬 NGUYÊN LIỆU - ROUTES =====
+ * Định nghĩa các endpoint API cho module Nguyên liệu
+ * Prefix: /api/nguyenlieu
+ * ==================================== */
 const express = require('express');
 const router = express.Router();
 const NguyenLieuController = require('../controllers/nguyenlieuController');

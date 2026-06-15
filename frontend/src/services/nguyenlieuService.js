@@ -1,3 +1,7 @@
+/* ===== 🥬 NGUYÊN LIỆU - FRONTEND SERVICE =====
+ * API calls cho module Nguyên liệu
+ * Endpoint: /api/nguyenlieu
+ * ============================================= */
 import axios from 'axios';
 
 const API_URL = 'http://localhost:3001/api/nguyenlieu';
@@ -17,9 +21,8 @@ export const createNguyenLieu = async (data) => {
     return response.data;
 };
 
-// Đã fix sạch dấu lạ ':1' bằng parseInt ở tầng client
 export const updateNguyenLieu = async (id, data) => {
-    const cleanId = parseInt(id); 
+    const cleanId = parseInt(id, 10);
     const response = await axios.put(`${API_URL}/${cleanId}`, data);
     return response.data;
 };

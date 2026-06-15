@@ -1,3 +1,7 @@
+/* ===== 🍽️ MÓN & CÔNG THỨC - SERVICE =====
+ * Xử lý nghiệp vụ: thêm/sửa/xóa món, POS menu, công thức, trừ kho
+ * Liên kết: monController → monService → monRepository
+ * ========================================== */
 const MonRepository = require('../repositories/monRepository');
 
 const MonService = {

@@ -1,3 +1,7 @@
+/* ===== 🧾 BÁN HÀNG - ĐƠN HÀNG - ROUTES =====
+ * Endpoint API cho Đơn hàng POS (mở đơn, thêm món, thanh toán...)
+ * Prefix: /api/pos
+ * ========================================== */
 const express = require("express");
 const DonHangController = require("../controllers/donHangController");
 const { requireAdmin } = require("../middleware/authMiddleware");

@@ -1,3 +1,7 @@
+/* ===== 🪑 BÁN HÀNG - BÀN - FRONTEND SERVICE =====
+ * API calls cho Quản lý Bàn + danh sách POS
+ * Endpoint: /api/ban
+ * ============================================== */
 import axiosClient from "./axiosClient";
 
 export const getBanList = async (sort = "asc") => {

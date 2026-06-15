@@ -1,3 +1,6 @@
+/* ===== 🍽️ MÓN & CÔNG THỨC - REPOSITORY =====
+ * Thao tác SQL với bảng mon, congthuc, danhmucmon, nguyenlieu
+ * ============================================= */
 const db = require("../config/database");
 
 /** Parse JSON_ARRAYAGG string → array an toàn */

@@ -1,3 +1,9 @@
+/* ===== 🧾 BÁN HÀNG (POS) - TRANG CHÍNH =====
+ * Giao diện bán hàng POS: sơ đồ bàn, thực đơn, giỏ hàng, thanh toán
+ * Components: BanHangCart, BanHangTables, BanHang (chính)
+ * Hook: useBanHang
+ * Utils: fmtMoney, buildPrintHTML
+ * =========================================== */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getBanPosList } from "../services/banService";
 import { getMenuPos } from "../services/monService";
@@ -7,7 +13,7 @@ import PosMenu from "../components/PosMenu";
 /* ───── banhangUtils ───── */
 const fmtMoney = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 
-const isTableBusy = (ban) => Boolean(ban.co_khach || ban.ma_don_hang);
+const isTableBusy = (ban) => Boolean(ban.co_khach);
 
 function baseHTML(body) {
   return `<!DOCTYPE html>
@@ -178,7 +184,7 @@ function BanHangCart({
 }) {
   if (!order) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-12 text-stone-400">
+      <div className="flex flex-col items-center justify-center h-full py-12 text-on-surface-variant">
         <span className="material-symbols-outlined text-4xl mb-2">table_restaurant</span>
         <p className="text-sm font-medium">Chọn bàn trống để gọi món</p>
         <p className="text-xs mt-1">Bấm vào bàn màu trắng để bắt đầu</p>
@@ -197,30 +203,30 @@ function BanHangCart({
           {table?.ten_ban} · #{order.ma_don_hang}
         </h3>
         {hasNewItems && (
-          <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full animate-pulse">
+          <span className="text-[10px] bg-red-100 text-red-600 font-semibold px-2.5 py-0.5 rounded-full animate-pulse">
             +{items.reduce((s, i) => s + (i.so_luong_cho_bar || 0), 0)} món mới
           </span>
         )}
       </div>
 
       {/* Items list */}
-      <ul className="flex-1 overflow-y-auto space-y-1.5 min-h-[180px] max-h-[340px]">
+      <ul className="flex-1 overflow-y-auto space-y-1.5 min-h-[120px] max-h-[35vh] lg:max-h-[340px]">
         {items.map((item) => {
           const daGui = Number(item.so_luong_da_gui_bar || 0);
           const choBar = Number(item.so_luong_cho_bar || 0);
           const daInHet = choBar <= 0 && daGui > 0;
           return (
-          <li key={item.ma_mon} className={`flex items-center gap-2 p-2.5 rounded-lg text-sm transition-all ${daInHet ? 'bg-stone-100/70 border border-stone-200' : 'bg-stone-50'}`}>
+          <li key={item.ma_mon} className={`flex items-center gap-2 p-2.5 rounded-lg text-sm transition-all ${daInHet ? 'bg-card/70 border border-outline' : 'bg-card'}`}>
             <div className="flex-1 min-w-0">
               <p className="font-bold truncate">{item.ten_mon}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 {daGui > 0 && (
-                  <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200/60">
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200/60">
                     🖨️ {daGui} đã in
                   </span>
                 )}
                 {choBar > 0 && (
-                  <span className="text-[10px] font-bold text-red-600">+{choBar} mới</span>
+                  <span className="text-[10px] font-semibold text-red-600">+{choBar} mới</span>
                 )}
               </div>
             </div>
@@ -231,8 +237,8 @@ function BanHangCart({
                 title={daInHet ? `Món này đã in ${daGui} cái — không thể xoá` : 'Giảm số lượng'}
                 className={`w-7 h-7 rounded font-bold transition-all ${
                   busy || daInHet
-                    ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                    : 'bg-stone-200 hover:bg-stone-300 active:scale-90'
+                    ? 'bg-surface-container-high/60 text-on-surface-variant cursor-not-allowed'
+                    : 'bg-surface-container-high hover:bg-surface-container-high/80 active:scale-90'
                 }`}
                 onClick={() => onQty(item.ma_mon, item.so_luong - 1)}
               >−</button>
@@ -252,7 +258,7 @@ function BanHangCart({
           </li>
           );
         })}
-        {!items.length && <li className="text-center text-stone-400 py-6">Chưa có món</li>}
+        {!items.length && <li className="text-center text-on-surface-variant py-6">Chưa có món</li>}
       </ul>
 
       {/* Delivery info form (only for Giao hàng) */}
@@ -314,7 +320,7 @@ function BanHangCart({
       )}
 
       {/* Actions */}
-      <div className="border-t border-stone-200 pt-3 mt-2 space-y-2">
+      <div className="border-t border-outline pt-3 mt-2 space-y-2">
         <div className="space-y-1">
           <div className="flex justify-between text-sm text-on-surface-variant">
             <span>Tạm tính</span>
@@ -327,7 +333,7 @@ function BanHangCart({
             </div>
           )}
         </div>
-        <div className="flex justify-between font-black text-lg text-primary border-t border-stone-200 pt-2">
+        <div className="flex justify-between font-black text-lg text-primary border-t border-outline pt-2">
           <span>Tổng cộng</span>
           <span>{fmtMoney(Number(order.tong_tien) + Number(phiGiaoHang))}</span>
         </div>
@@ -407,10 +413,10 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
       {/* Header with counter */}
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-stone-400 uppercase text-[10px] tracking-wider">
+          <h3 className="font-black text-on-surface uppercase text-xs tracking-wider">
             Bàn trong quán
           </h3>
-          <span className="text-[9px] font-bold text-stone-400 bg-stone-100/80 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-semibold text-on-surface-variant bg-surface-container-high/80 px-2.5 py-0.5 rounded-full">
             {tables.length} bàn
           </span>
         </div>
@@ -418,10 +424,10 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
           <button
             type="button"
             onClick={handleSwapToggle}
-            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
               swapMode
                 ? "bg-amber-500 text-white ring-2 ring-amber-300"
-                : "text-amber-600 hover:bg-amber-50 border border-stone-200"
+                : "text-amber-600 hover:bg-amber-50 border border-outline"
             }`}
           >
             {swapMode ? "✕ Huỷ" : "⇄ Đổi bàn"}
@@ -430,22 +436,21 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
       </div>
 
       {swapMode && (
-        <div className="mb-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-700 text-center">
+        <div className="mb-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] font-semibold text-amber-700 text-center">
           👆 Chọn bàn muốn chuyển đến
         </div>
       )}
 
       {/* Quầy indicator */}
       <div className="relative flex items-center justify-center mb-4">
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
-        <span className="absolute flex items-center gap-1.5 text-[9px] text-stone-400 font-medium bg-white px-3 py-1 rounded-full border border-stone-100 shadow-sm">
-          <span className="text-[11px]">🏪</span>
-          Quầy thu ngân
-        </span>
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-outline/50 to-transparent" />
+          <span className="absolute flex items-center gap-1.5 text-[10px] text-on-surface-variant font-semibold bg-card px-3 py-1 rounded-full border border-outline shadow-sm">
+            <span className="text-sm">🏪</span>
+            Quầy thu ngân
+          </span>
       </div>
 
-      {/* Tables grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      {/* Tables grid */}              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 md:gap-3 xl:gap-4">
         {tables.map((b) => {
           const busyTable = isTableBusy(b);
           const active = selected?.ma_ban === b.ma_ban;
@@ -460,16 +465,16 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
               className={[
                 "relative rounded-xl text-center transition-all duration-150",
                 "hover:shadow-lg",
-                active && !isMoving && "ring-4 ring-primary ring-offset-2 scale-[1.02] z-10",
-                isMoving && "ring-4 ring-amber-400 ring-offset-2 bg-amber-50 border-amber-400 scale-[1.02] z-10",
+                active && !isMoving && "ring-4 ring-primary ring-offset-2 ring-offset-card scale-[1.02] z-10",
+                isMoving && "ring-4 ring-amber-400 ring-offset-2 ring-offset-card bg-amber-50 border-amber-400 scale-[1.02] z-10",
                 swapMode && !active && busyTable && "cursor-pointer border-2 border-amber-300 bg-amber-50/30 hover:bg-amber-50",
                 !isMoving && busyTable && !swapMode
                   ? "bg-gradient-to-br from-red-500 to-rose-600 border-0 text-white shadow-md shadow-rose-200/50"
                   : "",
                 !isMoving && !busyTable && !swapMode
-                  ? "group bg-white border border-stone-200 text-stone-800 hover:border-primary hover:bg-primary/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-stone-200/50"
+                  ? "group bg-card border border-outline text-on-surface hover:border-primary hover:bg-primary/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-outline/30"
                   : "",
-                swapMode && !active && !busyTable && "border-2 border-dashed border-stone-300 text-stone-500 hover:border-amber-400 hover:bg-amber-50/50",
+                swapMode && !active && !busyTable && "border-2 border-dashed border-outline text-on-surface-variant hover:border-amber-400 hover:bg-amber-50/50",
               ].filter(Boolean).join(" ")}
               style={!isMoving && !swapMode && !busyTable ? { boxShadow: '0 1px 3px rgba(0,0,0,0.04)' } : {}}
             >
@@ -481,19 +486,19 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
                 </div>
               )}
 
-              <div className="relative z-10 p-3">
+              <div className="relative z-10 p-2.5 md:p-3">
                 <div className={[
-                  "w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center text-base transition-all",
-                  busyTable && !isMoving ? "bg-white/20" : "bg-stone-50 group-hover:bg-primary/5",
+                  "w-8 h-8 md:w-9 md:h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center text-sm md:text-base transition-all",
+                  busyTable && !isMoving ? "bg-white/20" : "bg-card group-hover:bg-primary/5",
                 ].join(" ")}>
                   {busyTable ? "🍽️" : "🪑"}
                 </div>
 
-                <p className="font-bold text-xs leading-tight">{b.ten_ban}</p>
+                <p className="font-bold text-xs leading-tight uppercase">{b.ten_ban}</p>
 
                 <p className={[
                   "text-[9px] font-semibold mt-1",
-                  busyTable && !isMoving ? "text-white/80" : "text-stone-400",
+                  busyTable && !isMoving ? "text-white/80" : "text-on-surface-variant",
                 ].join(" ")}>
                   {busyTable ? (
                     <span className="inline-flex items-center gap-1">
@@ -503,7 +508,7 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
                   ) : (
                     <span className="inline-flex items-center gap-1">
                       <span className="w-1 h-1 rounded-full bg-green-400" />
-                      <span className="text-stone-400">Trống</span>
+                      <span className="text-on-surface-variant">Trống</span>
                     </span>
                   )}
                 </p>
@@ -746,8 +751,12 @@ export default function BanHang() {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [moveBanErr, setMoveBanErr] = useState("");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [hinhThucThanhToan, setHinhThucThanhToan] = useState("tien_mat");
   const bh = useBanHang();
+
+  const cartItemCount = bh.order?.items?.reduce((s, i) => s + i.so_luong, 0) || 0;
+  const cartTotalAmount = Number(bh.order?.tong_tien || 0) + Number(bh.phiGiaoHang || 0);
 
   const doPrint = async (mode) => {
     if (!bh.order?.items?.length) return;
@@ -838,8 +847,8 @@ export default function BanHang() {
   if (bh.loading) {
     return (
       <div className="space-y-4 animate-pulse">
-        <div className="h-8 bg-stone-200 rounded-lg w-48" />
-        <div className="h-96 bg-stone-200 rounded-2xl" />
+        <div className="h-8 bg-surface-container-high rounded-lg w-48" />
+        <div className="h-96 bg-surface-container-high rounded-2xl" />
       </div>
     );
   }
@@ -847,27 +856,25 @@ export default function BanHang() {
   return (
     <>
       <div>
-        {bh.error && (
-          <div className="mb-4 p-3 rounded-lg bg-stone-100 border-l-4 border-primary text-sm font-medium flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-lg">info</span>
-            {bh.error}
-          </div>
-        )}
-
-        {hasOrder ? (
-          <div className="flex flex-col h-screen">
+        {hasOrder ? (            <div className="flex flex-col min-h-[100dvh]">
+            {bh.error && (
+              <div className="mb-4 p-3 rounded-lg bg-surface-container-high border-l-4 border-primary text-sm font-medium flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-lg">info</span>
+                {bh.error}
+              </div>
+            )}
             <div className="flex items-center justify-between mb-4 shrink-0">
               <div className="flex items-center gap-3">
                 <span className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                <h2 className="text-lg font-black text-stone-800">
-                  {bh.table ? bh.table.ten_ban : bh.loaiDon === "mang_ve" ? "🥡 Mang về" : "🚚 Giao hàng"}
+                <h2 className="text-lg font-black text-on-surface">
+                  {bh.table ? <span className="uppercase">{bh.table.ten_ban}</span> : bh.loaiDon === "mang_ve" ? "🥡 Mang về" : "🚚 Giao hàng"}
                 </h2>
-                <span className="text-stone-300">·</span>
-                <span className="text-sm text-stone-500 font-medium">
+                <span className="text-muted/40">·</span>
+                <span className="text-sm text-on-surface-variant font-medium">
                   Đơn #{bh.order.ma_don_hang}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 {bh.table && (
                   <button
                     type="button"
@@ -875,7 +882,7 @@ export default function BanHang() {
                       setMoveBanErr("");
                       setShowMoveModal(true);
                     }}
-                    className="px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50 text-xs font-bold text-amber-600 hover:bg-amber-100 hover:border-amber-300 transition-all flex items-center gap-1.5"
+                    className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50 text-[10px] sm:text-xs font-bold text-amber-600 hover:bg-amber-100 hover:border-amber-300 transition-all flex items-center gap-1"
                   >
                     ⇄ Đổi bàn
                   </button>
@@ -883,7 +890,7 @@ export default function BanHang() {
                 <button
                   type="button"
                   onClick={bh.clearSelection}
-                  className="px-4 py-1.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-500 hover:text-primary hover:border-primary transition-all flex items-center gap-1.5"
+                  className="px-2.5 sm:px-4 py-1.5 rounded-xl border border-outline text-[10px] sm:text-xs font-bold text-on-surface-variant hover:text-primary hover:border-primary transition-all flex items-center gap-1"
                 >
                   ← Về sơ đồ bàn
                 </button>
@@ -891,22 +898,22 @@ export default function BanHang() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
-              <section className="lg:col-span-8 bg-white rounded-2xl border border-stone-200 p-4 shadow-sm overflow-y-auto">
+              <section className="lg:col-span-8 bg-card rounded-2xl border border-outline p-3 md:p-4 shadow-sm overflow-y-auto max-lg:flex-1 max-lg:min-h-0">
                 <div className="flex items-center justify-between mb-3 shrink-0">
-                  <h3 className="font-black text-stone-600 uppercase text-xs tracking-wider">
+                  <h3 className="font-black text-on-surface uppercase text-xs tracking-wider">
                     🍽️ Thực đơn
                   </h3>
                 </div>
                 <PosMenu menu={bh.menu} busy={bh.busy} onAdd={bh.addMon} />
               </section>
 
-              <section className="lg:col-span-4 bg-white rounded-2xl border border-stone-200 p-4 shadow-sm lg:sticky lg:top-0 self-start">
+              <section className="hidden lg:block lg:col-span-4 bg-card rounded-2xl border border-outline p-4 shadow-sm lg:sticky lg:top-0 self-start">
                 <div className="flex items-center justify-between mb-3 shrink-0">
-                  <h3 className="font-black text-stone-600 uppercase text-xs tracking-wider">
+                  <h3 className="font-black text-on-surface uppercase text-xs tracking-wider">
                     🛒 Giỏ hàng
                   </h3>
                   {bh.order?.items?.length > 0 && (
-                    <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] bg-primary/10 text-primary font-semibold px-2.5 py-0.5 rounded-full">
                       {bh.order.items.reduce((s, i) => s + i.so_luong, 0)} món
                     </span>
                   )}
@@ -932,16 +939,22 @@ export default function BanHang() {
             </div>
           </div>
         ) : (
-          <section className="bg-white rounded-2xl border border-stone-200 shadow-sm flex flex-col h-screen">
+          <section className="fixed top-[69px] left-0 lg:left-64 right-0 bottom-0 h-[calc(100dvh-69px)] bg-card flex flex-col z-10">
+            {bh.error && (
+              <div className="shrink-0 px-6 md:px-8 pt-4 pb-2 text-sm font-medium flex items-center gap-2 text-primary">
+                <span className="material-symbols-outlined text-primary text-lg">info</span>
+                {bh.error}
+              </div>
+            )}
             {/* Fixed header + buttons area */}
-            <div className="shrink-0 px-6 md:px-8 pt-5 md:pt-6 pb-0 border-b border-stone-100 bg-gradient-to-b from-white to-stone-50/30">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
+            <div className="shrink-0 px-4 sm:px-6 md:px-8 pt-4 pb-0 border-b border-outline bg-gradient-to-b from-card to-surface-container-high/30">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3">
                 <div>
-                  <h2 className="text-lg md:text-xl font-black text-stone-800 tracking-tight flex items-center gap-2.5">
+                  <h2 className="text-lg md:text-xl font-black text-on-surface tracking-tight flex items-center gap-2.5">
                     <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-base">🏠</span>
                     Sơ đồ bàn
                   </h2>
-                  <p className="text-xs text-stone-400 mt-0.5 ml-[2.5rem]">
+                  <p className="text-xs text-on-surface-variant mt-0.5 ml-[2.5rem]">
                     Chọn bàn để gọi món
                   </p>
                 </div>
@@ -958,7 +971,7 @@ export default function BanHang() {
               </div>
 
               {/* Mang về + Giao hàng quick actions */}
-              <div className="grid grid-cols-2 gap-3 pb-4">
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2 pb-3">
                 <button
                   type="button"
                   disabled={bh.busy}
@@ -997,7 +1010,7 @@ export default function BanHang() {
             </div>
 
             {/* Scrollable tables area */}
-            <div className="flex-1 overflow-y-auto min-h-0 px-6 md:px-8 py-5 md:py-6">
+            <div className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 md:px-8 py-4 md:py-5">
               <BanHangTables
                 tables={bh.tables}
                 selected={bh.table}
@@ -1011,41 +1024,112 @@ export default function BanHang() {
         )}
       </div>
 
+      {/* Floating Cart Button — mobile only */}
+      {hasOrder && (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowCartDrawer(true)}
+            className="lg:hidden fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 hover:shadow-xl hover:shadow-primary/50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center"
+          >
+            <span className="material-symbols-outlined text-2xl">shopping_cart</span>
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center px-1 border-2 border-white shadow-md">
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </span>
+            )}
+          </button>
+
+          {/* Mini cart preview badge floating next to FAB */}
+          {cartItemCount > 0 && (
+            <div className="lg:hidden fixed bottom-[5.5rem] right-7 z-30 bg-card border border-outline rounded-xl px-3 py-2 shadow-lg text-right animate-fade-in">
+              <p className="text-[10px] text-on-surface-variant font-medium">Tổng cộng</p>
+              <p className="text-xs font-black text-primary">{fmtMoney(cartTotalAmount)}</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Cart Drawer — mobile/tablet only */}
+      {showCartDrawer && (
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col bg-card animate-slide-up">
+          {/* Drawer Header */}
+          <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 border-b border-outline bg-card">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCartDrawer(false)}
+                className="w-9 h-9 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface hover:bg-outline/30 transition-all"
+              >
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+              <h2 className="font-black text-on-surface uppercase text-sm">🛒 Giỏ hàng</h2>
+            </div>
+            {cartItemCount > 0 && (
+              <span className="text-[10px] bg-primary/10 text-primary font-semibold px-2.5 py-0.5 rounded-full">
+                {cartItemCount} món
+              </span>
+            )}
+          </div>
+
+          {/* Drawer Body */}
+          <div className="flex-1 overflow-y-auto px-4 py-3">
+            <BanHangCart
+              table={bh.table}
+              order={bh.order}
+              busy={bh.busy}
+              loaiDon={bh.loaiDon}
+              phiGiaoHang={bh.phiGiaoHang}
+              tenKhach={bh.tenKhach}
+              soDienThoaiGiao={bh.soDienThoaiGiao}
+              diaChiGiao={bh.diaChiGiao}
+              onUpdatePhiGiaoHang={bh.updatePhiGiaoHang}
+              onUpdateDeliveryInfo={bh.updateDeliveryInfo}
+              onQty={bh.changeQty}
+              onPrintMon={() => doPrint("mon")}
+              onPrintBill={() => doPrint("bill")}
+              onPay={handlePay}
+              onCombinedPay={() => { setHinhThucThanhToan("tien_mat"); setShowPaymentModal(true); }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Payment Modal for Mang về / Giao hàng */}
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowPaymentModal(false)}>
+        <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
           <div
-            className="bg-white rounded-2xl shadow-2xl border border-stone-200 p-6 w-full max-w-sm mx-4"
+            className="bg-card rounded-2xl shadow-2xl border border-outline p-6 w-full max-w-sm mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-black text-stone-800 uppercase text-sm flex items-center gap-2">
+              <h3 className="font-black text-on-surface uppercase text-sm flex items-center gap-2">
                 <span className="text-lg">💳</span> Xác nhận thanh toán
               </h3>
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(false)}
-                className="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200 font-bold text-sm"
+                className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:bg-outline/30 font-bold text-sm"
               >
                 ✕
               </button>
             </div>
 
             {/* Bill preview */}
-            <div className="mb-4 p-3 rounded-xl bg-stone-50 border border-stone-200 text-xs font-mono">
-              <div className="text-center font-bold text-stone-700 mb-2 text-sm">
+            <div className="mb-4 p-3 rounded-xl bg-surface-container-high border border-outline text-xs font-mono">
+              <div className="text-center font-bold text-on-surface mb-2 text-sm">
                 Nắng PR — {bh.loaiDon === "mang_ve" ? "🥡 Mang về" : "🚚 Giao hàng"}
               </div>
               <div className="space-y-1">
                 {bh.order?.items?.map((i) => (
-                  <div key={i.ma_mon} className="flex justify-between text-stone-600">
+                  <div key={i.ma_mon} className="flex justify-between text-on-surface">
                     <span className="truncate mr-2">{i.ten_mon}</span>
                     <span className="font-bold whitespace-nowrap">x{i.so_luong} · {fmtMoney(i.so_luong * i.don_gia)}</span>
                   </div>
                 ))}
               </div>
-              <hr className="my-2 border-stone-300" />
-              <div className="flex justify-between text-sm font-bold text-stone-800">
+              <hr className="my-2 border-outline" />
+              <div className="flex justify-between text-sm font-bold text-on-surface">
                 <span>Tổng cộng:</span>
                 <span>{fmtMoney(Number(bh.order?.tong_tien || 0) + Number(bh.phiGiaoHang || 0))}</span>
               </div>
@@ -1053,7 +1137,7 @@ export default function BanHang() {
 
             {/* Hình thức thanh toán */}
             <div className="mb-5">
-              <p className="text-[11px] font-bold text-stone-500 uppercase mb-2">Hình thức thanh toán</p>
+              <p className="text-[11px] font-bold text-on-surface-variant uppercase mb-2">Hình thức thanh toán</p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -1061,7 +1145,7 @@ export default function BanHang() {
                   className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold text-sm transition-all ${
                     hinhThucThanhToan === "tien_mat"
                       ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                      : "border-stone-200 bg-white text-stone-500 hover:border-stone-300"
+                      : "border-outline bg-card text-on-surface-variant hover:border-outline/60"
                   }`}
                 >
                   <span>💵</span> Tiền mặt
@@ -1072,7 +1156,7 @@ export default function BanHang() {
                   className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold text-sm transition-all ${
                     hinhThucThanhToan === "chuyen_khoan"
                       ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                      : "border-stone-200 bg-white text-stone-500 hover:border-stone-300"
+                      : "border-outline bg-card text-on-surface-variant hover:border-outline/60"
                   }`}
                 >
                   <span>💳</span> Chuyển khoản
@@ -1093,7 +1177,7 @@ export default function BanHang() {
             <button
               type="button"
               onClick={() => setShowPaymentModal(false)}
-              className="w-full mt-2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-500 hover:bg-stone-50 transition-all"
+              className="w-full mt-2 py-2.5 rounded-xl border border-outline text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all"
             >
               Huỷ
             </button>
@@ -1102,22 +1186,22 @@ export default function BanHang() {
       )}
 
       {showMoveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowMoveModal(false)}>
+        <div className="modal-overlay" onClick={() => setShowMoveModal(false)}>
           <div
-            className="bg-white rounded-2xl shadow-2xl border border-stone-200 p-6 w-full max-w-md mx-4"
+            className="bg-card rounded-2xl shadow-2xl border border-outline p-6 w-full max-w-md mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-black text-stone-800 uppercase text-sm">⇄ Chọn bàn muốn chuyển</h3>
+              <h3 className="font-black text-on-surface uppercase text-sm">⇄ Chọn bàn muốn chuyển</h3>
               <button
                 type="button"
                 onClick={() => setShowMoveModal(false)}
-                className="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200 font-bold text-sm"
+                className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:bg-outline/30 font-bold text-sm"
               >
                 ✕
               </button>
             </div>
-            <p className="text-xs text-stone-500 mb-4">
+            <p className="text-xs text-on-surface-variant mb-4">
               Chuyển đơn <strong>#{bh.order?.ma_don_hang}</strong> từ <strong>{bh.table?.ten_ban}</strong> sang:
             </p>
             {moveBanErr && (
@@ -1138,12 +1222,12 @@ export default function BanHang() {
                       onClick={() => handleMoveBan(b)}
                       className={`rounded-xl border-2 p-3 text-center transition-all ${
                         busy
-                          ? "border-stone-200 bg-stone-50 opacity-60 cursor-not-allowed"
-                          : "border-stone-200 bg-white hover:border-primary hover:shadow-md hover:-translate-y-0.5"
+                          ? "border-outline bg-surface-container-high opacity-60 cursor-not-allowed"
+                          : "border-outline bg-card hover:border-primary hover:shadow-md hover:-translate-y-0.5"
                       }`}
                     >
-                      <p className="font-bold text-sm">{b.ten_ban}</p>
-                      <p className="text-[10px] text-stone-400 mt-0.5">
+                      <p className="font-bold text-xs uppercase">{b.ten_ban}</p>
+                      <p className="text-[9px] font-semibold text-on-surface-variant mt-0.5">
                         {busy ? `${fmtMoney(b.tong_tien_hien_tai)}` : "🟢 Trống"}
                       </p>
                     </button>
@@ -1153,7 +1237,7 @@ export default function BanHang() {
             <button
               type="button"
               onClick={() => setShowMoveModal(false)}
-              className="w-full mt-4 py-2 rounded-xl border border-stone-200 text-xs font-bold text-stone-500 hover:bg-stone-50 transition-all"
+              className="w-full mt-4 py-2 rounded-xl border border-outline text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all"
             >
               Huỷ
             </button>

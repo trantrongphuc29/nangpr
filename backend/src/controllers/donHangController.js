@@ -1,3 +1,6 @@
+/* ===== 🧾 BÁN HÀNG - ĐƠN HÀNG - CONTROLLER =====
+ * Tiếp nhận request HTTP cho module Đơn hàng POS
+ * ============================================== */
 const DonHangService = require("../services/donHangService");
 
 const DonHangController = {

@@ -1,3 +1,6 @@
+/* ===== 🥬 NGUYÊN LIỆU - REPOSITORY =====
+ * Thao tác SQL trực tiếp với bảng nguyenlieu, phieunhap, chitiet_phieunhap
+ * ========================================= */
 const db = require("../config/database");
 
 const NguyenLieuRepository = {

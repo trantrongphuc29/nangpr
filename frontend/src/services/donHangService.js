@@ -1,3 +1,7 @@
+/* ===== 🧾 BÁN HÀNG - ĐƠN HÀNG - FRONTEND SERVICE =====
+ * API calls cho Đơn hàng POS (mở đơn, thêm món, thanh toán...)
+ * Endpoint: /api/pos
+ * =================================================== */
 import axiosClient from "./axiosClient";
 
 /** Mở đơn hàng cho bàn (tạo mới hoặc lấy đơn đang phục vụ) */

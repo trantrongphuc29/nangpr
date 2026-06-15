@@ -1,3 +1,6 @@
+/* ===== 🪑 BÁN HÀNG - BÀN - REPOSITORY =====
+ * Thao tác SQL với bảng ban
+ * ========================================= */
 const db = require("../config/database");
 
 const getAll = async (sort) => {

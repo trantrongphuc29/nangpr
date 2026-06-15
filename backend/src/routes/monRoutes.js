@@ -1,3 +1,7 @@
+/* ===== 🍽️ MÓN & CÔNG THỨC - ROUTES =====
+ * Định nghĩa endpoint API cho Món, Công thức, POS Menu
+ * Prefix: /api/mon
+ * ======================================== */
 const express = require("express");
 const multer = require("multer");
 const path = require("path");

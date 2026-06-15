@@ -1,3 +1,6 @@
+/* ===== 🧾 BÁN HÀNG - ĐƠN HÀNG - REPOSITORY =====
+ * Thao tác SQL với bảng donhang, chitiethoadon, ban, mon
+ * ================================================ */
 const db = require("../config/database");
 const MonRepository = require("./monRepository");
 
@@ -17,7 +20,15 @@ const DonHangRepository = {
   getBanPosList: async () => {
     const [rows] = await db.execute(
       `SELECT b.ma_ban, b.ten_ban, b.trang_thai,
-              CASE WHEN b.trang_thai = 'Co khach' THEN TRUE ELSE FALSE END AS co_khach,
+              CASE
+                WHEN dh.ma_don_hang IS NOT NULL
+                  AND EXISTS (
+                    SELECT 1 FROM chitiethoadon ct2
+                    WHERE ct2.ma_don_hang = dh.ma_don_hang
+                  )
+                THEN TRUE
+                ELSE FALSE
+              END AS co_khach,
               dh.ma_don_hang,
               COALESCE(blt.tong_tien, 0) AS tong_tien_hien_tai
        FROM ban b
@@ -33,7 +44,6 @@ const DonHangRepository = {
     return rows;
   },
 
-
   findActiveByBan: async (ma_ban) => {
     const [rows] = await db.execute(
       `SELECT * FROM donhang WHERE ma_ban = ? AND ${ACTIVE_ORDER} ORDER BY ma_don_hang DESC LIMIT 1`,
@@ -47,9 +57,7 @@ const DonHangRepository = {
       `INSERT INTO donhang (ma_ban, loai_don, phi_giao_hang, trang_thai_don, trang_thai_thanh_toan) VALUES (?, ?, 0.00, 'Dang phuc vu', 'Chua thanh toan')`,
       [ma_ban || null, loai_don]
     );
-    if (ma_ban) {
-      await db.execute(`UPDATE ban SET trang_thai = 'Co khach' WHERE ma_ban = ?`, [ma_ban]);
-    }
+    // KHÔNG set ban.trang_thai='Co khach' ở đây — chỉ set khi có món được thêm
     return result.insertId;
   },
 
@@ -71,6 +79,11 @@ const DonHangRepository = {
 
   getById: async (id) => {
     const [rows] = await db.execute(`SELECT * FROM donhang WHERE ma_don_hang = ?`, [id]);
+    return rows[0] || null;
+  },
+
+  getBanById: async (ma_ban) => {
+    const [rows] = await db.execute(`SELECT * FROM ban WHERE ma_ban = ?`, [ma_ban]);
     return rows[0] || null;
   },
 
@@ -126,6 +139,12 @@ const DonHangRepository = {
          VALUES (?, ?, ?, 0, ?, ?, 'Dang cho')`,
         [ma_don_hang, ma_mon, qty, monRows[0].gia_ban, ghi_chu_mon]
       );
+
+      // Đây là món đầu tiên của đơn → đánh dấu bàn là 'Có khách'
+      const order = await DonHangRepository.getById(ma_don_hang);
+      if (order && order.ma_ban) {
+        await db.execute(`UPDATE ban SET trang_thai = 'Co khach' WHERE ma_ban = ?`, [order.ma_ban]);
+      }
     }
   },
 
@@ -150,6 +169,17 @@ const DonHangRepository = {
         ma_don_hang,
         ma_mon,
       ]);
+      // Kiểm tra nếu đơn không còn món nào → reset bàn về 'Trong'
+      const [remaining] = await db.execute(
+        `SELECT COUNT(*) AS cnt FROM chitiethoadon WHERE ma_don_hang = ?`,
+        [ma_don_hang]
+      );
+      if (remaining[0].cnt === 0) {
+        const order = await DonHangRepository.getById(ma_don_hang);
+        if (order && order.ma_ban) {
+          await db.execute(`UPDATE ban SET trang_thai = 'Trong' WHERE ma_ban = ?`, [order.ma_ban]);
+        }
+      }
       return;
     }
     await db.execute(
@@ -220,7 +250,16 @@ const DonHangRepository = {
       `UPDATE donhang SET trang_thai_don = 'Da huy', trang_thai_thanh_toan = 'Da huy' WHERE ma_don_hang = ?`,
       [ma_don_hang]
     );
-    /* Bàn chỉ về Trống khi thanh toán — hủy đơn không đổi ban.trang_thai */
+    // Reset bàn về 'Trong' nếu không còn đơn active nào khác tại bàn đó
+    if (order.ma_ban) {
+      const [other] = await db.execute(
+        `SELECT ma_don_hang FROM donhang WHERE ma_ban = ? AND ${ACTIVE_ORDER} AND ma_don_hang != ? LIMIT 1`,
+        [order.ma_ban, ma_don_hang]
+      );
+      if (!other.length) {
+        await db.execute(`UPDATE ban SET trang_thai = 'Trong' WHERE ma_ban = ?`, [order.ma_ban]);
+      }
+    }
   },
 
   checkout: async (ma_don_hang, hinh_thuc_thanh_toan = null) => {

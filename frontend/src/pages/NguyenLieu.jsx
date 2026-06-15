@@ -1,3 +1,6 @@
+/* ===== 🥬 NGUYÊN LIỆU - TRANG CHÍNH =====
+ * Quản lý danh sách nguyên liệu, nhập kho, lịch sử, thống kê
+ * ========================================= */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import * as nlService from '../services/nguyenlieuService';
 import { ToastContainer, useToast } from '../components/Toast';
@@ -120,7 +123,6 @@ export default function NguyenLieu() {
     setList((data || []).map(enrichItem));
     setHistory(histData || []);
     setStats(statsData || { month: 0 });
-    // Dòng setCategoryOptions(...) đã được xóa
   } catch (err) {
     toast(err.response?.data?.message || 'Không tải được dữ liệu kho.', 'error');
   } finally {
@@ -132,7 +134,7 @@ export default function NguyenLieu() {
 
   useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, categoryFilter]);
 
-  // ⚡ ĐÃ SỬA: Form động cấu hình đơn vị chuẩn chỉ tự động nhảy theo danh mục quán chọn
+  /* Form động: tự động cập nhật đơn vị theo danh mục */
   const handleDanhMucFormChange = (targetCat) => {
     let updateFields = { danh_muc: targetCat };
 
@@ -186,7 +188,6 @@ export default function NguyenLieu() {
     }));
   };
 
-  // Thay đổi hoàn toàn đoạn categories cũ thành:
 const categories = useMemo(() => {
   return ['all', ...DANH_MUC_OPTIONS];
 }, []);

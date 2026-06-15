@@ -1,3 +1,7 @@
+/* ===== 🧾 BÁN HÀNG - ĐƠN HÀNG - SERVICE =====
+ * Xử lý nghiệp vụ: mở đơn, thêm món, gửi bar, thanh toán, chuyển bàn
+ * Liên kết: donHangController → donHangService → donHangRepository
+ * ============================================ */
 const DonHangRepository = require("../repositories/donHangRepository");
 
 const DonHangService = {
@@ -12,6 +16,12 @@ const DonHangService = {
       return DonHangRepository.getOrderDetail(ma_don_hang);
     }
     if (ma_ban) {
+      // Kiểm tra bàn có tồn tại không
+      const banRow = await DonHangRepository.getBanById(ma_ban);
+      if (!banRow) {
+        throw { status: 400, message: `Bàn #${ma_ban} không tồn tại trong hệ thống` };
+      }
+
       const existing = await DonHangRepository.findActiveByBan(ma_ban);
       if (existing) {
         // Cập nhật loại đơn nếu có thay đổi
