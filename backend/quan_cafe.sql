@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Jun 14, 2026 at 01:45 PM
+-- Generation Time: Jun 15, 2026 at 09:34 AM
 -- Server version: 5.7.31
 -- PHP Version: 7.3.21
 
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `ban` (
   `ten_ban` varchar(50) DEFAULT NULL,
   `trang_thai` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`ma_ban`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `ban`
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `ban` (
 
 INSERT INTO `ban` (`ma_ban`, `ten_ban`, `trang_thai`) VALUES
 (1, 'Bàn 1', 'Trong'),
-(2, 'Bàn 2', NULL),
+(2, 'Bàn 2', 'Trong'),
 (3, 'Bàn 3', 'Trong'),
 (8, 'bàn 5', 'Trong'),
 (9, 'bàn 4', 'Trong'),
@@ -54,7 +54,27 @@ INSERT INTO `ban` (`ma_ban`, `ten_ban`, `trang_thai`) VALUES
 (16, 'Bàn 12', NULL),
 (17, 'Bàn 13', NULL),
 (18, 'Bàn 15', NULL),
-(19, 'Bàn 14', NULL);
+(19, 'Bàn 14', NULL),
+(20, 'Bàn 16', NULL),
+(21, 'Bàn 17', NULL),
+(22, 'Bàn 18', NULL),
+(23, 'bàn 19', NULL),
+(24, 'bàn 20', NULL),
+(25, 'bàn 21', NULL),
+(26, 'Bàn 22', NULL),
+(27, 'bàn 23', NULL),
+(28, 'bàn 24', NULL),
+(29, 'bàn 25', NULL),
+(30, 'bàn 26', NULL),
+(31, 'bàn 27', NULL),
+(32, 'bàn 28', NULL),
+(33, 'bàn 29', NULL),
+(34, 'bàn 30', NULL),
+(35, 'bàn 32', NULL),
+(36, 'bàn 31', NULL),
+(37, 'bàn 33', NULL),
+(38, 'bàn 34', NULL),
+(39, 'bàn 35', NULL);
 
 -- --------------------------------------------------------
 
@@ -399,7 +419,31 @@ INSERT INTO `chitiethoadon` (`ma_don_hang`, `ma_mon`, `so_luong`, `so_luong_da_g
 (121, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
 (122, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
 (122, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(123, 30, 1, 1, NULL, 'Dang lam', '40000.00');
+(123, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
+(125, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
+(126, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
+(127, 22, 1, 0, NULL, 'Dang cho', '28000.00'),
+(127, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
+(128, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
+(128, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
+(129, 22, 2, 0, NULL, 'Dang cho', '28000.00'),
+(129, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
+(129, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
+(130, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
+(130, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
+(130, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
+(132, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
+(132, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
+(133, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
+(133, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
+(134, 30, 3, 3, NULL, 'Dang lam', '40000.00'),
+(135, 21, 1, 1, NULL, 'Dang lam', '25000.00'),
+(135, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
+(135, 23, 2, 2, NULL, 'Dang lam', '10000.00'),
+(135, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
+(137, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
+(137, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
+(137, 30, 1, 0, NULL, 'Dang cho', '40000.00');
 
 -- --------------------------------------------------------
 
@@ -540,7 +584,7 @@ CREATE TABLE IF NOT EXISTS `donhang` (
   `trang_thai_thanh_toan` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`ma_don_hang`),
   KEY `ma_ban` (`ma_ban`)
-) ENGINE=InnoDB AUTO_INCREMENT=125 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=139 DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `donhang`
@@ -670,7 +714,21 @@ INSERT INTO `donhang` (`ma_don_hang`, `ma_ban`, `loai_don`, `ten_khach`, `phi_gi
 (121, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 20:21:58', 'Hoan thanh', 'Da thanh toan'),
 (122, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-14 20:35:00', 'Hoan thanh', 'Da thanh toan'),
 (123, NULL, 'giao_hang', 'giao', '20000.00', 'tien_mat', '1233414132', '1d', '2026-06-14 20:35:25', 'Hoan thanh', 'Da thanh toan'),
-(124, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 20:44:46', 'Dang phuc vu', 'Chua thanh toan');
+(124, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 20:44:46', 'Dang phuc vu', 'Chua thanh toan'),
+(125, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 20:49:50', 'Hoan thanh', 'Da thanh toan'),
+(126, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:01:52', 'Hoan thanh', 'Da thanh toan'),
+(127, 2, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:01:57', 'Hoan thanh', 'Da thanh toan'),
+(128, 3, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:02:00', 'Hoan thanh', 'Da thanh toan'),
+(129, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:09:52', 'Hoan thanh', 'Da thanh toan'),
+(130, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:10:09', 'Hoan thanh', 'Da thanh toan'),
+(131, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:15:27', 'Dang phuc vu', 'Chua thanh toan'),
+(132, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:40:46', 'Hoan thanh', 'Da thanh toan'),
+(133, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-15 15:40:50', 'Hoan thanh', 'Da thanh toan'),
+(134, NULL, 'giao_hang', 'giao', '29000.00', 'tien_mat', '11212211', '12w', '2026-06-15 15:41:28', 'Hoan thanh', 'Da thanh toan'),
+(135, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:54:44', 'Hoan thanh', 'Da thanh toan'),
+(136, 2, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:54:57', 'Dang phuc vu', 'Chua thanh toan'),
+(137, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 16:04:11', 'Hoan thanh', 'Da thanh toan'),
+(138, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 16:34:09', 'Dang phuc vu', 'Chua thanh toan');
 
 -- --------------------------------------------------------
 
@@ -826,15 +884,15 @@ CREATE TABLE IF NOT EXISTS `nguyenlieu` (
 INSERT INTO `nguyenlieu` (`ma_nguyen_lieu`, `ten_nguyen_lieu`, `danh_muc`, `don_vi_tinh`, `don_vi_nhap`, `don_vi_dong_goi`, `dung_tich_san_pham`, `ml_thuc_te_ton`, `nguong_canh_bao`, `ghi_chu`, `trang_thai`) VALUES
 (1, 'CoCa', 'Nước uống đóng chai', 'chai', 'chai', NULL, '1.00', '0.00', '10.00', NULL, 1),
 (2, 'Sting', 'Nước uống đóng chai', 'chai', 'chai', NULL, '1.00', '0.00', '10.00', NULL, 1),
-(3, 'Bột Cafe Đen', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '1000.00', '500.00', '100.00', NULL, 1),
-(4, 'Nước Suối', 'Nước uống đóng chai', 'chai', 'chai', NULL, '1.00', '16.00', '1.00', NULL, 1),
-(5, 'Bột Cafe Sữa', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '1000.00', '900.00', '1000.00', NULL, 1),
-(6, 'Sữa Đặc', 'Nguyên liệu pha chế', 'ml', 'lon', 'Lon', '300.00', '160.00', '100.00', NULL, 1),
+(3, 'Bột Cafe Đen', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '1000.00', '400.00', '100.00', NULL, 1),
+(4, 'Nước Suối', 'Nước uống đóng chai', 'chai', 'chai', NULL, '1.00', '8.00', '1.00', NULL, 1),
+(5, 'Bột Cafe Sữa', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '1000.00', '600.00', '1000.00', NULL, 1),
+(6, 'Sữa Đặc', 'Nguyên liệu pha chế', 'ml', 'lon', 'Lon', '300.00', '40.00', '100.00', NULL, 1),
 (7, 'Pepsi', 'Nước uống đóng chai', 'chai', 'chai', NULL, '1.00', '0.00', '10.00', NULL, 1),
 (8, 'Revive', 'Nước uống đóng chai', 'chai', 'chai', NULL, '1.00', '0.00', '10.00', NULL, 1),
-(9, 'Bột Matcha', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '1000.00', '1250.00', '200.00', NULL, 1),
-(10, 'Sữa Gấu', 'Nguyên liệu pha chế', 'ml', 'lon', 'Lon', '140.00', '2775.00', '280.00', NULL, 1),
-(11, 'Đường', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '500.00', '2125.00', '200.00', NULL, 1);
+(9, 'Bột Matcha', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '1000.00', '890.00', '200.00', NULL, 1),
+(10, 'Sữa Gấu', 'Nguyên liệu pha chế', 'ml', 'lon', 'Lon', '140.00', '2763.00', '280.00', NULL, 1),
+(11, 'Đường', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '500.00', '1945.00', '200.00', NULL, 1);
 
 -- --------------------------------------------------------
 
