@@ -22,7 +22,7 @@ export default function Layout() {
         {/* Main content: p-6 giữ nguyên giao diện. 
             Mọi trang con (Outlet) bây giờ sẽ hiển thị trên nền tổng đã được đồng bộ.
         */}
-        <main className="p-4 md:p-6 print:p-0 print:m-0">
+        <main className="p-4 md:p-6 print:p-0 print:m-0 flex-1 min-h-0 overflow-auto">
           <Outlet />
         </main>
       </div>

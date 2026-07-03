@@ -44,7 +44,7 @@ const getAssignments = async (queryOptions) => {
     sql += " AND pc.ngay = ?";
     params.push(startDate);
   } else {
-    sql += " AND pc.ngay = CURDATE()";
+    sql += " AND pc.ngay + INTERVAL 7 HOUR = CURDATE() + INTERVAL 7 HOUR";
   }
 
   if (name) {

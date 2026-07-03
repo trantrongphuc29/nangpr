@@ -48,7 +48,10 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
       .map(
         (i, idx) => `
         <tr${idx % 2 === 1 ? ' style="background:#f5f5f5"' : ""}>
-          <td style="padding:10px 8px;font-weight:700;font-size:15px">${i.ten_mon}</td>
+          <td style="padding:10px 8px;font-weight:700;font-size:15px">
+            ${i.ten_mon}
+            ${i.ghi_chu_mon ? `<br><span style="font-size:11px;font-weight:400;color:#888;font-style:italic">📝 ${i.ghi_chu_mon}</span>` : ''}
+          </td>
           <td style="padding:10px 8px;text-align:center;font-weight:900;font-size:20px">${i.so_luong_cho_bar || i.so_luong}</td>
         </tr>`
       )
@@ -79,12 +82,56 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
     `);
   }
 
+  if (mode === "cancel") {
+    const cancelItems = newItems || [];
+    const rows = cancelItems
+      .map(
+        (i, idx) => `
+        <tr${idx % 2 === 1 ? ' style="background:#fff0f0"' : ""}>
+          <td style="padding:10px 8px;font-weight:700;font-size:15px">${i.ten_mon}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:900;font-size:20px;color:#dc2626">-${i.so_luong_huy}</td>
+        </tr>`
+      )
+      .join("");
+
+    return baseHTML(`
+      <div style="padding:20px;font-family:'Courier New',monospace;max-width:320px;margin:0 auto;color:#000">
+        <div style="text-align:center;margin-bottom:12px">
+          <div style="font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#dc2626">Nắng PR</div>
+          <div style="font-size:11px;color:#dc2626;margin-top:2px;font-weight:700">✕ PHIẾU HUỶ MÓN</div>
+        </div>
+        <div style="border-top:3px solid #dc2626;border-bottom:3px solid #dc2626;padding:10px 0;margin-bottom:14px;text-align:center">
+          <div style="font-size:28px;font-weight:900">${tenBan}</div>
+          <div style="font-size:12px;color:#888">Đơn #${maDon}</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="border-bottom:2px solid #dc2626;font-size:10px;text-transform:uppercase">
+              <th style="padding:4px 8px;text-align:left;font-weight:700;color:#dc2626">Món huỷ</th>
+              <th style="padding:4px 8px;text-align:center;width:48px;font-weight:700;color:#dc2626">SL</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="2" style="padding:20px;text-align:center;color:#999">Không có món</td></tr>'}
+          </tbody>
+        </table>
+        <div style="margin-top:16px;padding:8px;border:1px dashed #dc2626;text-align:center;font-size:11px;color:#dc2626;font-weight:700">
+          ⚠️ Vui lòng hủy các món trên
+        </div>
+        <div style="margin-top:12px;text-align:center;font-size:10px;color:#aaa">${now}</div>
+      </div>
+    `);
+  }
+
   // mode === "bill"
   const rows = items
     .map(
       (i, idx) => `
       <tr${idx % 2 === 1 ? ' style="background:#f5f5f5"' : ""}>
-        <td style="padding:8px 6px">${i.ten_mon}</td>
+        <td style="padding:8px 6px">
+          ${i.ten_mon}
+          ${i.ghi_chu_mon ? `<br><span style="font-size:10px;color:#888;font-style:italic">📝 ${i.ghi_chu_mon}</span>` : ''}
+        </td>
         <td style="padding:8px 6px;text-align:center;width:36px">${i.so_luong}</td>
         <td style="padding:8px 6px;text-align:right;width:80px">${fmtMoney(i.so_luong * i.don_gia)}</td>
       </tr>`
@@ -180,12 +227,13 @@ function BanHangCart({
   onPrintMon,
   onPrintBill,
   onPay,
-  onCombinedPay,
+  onCancelAndQty,
+  onUpdateNote,
 }) {
   if (!order) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-12 text-on-surface-variant">
-        <span className="material-symbols-outlined text-4xl mb-2">table_restaurant</span>
+        <span className="material-symbols-outlined text-4xl mb-2">shopping_cart</span>
         <p className="text-sm font-medium">Chọn bàn trống để gọi món</p>
         <p className="text-xs mt-1">Bấm vào bàn màu trắng để bắt đầu</p>
       </div>
@@ -198,75 +246,116 @@ function BanHangCart({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-black text-primary uppercase text-sm">
-          {table?.ten_ban} · #{order.ma_don_hang}
-        </h3>
+      <div className="flex items-center justify-between mb-3 pb-3 border-b border-outline/40">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary text-lg">receipt</span>
+          </div>
+          <div>
+            <h3 className="font-bold text-sm text-on-surface">
+              {order.ma_don_hang
+                ? (table?.ten_ban ? `#${order.ma_don_hang} · ${table.ten_ban}` : `#${order.ma_don_hang}`)
+                : (table?.ten_ban || 'Đơn mới')}
+            </h3>
+            <p className="text-[10px] text-muted">{items.length} món</p>
+          </div>
+        </div>
         {hasNewItems && (
-          <span className="text-[10px] bg-red-100 text-red-600 font-semibold px-2.5 py-0.5 rounded-full animate-pulse">
-            +{items.reduce((s, i) => s + (i.so_luong_cho_bar || 0), 0)} món mới
+          <span className="text-[10px] text-error font-semibold px-2.5 py-0.5 rounded-full animate-pulse" style={{ backgroundColor: "color-mix(in srgb, var(--color-error) 12%, transparent)" }}>
+            +{items.reduce((s, i) => s + (i.so_luong_cho_bar || 0), 0)} mới
           </span>
         )}
       </div>
 
       {/* Items list */}
-      <ul className="flex-1 overflow-y-auto space-y-1.5 min-h-[120px] max-h-[35vh] lg:max-h-[340px]">
+      <ul className="flex-1 overflow-y-auto space-y-1.5 min-h-[120px] max-h-[calc(100vh-340px)] lg:max-h-[calc(100vh-360px)]">
         {items.map((item) => {
           const daGui = Number(item.so_luong_da_gui_bar || 0);
           const choBar = Number(item.so_luong_cho_bar || 0);
           const daInHet = choBar <= 0 && daGui > 0;
           return (
-          <li key={item.ma_mon} className={`flex items-center gap-2 p-2.5 rounded-lg text-sm transition-all ${daInHet ? 'bg-card/70 border border-outline' : 'bg-card'}`}>
+          <li key={item.ma_mon} className="flex items-start gap-2 p-2.5 rounded-xl text-sm transition-all bg-surface-container-lowest border border-outline/10 hover:border-outline/30">
             <div className="flex-1 min-w-0">
-              <p className="font-bold truncate">{item.ten_mon}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="font-semibold text-on-surface truncate">{item.ten_mon}</p>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 {daGui > 0 && (
-                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200/60">
-                    🖨️ {daGui} đã in
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: "color-mix(in srgb, var(--color-secondary) 12%, transparent)", color: "var(--color-secondary)" }}>
+                    🖨 {daGui} đã in
                   </span>
                 )}
                 {choBar > 0 && (
-                  <span className="text-[10px] font-semibold text-red-600">+{choBar} mới</span>
+                  <span className="text-[10px] font-semibold text-error">+{choBar} mới</span>
                 )}
               </div>
+              {/* Ghi chú món */}
+              <input
+                type="text"
+                placeholder="Ghi chú (ít đường, không đá...)"
+                defaultValue={item.ghi_chu_mon || ""}
+                disabled={busy}
+                className="mt-1.5 w-full text-[10px] bg-transparent border-b border-dotted border-outline/20 text-on-surface-variant placeholder:text-outline/30 focus:border-primary/40 focus:outline-none px-0 py-0.5 transition-colors"
+                onBlur={(e) => {
+                  const val = e.target.value.trim();
+                  if (val !== (item.ghi_chu_mon || "")) {
+                    if (onUpdateNote) onUpdateNote(item.ma_mon, val || null);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.target.blur();
+                }}
+              />
             </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={busy || daInHet}
-                title={daInHet ? `Món này đã in ${daGui} cái — không thể xoá` : 'Giảm số lượng'}
-                className={`w-7 h-7 rounded font-bold transition-all ${
-                  busy || daInHet
-                    ? 'bg-surface-container-high/60 text-on-surface-variant cursor-not-allowed'
-                    : 'bg-surface-container-high hover:bg-surface-container-high/80 active:scale-90'
-                }`}
-                onClick={() => onQty(item.ma_mon, item.so_luong - 1)}
-              >−</button>
-              <span className="w-5 text-center font-black">{item.so_luong}</span>
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
                 disabled={busy}
-                className={`w-7 h-7 rounded font-bold transition-all ${
+                title={daInHet ? `Món này đã in ${daGui} cái. Bấm để giảm (sẽ ghi nhận huỷ)` : 'Giảm số lượng'}
+                className={`w-7 h-7 rounded-lg font-bold transition-all flex items-center justify-center text-sm ${
                   busy
-                    ? 'bg-primary/40 text-white cursor-not-allowed'
-                    : 'bg-primary text-white hover:bg-primary/80 active:scale-90'
+                    ? 'opacity-40 cursor-not-allowed'
+                    : daInHet
+                      ? 'text-error hover:bg-error-container active:scale-90'
+                      : 'text-on-surface-variant hover:bg-surface-container-high active:scale-90'
                 }`}
+                style={daInHet && !busy ? { backgroundColor: "color-mix(in srgb, var(--color-error) 8%, transparent)" } : {}}
+                onClick={() => {
+                  if (daInHet) {
+                    const maxReduce = item.so_luong;
+                    const input = prompt(`⚠️ Món "${item.ten_mon}" đã in ${daGui} cái xuống bếp.\nNhập số lượng muốn huỷ (1 → ${maxReduce}):`, "1");
+                    if (input === null) return;
+                    const soLuongHuy = parseInt(input, 10);
+                    if (isNaN(soLuongHuy) || soLuongHuy < 1 || soLuongHuy > maxReduce) {
+                      alert(`Số không hợp lệ! Vui lòng nhập từ 1 đến ${maxReduce}.`);
+                      return;
+                    }
+                    if (onCancelAndQty) onCancelAndQty(item, soLuongHuy);
+                  } else {
+                    onQty(item.ma_mon, item.so_luong - 1);
+                  }
+                }}
+              >−</button>
+              <span className="w-5 text-center font-bold text-on-surface">{item.so_luong}</span>
+              <button
+                type="button"
+                disabled={busy}
+                className="w-7 h-7 rounded-lg font-bold flex items-center justify-center text-sm text-white active:scale-90 transition-all disabled:opacity-40"
+                style={{ backgroundColor: "var(--color-primary)" }}
                 onClick={() => onQty(item.ma_mon, item.so_luong + 1)}
               >+</button>
             </div>
-            <span className="font-bold w-16 text-right text-primary">{fmtMoney(item.so_luong * item.don_gia)}</span>
+            <span className="font-bold w-16 text-right shrink-0 text-primary">{fmtMoney(item.so_luong * item.don_gia)}</span>
           </li>
           );
         })}
-        {!items.length && <li className="text-center text-on-surface-variant py-6">Chưa có món</li>}
+        {!items.length && <li className="text-center text-muted py-8">Chưa có món nào</li>}
       </ul>
 
       {/* Delivery info form (only for Giao hàng) */}
       {loaiDon === "giao_hang" && (
-        <div className="space-y-2 pt-1 mb-2">
-          {/* Tên khách hàng */}
-          <div className="flex items-center gap-2 bg-sky-50/50 rounded-xl p-3 border border-sky-200/50">
-            <span className="material-symbols-outlined text-sky-600 text-lg">person</span>
+        <div className="space-y-2 pt-3 mb-2 border-t border-outline/40">
+          <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1">Thông tin giao hàng</p>
+          <div className="flex items-center gap-2 rounded-xl p-3" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)" }}>
+            <span className="material-symbols-outlined text-primary text-lg shrink-0">person</span>
             <input
               type="text"
               className="flex-1 bg-transparent border-none text-sm font-medium placeholder:text-muted/60 focus:ring-0 p-0"
@@ -275,9 +364,8 @@ function BanHangCart({
               onChange={(e) => onUpdateDeliveryInfo({ ten_khach: e.target.value })}
             />
           </div>
-          {/* Số điện thoại */}
-          <div className="flex items-center gap-2 bg-sky-50/50 rounded-xl p-3 border border-sky-200/50">
-            <span className="material-symbols-outlined text-sky-600 text-lg">phone</span>
+          <div className="flex items-center gap-2 rounded-xl p-3" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)" }}>
+            <span className="material-symbols-outlined text-primary text-lg shrink-0">phone</span>
             <input
               type="tel"
               className="flex-1 bg-transparent border-none text-sm font-medium placeholder:text-muted/60 focus:ring-0 p-0"
@@ -286,9 +374,8 @@ function BanHangCart({
               onChange={(e) => onUpdateDeliveryInfo({ so_dien_thoai_giao: e.target.value })}
             />
           </div>
-          {/* Địa chỉ */}
-          <div className="flex items-start gap-2 bg-sky-50/50 rounded-xl p-3 border border-sky-200/50">
-            <span className="material-symbols-outlined text-sky-600 text-lg mt-0.5">location_on</span>
+          <div className="flex items-start gap-2 rounded-xl p-3" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)" }}>
+            <span className="material-symbols-outlined text-primary text-lg mt-0.5 shrink-0">location_on</span>
             <textarea
               className="flex-1 bg-transparent border-none text-sm font-medium placeholder:text-muted/60 focus:ring-0 p-0 resize-none min-h-[38px]"
               rows={2}
@@ -297,43 +384,43 @@ function BanHangCart({
               onChange={(e) => onUpdateDeliveryInfo({ dia_chi_giao: e.target.value })}
             />
           </div>
-          {/* Phí giao hàng */}
-          <div className="flex items-center justify-between bg-amber-50/50 rounded-xl p-3 border border-amber-200/50">
+          <div className="flex items-center justify-between rounded-xl p-3" style={{ backgroundColor: "color-mix(in srgb, var(--color-warning) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--color-warning) 20%, transparent)" }}>
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-amber-600 text-lg">delivery_dining</span>
-              <span className="text-xs font-bold text-amber-800">Phí giao hàng</span>
+              <span className="material-symbols-outlined text-warning text-lg">delivery_dining</span>
+              <span className="text-xs font-bold text-warning">Phí giao hàng</span>
             </div>
             <div className="flex items-center gap-2">
               <input
                 type="number"
                 min="0"
                 step="1000"
-                className="w-24 text-right font-bold text-sm bg-white border border-amber-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-amber-400/30"
+                className="w-24 text-right font-bold text-sm bg-surface-lowest border border-warning-border rounded-lg px-2 py-1.5 focus:ring-2"
+                style={{ borderColor: "color-mix(in srgb, var(--color-warning) 30%, transparent)" }}
                 placeholder="0"
                 value={phiGiaoHang || ""}
                 onChange={(e) => onUpdatePhiGiaoHang(e.target.value)}
               />
-              <span className="text-xs font-bold text-amber-700">đ</span>
+              <span className="text-xs font-bold text-warning">đ</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Actions */}
-      <div className="border-t border-outline pt-3 mt-2 space-y-2">
+      <div className="border-t border-outline/40 pt-3 mt-2 space-y-2">
         <div className="space-y-1">
           <div className="flex justify-between text-sm text-on-surface-variant">
             <span>Tạm tính</span>
-            <span>{fmtMoney(order.tong_tien)}</span>
+            <span className="font-medium">{fmtMoney(order.tong_tien)}</span>
           </div>
           {loaiDon === "giao_hang" && (
             <div className="flex justify-between text-sm text-on-surface-variant">
               <span>Phí giao hàng</span>
-              <span>{fmtMoney(phiGiaoHang)}</span>
+              <span className="font-medium">{fmtMoney(phiGiaoHang)}</span>
             </div>
           )}
         </div>
-        <div className="flex justify-between font-black text-lg text-primary border-t border-outline pt-2">
+        <div className="flex justify-between font-bold text-base border-t border-outline/40 pt-2" style={{ color: "var(--color-primary)" }}>
           <span>Tổng cộng</span>
           <span>{fmtMoney(Number(order.tong_tien) + Number(phiGiaoHang))}</span>
         </div>
@@ -344,15 +431,16 @@ function BanHangCart({
                 type="button"
                 disabled={busy || !items.length || !hasNewItems}
                 onClick={onPrintMon}
-                className="py-2.5 rounded-xl bg-amber-500 text-white font-bold text-xs uppercase disabled:opacity-40 transition-all hover:bg-amber-600"
+                className="py-2.5 rounded-xl font-bold text-xs uppercase transition-all disabled:opacity-40"
+                style={{ backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }}
               >
-                🖨️ In món
+                🖨 In món
               </button>
               <button
                 type="button"
                 disabled={busy || !items.length}
                 onClick={onPrintBill}
-                className="py-2.5 rounded-xl border-2 border-stone-300 font-bold text-xs uppercase hover:border-primary hover:text-primary transition-all"
+                className="btn-outline !py-2.5 !px-4 !text-xs uppercase"
               >
                 In bill
               </button>
@@ -361,7 +449,7 @@ function BanHangCart({
               type="button"
               disabled={busy || !items.length}
               onClick={onPay}
-              className="w-full py-3 rounded-xl bg-primary text-white font-black uppercase text-sm disabled:opacity-40 hover:bg-primary/90 transition-all"
+              className="btn-primary w-full !py-3 !text-sm uppercase"
             >
               Thanh toán
             </button>
@@ -370,11 +458,11 @@ function BanHangCart({
           <button
             type="button"
             disabled={busy || !items.length}
-            onClick={onCombinedPay}
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black uppercase text-sm disabled:opacity-40 hover:from-emerald-700 hover:to-emerald-600 transition-all shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2"
+            onClick={onPay}
+            className="btn-primary w-full !py-4 !text-sm uppercase flex items-center justify-center gap-2"
           >
-            <span className="text-lg">🧾</span>
-            <span>In bill &amp; Thanh toán</span>
+            <span>🧾</span>
+            <span>In bill & Thanh toán</span>
           </button>
         )}
       </div>
@@ -388,6 +476,10 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
 
   const handleClick = (ban) => {
     if (swapMode && order?.ma_don_hang && ban.ma_ban !== selected?.ma_ban) {
+      if (isTableBusy(ban)) {
+        alert("Bàn này đang có khách, không thể chuyển đến!");
+        return;
+      }
       if (window.confirm(`Chuyển đơn #${order.ma_don_hang} từ "${selected?.ten_ban}" sang "${ban.ten_ban}"?`)) {
         onMoveBan(ban.ma_ban);
       }
@@ -401,22 +493,18 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
     if (swapMode) {
       setSwapMode(false);
     } else {
-      if (!order?.ma_don_hang) {
-        return;
-      }
+      if (!order?.ma_don_hang) return;
       setSwapMode(true);
     }
   };
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with counter */}
-      <div className="flex items-center justify-between mb-2.5">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="font-black text-on-surface uppercase text-xs tracking-wider">
-            Bàn trong quán
-          </h3>
-          <span className="text-[10px] font-semibold text-on-surface-variant bg-surface-container-high/80 px-2.5 py-0.5 rounded-full">
+          <h3 className="font-bold text-on-surface text-sm">Sơ đồ bàn</h3>
+          <span className="text-[10px] text-muted px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--color-surface-container-high)" }}>
             {tables.length} bàn
           </span>
         </div>
@@ -424,11 +512,12 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
           <button
             type="button"
             onClick={handleSwapToggle}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
               swapMode
-                ? "bg-amber-500 text-white ring-2 ring-amber-300"
-                : "text-amber-600 hover:bg-amber-50 border border-outline"
+                ? "text-white"
+                : "text-on-surface-variant border"
             }`}
+            style={swapMode ? { backgroundColor: "var(--color-primary)" } : { borderColor: "var(--color-border)" }}
           >
             {swapMode ? "✕ Huỷ" : "⇄ Đổi bàn"}
           </button>
@@ -436,21 +525,13 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
       </div>
 
       {swapMode && (
-        <div className="mb-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] font-semibold text-amber-700 text-center">
+        <div className="mb-3 px-3 py-2 rounded-lg text-[11px] font-semibold text-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)", color: "var(--color-primary)", border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)" }}>
           👆 Chọn bàn muốn chuyển đến
         </div>
       )}
 
-      {/* Quầy indicator */}
-      <div className="relative flex items-center justify-center mb-4">
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-outline/50 to-transparent" />
-          <span className="absolute flex items-center gap-1.5 text-[10px] text-on-surface-variant font-semibold bg-card px-3 py-1 rounded-full border border-outline shadow-sm">
-            <span className="text-sm">🏪</span>
-            Quầy thu ngân
-          </span>
-      </div>
-
-      {/* Tables grid */}              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 md:gap-3 xl:gap-4">
+      {/* Tables grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
         {tables.map((b) => {
           const busyTable = isTableBusy(b);
           const active = selected?.ma_ban === b.ma_ban;
@@ -462,67 +543,43 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
               type="button"
               disabled={busy && !swapMode}
               onClick={() => handleClick(b)}
-              className={[
-                "relative rounded-xl text-center transition-all duration-150",
-                "hover:shadow-lg",
-                active && !isMoving && "ring-4 ring-primary ring-offset-2 ring-offset-card scale-[1.02] z-10",
-                isMoving && "ring-4 ring-amber-400 ring-offset-2 ring-offset-card bg-amber-50 border-amber-400 scale-[1.02] z-10",
-                swapMode && !active && busyTable && "cursor-pointer border-2 border-amber-300 bg-amber-50/30 hover:bg-amber-50",
-                !isMoving && busyTable && !swapMode
-                  ? "bg-gradient-to-br from-red-500 to-rose-600 border-0 text-white shadow-md shadow-rose-200/50"
-                  : "",
-                !isMoving && !busyTable && !swapMode
-                  ? "group bg-card border border-outline text-on-surface hover:border-primary hover:bg-primary/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-outline/30"
-                  : "",
-                swapMode && !active && !busyTable && "border-2 border-dashed border-outline text-on-surface-variant hover:border-amber-400 hover:bg-amber-50/50",
-              ].filter(Boolean).join(" ")}
-              style={!isMoving && !swapMode && !busyTable ? { boxShadow: '0 1px 3px rgba(0,0,0,0.04)' } : {}}
+              className={`relative rounded-xl text-center transition-all duration-200 p-3 ${
+                active && !isMoving
+                  ? "ring-2 shadow-md scale-[1.02] z-10"
+                  : isMoving
+                    ? "ring-2 scale-[1.02] z-10"
+                    : "hover:shadow-md hover:-translate-y-0.5"
+              } ${swapMode && !active && busyTable ? "cursor-pointer" : ""}`}
+              style={(() => {
+                if (isMoving) {
+                  return { backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)", borderColor: "var(--color-primary)", ringColor: "var(--color-primary)" };
+                }
+                if (active && !isMoving) {
+                  return { backgroundColor: "var(--color-surface-lowest)", border: "2px solid var(--color-primary)", ringColor: "var(--color-primary)" };
+                }
+                if (busyTable && !swapMode) {
+                  return { backgroundColor: "color-mix(in srgb, var(--color-error) 18%, var(--color-surface-lowest))", border: "2px solid var(--color-error)", boxShadow: "0 4px 12px rgba(220,38,38,0.25)" };
+                }
+                return { backgroundColor: "var(--color-surface-lowest)", border: "1px solid var(--color-border)" };
+              })()}
             >
-              {/* Background decoration for busy tables */}
-              {busyTable && !isMoving && (
-                <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-white/20" />
-                  <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-full bg-white/5" />
-                </div>
-              )}
-
-              <div className="relative z-10 p-2.5 md:p-3">
-                <div className={[
-                  "w-8 h-8 md:w-9 md:h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center text-sm md:text-base transition-all",
-                  busyTable && !isMoving ? "bg-white/20" : "bg-card group-hover:bg-primary/5",
-                ].join(" ")}>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all"
+                style={busyTable && !swapMode && !isMoving ? { backgroundColor: "color-mix(in srgb, var(--color-error) 20%, transparent)" } : { backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" }}
+                >
                   {busyTable ? "🍽️" : "🪑"}
                 </div>
-
-                <p className="font-bold text-xs leading-tight uppercase">{b.ten_ban}</p>
-
-                <p className={[
-                  "text-[9px] font-semibold mt-1",
-                  busyTable && !isMoving ? "text-white/80" : "text-on-surface-variant",
-                ].join(" ")}>
-                  {busyTable ? (
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-white/60 animate-pulse" />
-                      {fmtMoney(b.tong_tien_hien_tai)}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-green-400" />
-                      <span className="text-on-surface-variant">Trống</span>
-                    </span>
-                  )}
+                <p className={`font-bold text-xs uppercase ${
+                  busyTable && !swapMode && !isMoving ? "text-error" : "text-on-surface"
+                }`}>{b.ten_ban}</p>
+                <p className={`font-bold text-sm ${
+                  busyTable && !swapMode && !isMoving
+                    ? "text-error"
+                    : "text-muted text-[9px] font-medium"
+                }`}>
+                  {busyTable ? fmtMoney(b.tong_tien_hien_tai) : "Trống"}
                 </p>
               </div>
-
-              {active && !isMoving && (
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary border-[3px] border-white shadow-md z-20" />
-              )}
-
-              {swapMode && !active && (
-                <span className="absolute -top-2 -left-2 w-4 h-4 rounded-full bg-amber-400 border-2 border-white shadow-md flex items-center justify-center text-[7px] font-black text-white z-20">
-                  +
-                </span>
-              )}
             </button>
           );
         })}
@@ -544,7 +601,6 @@ function useBanHang() {
   const refreshTables = useCallback(async () => {
     try {
       const data = await getBanPosList();
-      // Sắp xếp theo tên bàn (natural order: Bàn 1, Bàn 2, ..., Bàn 10)
       setTables(data.sort((a, b) => {
         const numA = parseInt(a.ten_ban?.match(/\d+/)?.[0] || 0, 10);
         const numB = parseInt(b.ten_ban?.match(/\d+/)?.[0] || 0, 10);
@@ -600,17 +656,84 @@ function useBanHang() {
   const [diaChiGiao, setDiaChiGiao] = useState("");
   const [tenKhach, setTenKhach] = useState("");
 
+  /* ───── Local order helpers ───── */
+  /** Tạo một order local (chưa lưu vào DB) */
+  const createLocalOrder = (ban, type) => ({
+    ma_don_hang: null,
+    ma_ban: ban?.ma_ban || null,
+    loai_don: type || 'tai_cho',
+    items: [],
+    tong_tien: 0,
+    phi_giao_hang: 0,
+    trang_thai_don: 'Dang phuc vu',
+    trang_thai_thanh_toan: 'Chua thanh toan',
+    co_mon_cho_bar: false,
+    ten_khach: null,
+    so_dien_thoai_giao: null,
+    dia_chi_giao: null,
+  });
+
+  /** Persist order local vào DB (tạo đơn + thêm items) */
+  const persistOrderToDb = async () => {
+    if (!order) throw new Error('Không có đơn hàng');
+    if (order.ma_don_hang) return order; // Đã persist rồi
+
+    // Tạo đơn trong DB
+    const data = await donHangApi.openOrder({
+      ma_ban: table?.ma_ban || null,
+      loai_don: loaiDon,
+    });
+    const maDonHang = data.ma_don_hang;
+
+    // Thêm tất cả items vào DB
+    for (const item of order.items) {
+      await donHangApi.addItem(maDonHang, {
+        ma_mon: item.ma_mon,
+        so_luong: item.so_luong,
+        ghi_chu_mon: item.ghi_chu_mon,
+      });
+    }
+
+    // Cập nhật thông tin giao hàng nếu cần
+    if (loaiDon === 'giao_hang') {
+      if (phiGiaoHang > 0) {
+        await donHangApi.updatePhiGiaoHang(maDonHang, phiGiaoHang);
+      }
+      if (tenKhach || soDienThoaiGiao || diaChiGiao) {
+        await donHangApi.updateDeliveryInfo(maDonHang, {
+          ten_khach: tenKhach,
+          so_dien_thoai_giao: soDienThoaiGiao,
+          dia_chi_giao: diaChiGiao,
+        });
+      }
+    }
+
+    // Lấy đơn đầy đủ từ DB
+    const fullOrder = await donHangApi.getOrder(maDonHang);
+    return fullOrder;
+  };
+
   const selectTable = (ban) =>
     run(async () => {
       setTable(ban);
-      const data = await donHangApi.openOrder({ ma_ban: ban.ma_ban, loai_don: loaiDon });
-      setOrder(data);
-      // Đồng bộ loai_don từ order (backend chỉ cập nhật nếu khác, an toàn khi mở lại đơn cũ)
-      if (data?.loai_don) setLoaiDon(data.loai_don);
-      if (data?.phi_giao_hang !== undefined) setPhiGiaoHang(Number(data.phi_giao_hang));
-      if (data?.so_dien_thoai_giao) setSoDienThoaiGiao(data.so_dien_thoai_giao);
-      if (data?.dia_chi_giao) setDiaChiGiao(data.dia_chi_giao);
-      if (data?.ten_khach) setTenKhach(data.ten_khach);
+      // Nếu bàn đã có đơn active (đang phục vụ) → load từ DB
+      if (ban.co_khach) {
+        const data = await donHangApi.openOrder({ ma_ban: ban.ma_ban, loai_don: 'tai_cho' });
+        setOrder(data);
+        if (data?.loai_don) setLoaiDon(data.loai_don);
+        if (data?.phi_giao_hang !== undefined) setPhiGiaoHang(Number(data.phi_giao_hang));
+        if (data?.so_dien_thoai_giao) setSoDienThoaiGiao(data.so_dien_thoai_giao);
+        if (data?.dia_chi_giao) setDiaChiGiao(data.dia_chi_giao);
+        if (data?.ten_khach) setTenKhach(data.ten_khach);
+      } else {
+        // Bàn trống → tạo order local, chưa lưu vào DB
+        setLoaiDon('tai_cho');
+        setPhiGiaoHang(0);
+        setSoDienThoaiGiao('');
+        setDiaChiGiao('');
+        setTenKhach('');
+        setOrder(createLocalOrder(ban, 'tai_cho'));
+      }
       await refreshTables();
     });
 
@@ -624,49 +747,150 @@ function useBanHang() {
         setDiaChiGiao("");
         setTenKhach("");
       }
-      const data = await donHangApi.openOrder({ loai_don: newType });
-      setOrder(data);
-      if (data?.loai_don) setLoaiDon(data.loai_don);
-      if (data?.phi_giao_hang !== undefined) setPhiGiaoHang(Number(data.phi_giao_hang));
-      if (data?.so_dien_thoai_giao) setSoDienThoaiGiao(data.so_dien_thoai_giao);
-      if (data?.dia_chi_giao) setDiaChiGiao(data.dia_chi_giao);
-      if (data?.ten_khach) setTenKhach(data.ten_khach);
+      // Chỉ tạo order local, chưa lưu vào DB
+      setOrder(createLocalOrder(null, newType));
     });
 
   const addMon = (mon) => {
-    if (!order?.ma_don_hang) {
-      setError("Vui lòng mở đơn trước khi gọi món");
+    if (!order) {
+      setError("Vui lòng chọn bàn hoặc chọn loại đơn trước");
       return Promise.resolve();
     }
     if (mon.het_hang) {
       setError(`"${mon.ten_mon}" hết kho — tạm khóa`);
       return Promise.resolve();
     }
-    return run(async () => {
-      const data = await donHangApi.addItem(order.ma_don_hang, { ma_mon: mon.ma_mon, so_luong: 1 });
-      setOrder(data);
-      await refreshTables();
+    // Nếu đã persist → thêm qua API
+    if (order.ma_don_hang) {
+      return run(async () => {
+        const data = await donHangApi.addItem(order.ma_don_hang, { ma_mon: mon.ma_mon, so_luong: 1 });
+        setOrder(data);
+        await refreshTables();
+      });
+    }
+    // Chưa persist → thêm vào local state
+    setOrder((prev) => {
+      if (!prev) return prev;
+      const existingItem = prev.items.find((i) => i.ma_mon === mon.ma_mon);
+      if (existingItem) {
+        const newItems = prev.items.map((i) =>
+          i.ma_mon === mon.ma_mon
+            ? { ...i, so_luong: i.so_luong + 1, so_luong_cho_bar: (i.so_luong_cho_bar || 0) + 1 }
+            : i
+        );
+        return {
+          ...prev,
+          items: newItems,
+          tong_tien: newItems.reduce((s, i) => s + Number(i.so_luong) * Number(i.don_gia), 0),
+          co_mon_cho_bar: newItems.some((i) => i.so_luong_cho_bar > 0),
+        };
+      }
+      const newItem = {
+        ma_mon: mon.ma_mon,
+        ten_mon: mon.ten_mon,
+        so_luong: 1,
+        so_luong_da_gui_bar: 0,
+        so_luong_cho_bar: 1,
+        don_gia: mon.gia_ban,
+        ghi_chu_mon: null,
+        ten_danh_muc: mon.ten_danh_muc || "",
+        trang_thai_mon: "Dang cho",
+      };
+      const newItems = [...prev.items, newItem];
+      return {
+        ...prev,
+        items: newItems,
+        tong_tien: newItems.reduce((s, i) => s + Number(i.so_luong) * Number(i.don_gia), 0),
+        co_mon_cho_bar: true,
+      };
     });
+    return Promise.resolve();
   };
 
   const changeQty = (ma_mon, so_luong) =>
     run(async () => {
-      const data = await donHangApi.updateItemQty(order.ma_don_hang, ma_mon, so_luong);
-      setOrder(data);
-      await refreshTables();
+      // Nếu đã persist → cập nhật qua API
+      if (order?.ma_don_hang) {
+        const data = await donHangApi.updateItemQty(order.ma_don_hang, ma_mon, so_luong);
+        setOrder(data);
+        await Promise.all([refreshTables(), refreshMenu()]);
+        return;
+      }
+      // Local state
+      setOrder((prev) => {
+        if (!prev) return prev;
+        if (so_luong <= 0) {
+          const newItems = prev.items.filter((i) => i.ma_mon !== ma_mon);
+          return {
+            ...prev,
+            items: newItems,
+            tong_tien: newItems.reduce((s, i) => s + Number(i.so_luong) * Number(i.don_gia), 0),
+            co_mon_cho_bar: newItems.some((i) => i.so_luong_cho_bar > 0),
+          };
+        }
+        const newItems = prev.items.map((i) =>
+          i.ma_mon === ma_mon
+            ? {
+                ...i,
+                so_luong,
+                so_luong_cho_bar: Math.max(0, so_luong - Number(i.so_luong_da_gui_bar || 0)),
+              }
+            : i
+        );
+        return {
+          ...prev,
+          items: newItems,
+          tong_tien: newItems.reduce((s, i) => s + Number(i.so_luong) * Number(i.don_gia), 0),
+          co_mon_cho_bar: newItems.some((i) => i.so_luong_cho_bar > 0),
+        };
+      });
+    });
+
+  const updateNote = (ma_mon, ghi_chu) =>
+    run(async () => {
+      if (order?.ma_don_hang) {
+        const data = await donHangApi.updateItemNote(order.ma_don_hang, ma_mon, ghi_chu);
+        setOrder(data);
+        return;
+      }
+      // Local state
+      setOrder((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.map((i) =>
+            i.ma_mon === ma_mon ? { ...i, ghi_chu_mon: ghi_chu } : i
+          ),
+        };
+      });
     });
 
   const sendBar = () =>
     run(async () => {
-      const data = await donHangApi.sendToBar(order.ma_don_hang);
+      // Persist vào DB trước nếu chưa
+      let currentOrder = order;
+      if (!currentOrder?.ma_don_hang) {
+        currentOrder = await persistOrderToDb();
+        setOrder(currentOrder);
+      }
+      // Gửi bar
+      const data = await donHangApi.sendToBar(currentOrder.ma_don_hang);
       setOrder(data);
       setError("");
+      await Promise.all([refreshTables(), refreshMenu()]);
       return true;
     });
 
   const pay = (hinhThuc) =>
     run(async () => {
-      await donHangApi.checkout(order.ma_don_hang, hinhThuc);
+      // Persist vào DB trước nếu chưa
+      let currentOrder = order;
+      if (!currentOrder?.ma_don_hang) {
+        currentOrder = await persistOrderToDb();
+        setOrder(currentOrder);
+      }
+      // Checkout
+      await donHangApi.checkout(currentOrder.ma_don_hang, hinhThuc);
       setOrder(null);
       setTable(null);
       await Promise.all([refreshTables(), refreshMenu()]);
@@ -676,7 +900,7 @@ function useBanHang() {
   const moveBan = (targetMaBan) =>
     run(async () => {
       if (!order?.ma_don_hang) {
-        setError("Không có đơn để chuyển");
+        setError("Đơn chưa được lưu, không thể chuyển bàn. Hãy in món hoặc thanh toán trước.");
         return null;
       }
       const result = await donHangApi.moveOrderToBan(order.ma_don_hang, targetMaBan);
@@ -711,7 +935,16 @@ function useBanHang() {
     addMon,
     changeQty,
     sendBar,
-    pay,    moveBan, clearSelection, refreshTables,
+    updateNote,
+    pay, moveBan, clearSelection, refreshTables,
+    persistOrder: async () => {
+      // Chỉ persist vào DB, không gửi bar (dùng cho In bill)
+      if (!order) throw new Error('Không có đơn hàng');
+      if (order.ma_don_hang) return order;
+      const result = await persistOrderToDb();
+      setOrder(result);
+      return result;
+    },
     loaiDon, openKhongBan,
     phiGiaoHang, soDienThoaiGiao, diaChiGiao, tenKhach,
     updatePhiGiaoHang: async (value) => {
@@ -771,8 +1004,20 @@ export default function BanHang() {
       if (!ok) return;
       const html = buildPrintHTML("mon", { table: bh.table, order: bh.order, newItems });
       openAndPrint(html);
-      bh.clearSelection();
+      const stay = window.confirm("✅ Đã in món! Bạn có muốn ở lại để thêm món tiếp không?");
+      if (!stay) {
+        bh.clearSelection();
+      }
     } else {
+      // In bill → persist trước để có mã đơn (không gửi bar)
+      if (!bh.order?.ma_don_hang) {
+        try {
+          await bh.persistOrder();
+        } catch (e) {
+          bh.setError('Không thể lưu đơn hàng để in bill');
+          return;
+        }
+      }
       const html = buildPrintHTML("bill", {
         table: bh.table,
         order: bh.order,
@@ -797,19 +1042,39 @@ export default function BanHang() {
     w.print();
   };
 
-  const handlePay = async () => {
-    if (!bh.order?.items?.length) return;
-    if (!window.confirm(`Thanh toán ${fmtMoney(bh.order.tong_tien)}?`)) return;
-    const ok = await bh.pay();
-    if (ok) bh.setError("✅ Đã thanh toán thành công!");
+  const handleCancelAndQty = async (item, soLuongHuy) => {
+    const newQty = item.so_luong - soLuongHuy;
+    const result = await bh.changeQty(item.ma_mon, newQty);
+    if (result !== null) {
+      const cancelData = [{
+        ten_mon: item.ten_mon,
+        so_luong_huy: soLuongHuy,
+        da_gui: item.so_luong_da_gui_bar
+      }];
+      const html = buildPrintHTML("cancel", {
+        table: bh.table,
+        order: bh.order,
+        newItems: cancelData
+      });
+      openAndPrint(html);
+    }
   };
 
-  const handleCombinedPay = async (hinhThuc) => {
+  const handleModalPay = async (hinhThuc) => {
     setShowPaymentModal(false);
     if (!bh.order?.items?.length) return;
 
-    // 1. In 2 bill TRƯỚC (phiếu chế biến + hóa đơn) — cần build trước khi sendToBar
-    //    vì sendToBar sẽ reset so_luong_cho_bar về 0
+    const hasNewItems = bh.order.items.some((i) => i.so_luong_cho_bar > 0);
+
+    if (bh.loaiDon === "tai_cho") {
+      if (hasNewItems) {
+        await bh.sendBar();
+      }
+      const ok = await bh.pay(hinhThuc);
+      if (ok) bh.setError("✅ Đã thanh toán thành công!");
+      return;
+    }
+
     const html = buildCombinedPrintHTML({
       table: bh.table,
       order: bh.order,
@@ -819,11 +1084,9 @@ export default function BanHang() {
       phiGiaoHang: bh.phiGiaoHang,
     });
     openAndPrint(html);
-
-    // 2. Gửi bar (đánh dấu món đã gửi xuống chế biến)
-    await bh.sendBar();
-
-    // 3. Thanh toán với hình thức đã chọn
+    if (hasNewItems) {
+      await bh.sendBar();
+    }
     const ok = await bh.pay(hinhThuc);
     if (ok) {
       bh.setError("✅ Đã thanh toán thành công!");
@@ -846,43 +1109,52 @@ export default function BanHang() {
 
   if (bh.loading) {
     return (
-      <div className="space-y-4 animate-pulse">
-        <div className="h-8 bg-surface-container-high rounded-lg w-48" />
-        <div className="h-96 bg-surface-container-high rounded-2xl" />
+      <div className="flex justify-center py-20">
+        <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent", borderRightColor: "transparent" }} />
       </div>
     );
   }
 
   return (
     <>
-      <div>
-        {hasOrder ? (            <div className="flex flex-col min-h-[100dvh]">
-            {bh.error && (
-              <div className="mb-4 p-3 rounded-lg bg-surface-container-high border-l-4 border-primary text-sm font-medium flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-lg">info</span>
-                {bh.error}
-              </div>
-            )}
+      <div className="h-full flex flex-col min-h-0">
+        {/* Error banner */}
+        {bh.error && (
+          <div className="mb-4 p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-fade-in" style={{ backgroundColor: bh.error.includes("✅") ? "color-mix(in srgb, var(--color-success) 10%, transparent)" : "color-mix(in srgb, var(--color-error) 10%, transparent)", borderLeft: `4px solid ${bh.error.includes("✅") ? "var(--color-success)" : "var(--color-error)"}`, color: bh.error.includes("✅") ? "var(--color-success)" : "var(--color-error)" }}>
+            <span className="material-symbols-outlined text-lg shrink-0">{bh.error.includes("✅") ? "check_circle" : "info"}</span>
+            {bh.error}
+          </div>
+        )}
+
+        {hasOrder ? (
+          /* ──── VIEW: ĐANG BÁN ──── */
+          <div className="flex flex-col flex-1 min-h-0">
+            {/* Order header */}
             <div className="flex items-center justify-between mb-4 shrink-0">
               <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                <h2 className="text-lg font-black text-on-surface">
-                  {bh.table ? <span className="uppercase">{bh.table.ten_ban}</span> : bh.loaiDon === "mang_ve" ? "🥡 Mang về" : "🚚 Giao hàng"}
-                </h2>
-                <span className="text-muted/40">·</span>
-                <span className="text-sm text-on-surface-variant font-medium">
-                  Đơn #{bh.order.ma_don_hang}
-                </span>
+                <div className="w-1 h-8 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} />
+                <div>
+                  <h2 className="text-lg font-bold text-on-surface">
+                    {bh.table ? (
+                      <span>{bh.table.ten_ban}</span>
+                    ) : bh.loaiDon === "mang_ve" ? (
+                      <span>🥡 Mang về</span>
+                    ) : (
+                      <span>🚚 Giao hàng</span>
+                    )}
+                  </h2>
+                  {bh.order.ma_don_hang ? (
+                    <p className="text-xs text-muted">Đơn #{bh.order.ma_don_hang}</p>
+                  ) : null}
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                {bh.table && (
+              <div className="flex items-center gap-2">
+                {bh.table && bh.order?.ma_don_hang && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setMoveBanErr("");
-                      setShowMoveModal(true);
-                    }}
-                    className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50 text-[10px] sm:text-xs font-bold text-amber-600 hover:bg-amber-100 hover:border-amber-300 transition-all flex items-center gap-1"
+                    onClick={() => { setMoveBanErr(""); setShowMoveModal(true); }}
+                    className="px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all"
+                    style={{ borderColor: "var(--color-border)", color: "var(--color-on-surface-variant)" }}
                   >
                     ⇄ Đổi bàn
                   </button>
@@ -890,102 +1162,103 @@ export default function BanHang() {
                 <button
                   type="button"
                   onClick={bh.clearSelection}
-                  className="px-2.5 sm:px-4 py-1.5 rounded-xl border border-outline text-[10px] sm:text-xs font-bold text-on-surface-variant hover:text-primary hover:border-primary transition-all flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all text-white"
+                  style={{ backgroundColor: "var(--color-primary)" }}
                 >
-                  ← Về sơ đồ bàn
+                  ← Về sơ đồ
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
-              <section className="lg:col-span-8 bg-card rounded-2xl border border-outline p-3 md:p-4 shadow-sm overflow-y-auto max-lg:flex-1 max-lg:min-h-0">
-                <div className="flex items-center justify-between mb-3 shrink-0">
-                  <h3 className="font-black text-on-surface uppercase text-xs tracking-wider">
-                    🍽️ Thực đơn
-                  </h3>
+            {/* Grid: Menu + Cart */}
+            <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 flex-1 min-h-0">
+              {/* Menu */}
+              <section className="lg:col-span-7 card border-none shadow-lg p-4 flex flex-col min-h-0">
+                <div className="flex items-center gap-2 mb-3 shrink-0">
+                  <span className="text-lg">🍽️</span>
+                  <h3 className="font-bold text-on-surface text-sm">Thực đơn</h3>
                 </div>
                 <PosMenu menu={bh.menu} busy={bh.busy} onAdd={bh.addMon} />
               </section>
 
-              <section className="hidden lg:block lg:col-span-4 bg-card rounded-2xl border border-outline p-4 shadow-sm lg:sticky lg:top-0 self-start">
+              {/* Cart - Desktop */}
+              <section className="hidden lg:flex lg:col-span-3 flex-col min-h-0 card border-none shadow-lg p-4">
                 <div className="flex items-center justify-between mb-3 shrink-0">
-                  <h3 className="font-black text-on-surface uppercase text-xs tracking-wider">
-                    🛒 Giỏ hàng
-                  </h3>
-                  {bh.order?.items?.length > 0 && (
-                    <span className="text-[10px] bg-primary/10 text-primary font-semibold px-2.5 py-0.5 rounded-full">
-                      {bh.order.items.reduce((s, i) => s + i.so_luong, 0)} món
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🛒</span>
+                    <h3 className="font-bold text-on-surface text-sm">Giỏ hàng</h3>
+                  </div>
+                  {cartItemCount > 0 && (
+                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)", color: "var(--color-primary)" }}>
+                      {cartItemCount} món
                     </span>
                   )}
                 </div>
-                <BanHangCart
-                  table={bh.table}
-                  order={bh.order}
-                  busy={bh.busy}
-                  loaiDon={bh.loaiDon}
-                  phiGiaoHang={bh.phiGiaoHang}
-                  tenKhach={bh.tenKhach}
-                  soDienThoaiGiao={bh.soDienThoaiGiao}
-                  diaChiGiao={bh.diaChiGiao}
-                  onUpdatePhiGiaoHang={bh.updatePhiGiaoHang}
-                  onUpdateDeliveryInfo={bh.updateDeliveryInfo}
-                  onQty={bh.changeQty}
-                  onPrintMon={() => doPrint("mon")}
-                  onPrintBill={() => doPrint("bill")}
-                  onPay={handlePay}
-                  onCombinedPay={() => { setHinhThucThanhToan("tien_mat"); setShowPaymentModal(true); }}
-                />
+                <div className="flex-1 overflow-hidden">
+                  <BanHangCart
+                    table={bh.table}
+                    order={bh.order}
+                    busy={bh.busy}
+                    loaiDon={bh.loaiDon}
+                    phiGiaoHang={bh.phiGiaoHang}
+                    tenKhach={bh.tenKhach}
+                    soDienThoaiGiao={bh.soDienThoaiGiao}
+                    diaChiGiao={bh.diaChiGiao}
+                    onUpdatePhiGiaoHang={bh.updatePhiGiaoHang}
+                    onUpdateDeliveryInfo={bh.updateDeliveryInfo}
+                    onQty={bh.changeQty}
+                    onPrintMon={() => doPrint("mon")}
+                    onPrintBill={() => doPrint("bill")}
+                    onPay={() => { setHinhThucThanhToan("tien_mat"); setShowPaymentModal(true); }}
+                    onCancelAndQty={handleCancelAndQty}
+                    onUpdateNote={bh.updateNote}
+                  />
+                </div>
               </section>
             </div>
           </div>
         ) : (
-          <section className="fixed top-[69px] left-0 lg:left-64 right-0 bottom-0 h-[calc(100dvh-69px)] bg-card flex flex-col z-10">
-            {bh.error && (
-              <div className="shrink-0 px-6 md:px-8 pt-4 pb-2 text-sm font-medium flex items-center gap-2 text-primary">
-                <span className="material-symbols-outlined text-primary text-lg">info</span>
-                {bh.error}
-              </div>
-            )}
-            {/* Fixed header + buttons area */}
-            <div className="shrink-0 px-4 sm:px-6 md:px-8 pt-4 pb-0 border-b border-outline bg-gradient-to-b from-card to-surface-container-high/30">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3">
-                <div>
-                  <h2 className="text-lg md:text-xl font-black text-on-surface tracking-tight flex items-center gap-2.5">
-                    <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-base">🏠</span>
-                    Sơ đồ bàn
-                  </h2>
-                  <p className="text-xs text-on-surface-variant mt-0.5 ml-[2.5rem]">
-                    Chọn bàn để gọi món
-                  </p>
+          /* ──── VIEW: SƠ ĐỒ BÀN ──── */
+          <div className="flex flex-col flex-1 min-h-0">
+            {/* Header + Actions */}
+            <div className="shrink-0 mb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
+                    🏠
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-on-surface">Bán hàng</h2>
+                    <p className="text-xs text-muted">Chọn bàn để gọi món</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-200" />
-                    <span className="text-[10px] font-semibold text-emerald-600">Trống</span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold border" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-primary)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} />
+                    Trống
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-100">
-                    <span className="w-2 h-2 rounded-full bg-rose-400 shadow-sm shadow-rose-200" />
-                    <span className="text-[10px] font-semibold text-rose-600">Có khách</span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold border" style={{ backgroundColor: "color-mix(in srgb, var(--color-error) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-error) 20%, transparent)", color: "var(--color-error)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--color-error)" }} />
+                    Có khách
                   </span>
                 </div>
               </div>
 
-              {/* Mang về + Giao hàng quick actions */}
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-2 pb-3">
+              {/* Mang về + Giao hàng */}
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   disabled={bh.busy}
                   onClick={() => bh.openKhongBan("mang_ve")}
-                  className="group relative overflow-hidden rounded-xl border-2 border-amber-200/70 bg-gradient-to-br from-amber-50 via-amber-50/50 to-white p-3 text-left transition-all duration-200 hover:shadow-lg hover:shadow-amber-200/30 hover:border-amber-400 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
+                  className="card border-none shadow-lg p-4 text-left transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
                 >
-                  <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-amber-200/10 group-hover:bg-amber-200/20 transition-all" />
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-300 to-amber-400 flex items-center justify-center text-lg shadow-sm shadow-amber-200/50 group-hover:scale-110 group-hover:shadow-md transition-all shrink-0">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: "var(--color-primary)" }}>
                       🥡
                     </div>
                     <div>
-                      <p className="font-black text-amber-800 text-sm">Mang về</p>
-                      <p className="text-[9px] font-medium text-amber-600/60 mt-0.5">Khách mua mang đi</p>
+                      <p className="font-bold text-sm text-on-surface">Mang về</p>
+                      <p className="text-[10px] text-muted mt-0.5">Khách mua mang đi</p>
                     </div>
                   </div>
                 </button>
@@ -993,24 +1266,23 @@ export default function BanHang() {
                   type="button"
                   disabled={bh.busy}
                   onClick={() => bh.openKhongBan("giao_hang")}
-                  className="group relative overflow-hidden rounded-xl border-2 border-sky-200/70 bg-gradient-to-br from-sky-50 via-sky-50/50 to-white p-3 text-left transition-all duration-200 hover:shadow-lg hover:shadow-sky-200/30 hover:border-sky-400 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
+                  className="card border-none shadow-lg p-4 text-left transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
                 >
-                  <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-sky-200/10 group-hover:bg-sky-200/20 transition-all" />
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-300 to-sky-400 flex items-center justify-center text-lg shadow-sm shadow-sky-200/50 group-hover:scale-110 group-hover:shadow-md transition-all shrink-0">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-secondary) 15%, transparent)", color: "var(--color-secondary)" }}>
                       🚚
                     </div>
                     <div>
-                      <p className="font-black text-sky-800 text-sm">Giao hàng</p>
-                      <p className="text-[9px] font-medium text-sky-600/60 mt-0.5">Giao tận nơi</p>
+                      <p className="font-bold text-sm text-on-surface">Giao hàng</p>
+                      <p className="text-[10px] text-muted mt-0.5">Giao tận nơi</p>
                     </div>
                   </div>
                 </button>
               </div>
             </div>
 
-            {/* Scrollable tables area */}
-            <div className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 md:px-8 py-4 md:py-5">
+            {/* Tables */}
+            <div className="flex-1 overflow-y-auto min-h-0 card border-none shadow-lg p-5">
               <BanHangTables
                 tables={bh.tables}
                 selected={bh.table}
@@ -1020,7 +1292,7 @@ export default function BanHang() {
                 onMoveBan={bh.moveBan}
               />
             </div>
-          </section>
+          </div>
         )}
       </div>
 
@@ -1030,49 +1302,48 @@ export default function BanHang() {
           <button
             type="button"
             onClick={() => setShowCartDrawer(true)}
-            className="lg:hidden fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 hover:shadow-xl hover:shadow-primary/50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center"
+            className="lg:hidden fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center"
+            style={{ backgroundColor: "var(--color-primary)" }}
           >
-            <span className="material-symbols-outlined text-2xl">shopping_cart</span>
+            <span className="material-symbols-outlined text-2xl text-white">shopping_cart</span>
             {cartItemCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center px-1 border-2 border-white shadow-md">
+              <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] rounded-full text-white text-[10px] font-black flex items-center justify-center px-1 border-2 border-white shadow-md" style={{ backgroundColor: "var(--color-error)" }}>
                 {cartItemCount > 99 ? "99+" : cartItemCount}
               </span>
             )}
           </button>
 
-          {/* Mini cart preview badge floating next to FAB */}
           {cartItemCount > 0 && (
-            <div className="lg:hidden fixed bottom-[5.5rem] right-7 z-30 bg-card border border-outline rounded-xl px-3 py-2 shadow-lg text-right animate-fade-in">
-              <p className="text-[10px] text-on-surface-variant font-medium">Tổng cộng</p>
-              <p className="text-xs font-black text-primary">{fmtMoney(cartTotalAmount)}</p>
+            <div className="lg:hidden fixed bottom-[5.5rem] right-7 z-30 bg-surface-lowest border border-outline rounded-xl px-3 py-2 shadow-lg text-right animate-fade-in">
+              <p className="text-[10px] text-muted font-medium">Tổng cộng</p>
+              <p className="text-xs font-bold text-primary">{fmtMoney(cartTotalAmount)}</p>
             </div>
           )}
         </>
       )}
 
-      {/* Cart Drawer — mobile/tablet only */}
+      {/* Cart Drawer — mobile/tablet */}
       {showCartDrawer && (
-        <div className="lg:hidden fixed inset-0 z-50 flex flex-col bg-card animate-slide-up">
-          {/* Drawer Header */}
-          <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 border-b border-outline bg-card">
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col animate-slide-up" style={{ backgroundColor: "var(--color-surface-lowest)" }}>
+          <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 border-b" style={{ borderColor: "var(--color-border)" }}>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowCartDrawer(false)}
-                className="w-9 h-9 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface hover:bg-outline/30 transition-all"
+                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+                style={{ backgroundColor: "var(--color-surface-container-high)" }}
               >
-                <span className="material-symbols-outlined">arrow_back</span>
+                <span className="material-symbols-outlined text-on-surface">arrow_back</span>
               </button>
-              <h2 className="font-black text-on-surface uppercase text-sm">🛒 Giỏ hàng</h2>
+              <h2 className="font-bold text-on-surface text-sm">🛒 Giỏ hàng</h2>
             </div>
             {cartItemCount > 0 && (
-              <span className="text-[10px] bg-primary/10 text-primary font-semibold px-2.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)", color: "var(--color-primary)" }}>
                 {cartItemCount} món
               </span>
             )}
           </div>
 
-          {/* Drawer Body */}
           <div className="flex-1 overflow-y-auto px-4 py-3">
             <BanHangCart
               table={bh.table}
@@ -1088,14 +1359,15 @@ export default function BanHang() {
               onQty={bh.changeQty}
               onPrintMon={() => doPrint("mon")}
               onPrintBill={() => doPrint("bill")}
-              onPay={handlePay}
-              onCombinedPay={() => { setHinhThucThanhToan("tien_mat"); setShowPaymentModal(true); }}
+              onPay={() => { setHinhThucThanhToan("tien_mat"); setShowPaymentModal(true); }}
+              onCancelAndQty={handleCancelAndQty}
+              onUpdateNote={bh.updateNote}
             />
           </div>
         </div>
       )}
 
-      {/* Payment Modal for Mang về / Giao hàng */}
+      {/* Payment Modal */}
       {showPaymentModal && (
         <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
           <div
@@ -1103,50 +1375,31 @@ export default function BanHang() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-black text-on-surface uppercase text-sm flex items-center gap-2">
-                <span className="text-lg">💳</span> Xác nhận thanh toán
+              <h3 className="font-bold text-on-surface flex items-center gap-2">
+                <span>💳</span> Xác nhận thanh toán
               </h3>
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(false)}
-                className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:bg-outline/30 font-bold text-sm"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all"
+                style={{ backgroundColor: "var(--color-surface-container-high)", color: "var(--color-on-surface-variant)" }}
               >
                 ✕
               </button>
             </div>
 
-            {/* Bill preview */}
-            <div className="mb-4 p-3 rounded-xl bg-surface-container-high border border-outline text-xs font-mono">
-              <div className="text-center font-bold text-on-surface mb-2 text-sm">
-                Nắng PR — {bh.loaiDon === "mang_ve" ? "🥡 Mang về" : "🚚 Giao hàng"}
-              </div>
-              <div className="space-y-1">
-                {bh.order?.items?.map((i) => (
-                  <div key={i.ma_mon} className="flex justify-between text-on-surface">
-                    <span className="truncate mr-2">{i.ten_mon}</span>
-                    <span className="font-bold whitespace-nowrap">x{i.so_luong} · {fmtMoney(i.so_luong * i.don_gia)}</span>
-                  </div>
-                ))}
-              </div>
-              <hr className="my-2 border-outline" />
-              <div className="flex justify-between text-sm font-bold text-on-surface">
-                <span>Tổng cộng:</span>
-                <span>{fmtMoney(Number(bh.order?.tong_tien || 0) + Number(bh.phiGiaoHang || 0))}</span>
-              </div>
-            </div>
-
-            {/* Hình thức thanh toán */}
             <div className="mb-5">
-              <p className="text-[11px] font-bold text-on-surface-variant uppercase mb-2">Hình thức thanh toán</p>
+              <p className="text-[11px] font-bold text-muted uppercase mb-2">Hình thức thanh toán</p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setHinhThucThanhToan("tien_mat")}
                   className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold text-sm transition-all ${
                     hinhThucThanhToan === "tien_mat"
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                      : "border-outline bg-card text-on-surface-variant hover:border-outline/60"
+                      ? "text-on-surface"
+                      : "text-on-surface-variant hover:border-outline/60"
                   }`}
+                  style={hinhThucThanhToan === "tien_mat" ? { borderColor: "var(--color-primary)", backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" } : { borderColor: "var(--color-border)" }}
                 >
                   <span>💵</span> Tiền mặt
                 </button>
@@ -1155,29 +1408,33 @@ export default function BanHang() {
                   onClick={() => setHinhThucThanhToan("chuyen_khoan")}
                   className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold text-sm transition-all ${
                     hinhThucThanhToan === "chuyen_khoan"
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                      : "border-outline bg-card text-on-surface-variant hover:border-outline/60"
+                      ? "text-on-surface"
+                      : "text-on-surface-variant hover:border-outline/60"
                   }`}
+                  style={hinhThucThanhToan === "chuyen_khoan" ? { borderColor: "var(--color-primary)", backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" } : { borderColor: "var(--color-border)" }}
                 >
                   <span>💳</span> Chuyển khoản
                 </button>
               </div>
             </div>
 
-            {/* Actions */}
             <button
               type="button"
               disabled={bh.busy}
-              onClick={() => handleCombinedPay(hinhThucThanhToan)}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black uppercase text-sm disabled:opacity-40 hover:from-emerald-700 hover:to-emerald-600 transition-all shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2"
+              onClick={() => handleModalPay(hinhThucThanhToan)}
+              className="btn-primary w-full !py-3.5 !text-sm uppercase flex items-center justify-center gap-2"
             >
-              <span className="text-lg">🧾</span>
-              <span>In bill &amp; Thanh toán</span>
+              {bh.loaiDon === "tai_cho" ? (
+                <><span>✅</span> Xác nhận thanh toán</>
+              ) : (
+                <><span>🧾</span> In bill & Thanh toán</>
+              )}
             </button>
             <button
               type="button"
               onClick={() => setShowPaymentModal(false)}
-              className="w-full mt-2 py-2.5 rounded-xl border border-outline text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all"
+              className="w-full mt-2 py-2.5 rounded-xl border text-xs font-bold transition-all"
+              style={{ borderColor: "var(--color-border)", color: "var(--color-on-surface-variant)" }}
             >
               Huỷ
             </button>
@@ -1185,6 +1442,7 @@ export default function BanHang() {
         </div>
       )}
 
+      {/* Move Ban Modal */}
       {showMoveModal && (
         <div className="modal-overlay" onClick={() => setShowMoveModal(false)}>
           <div
@@ -1192,20 +1450,21 @@ export default function BanHang() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-black text-on-surface uppercase text-sm">⇄ Chọn bàn muốn chuyển</h3>
+              <h3 className="font-bold text-on-surface">⇄ Chọn bàn muốn chuyển</h3>
               <button
                 type="button"
                 onClick={() => setShowMoveModal(false)}
-                className="w-7 h-7 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:bg-outline/30 font-bold text-sm"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all"
+                style={{ backgroundColor: "var(--color-surface-container-high)", color: "var(--color-on-surface-variant)" }}
               >
                 ✕
               </button>
             </div>
-            <p className="text-xs text-on-surface-variant mb-4">
+            <p className="text-xs text-muted mb-4">
               Chuyển đơn <strong>#{bh.order?.ma_don_hang}</strong> từ <strong>{bh.table?.ten_ban}</strong> sang:
             </p>
             {moveBanErr && (
-              <div className="mb-3 p-2 rounded-lg bg-red-50 border border-red-200 text-[11px] font-bold text-red-600 text-center">
+              <div className="mb-3 p-2 rounded-lg text-[11px] font-bold text-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-error) 10%, transparent)", color: "var(--color-error)", border: "1px solid color-mix(in srgb, var(--color-error) 20%, transparent)" }}>
                 {moveBanErr}
               </div>
             )}
@@ -1222,12 +1481,16 @@ export default function BanHang() {
                       onClick={() => handleMoveBan(b)}
                       className={`rounded-xl border-2 p-3 text-center transition-all ${
                         busy
-                          ? "border-outline bg-surface-container-high opacity-60 cursor-not-allowed"
-                          : "border-outline bg-card hover:border-primary hover:shadow-md hover:-translate-y-0.5"
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:shadow-md hover:-translate-y-0.5"
                       }`}
+                      style={{
+                        borderColor: busy ? "var(--color-border)" : "var(--color-border)",
+                        backgroundColor: busy ? "var(--color-surface-container-high)" : "var(--color-surface-lowest)"
+                      }}
                     >
-                      <p className="font-bold text-xs uppercase">{b.ten_ban}</p>
-                      <p className="text-[9px] font-semibold text-on-surface-variant mt-0.5">
+                      <p className="font-bold text-xs uppercase text-on-surface">{b.ten_ban}</p>
+                      <p className="text-[9px] font-medium text-muted mt-0.5">
                         {busy ? `${fmtMoney(b.tong_tien_hien_tai)}` : "🟢 Trống"}
                       </p>
                     </button>
@@ -1237,7 +1500,8 @@ export default function BanHang() {
             <button
               type="button"
               onClick={() => setShowMoveModal(false)}
-              className="w-full mt-4 py-2 rounded-xl border border-outline text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all"
+              className="w-full mt-4 py-2 rounded-xl border text-xs font-bold transition-all"
+              style={{ borderColor: "var(--color-border)", color: "var(--color-on-surface-variant)" }}
             >
               Huỷ
             </button>

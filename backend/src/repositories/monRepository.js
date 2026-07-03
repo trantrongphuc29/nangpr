@@ -42,7 +42,7 @@ const MonRepository = {
 
         IF(
           COUNT(ct.ma_nguyen_lieu) > 0, 
-          IFNULL(FLOOR(MIN(nl.ml_thuc_te_ton / ct.dinh_luong)), 0), 
+          IFNULL(FLOOR(MIN(nl.ton_kho / ct.dinh_luong)), 0), 
           0
         ) AS so_luong_co_the_lam,
 
@@ -220,7 +220,7 @@ const MonRepository = {
 
         await conn.execute(
           `UPDATE nguyenlieu 
-           SET ml_thuc_te_ton = ml_thuc_te_ton - ? 
+           SET ton_kho = ton_kho - ? 
            WHERE ma_nguyen_lieu = ?`,
           [totalDeduct, item.ma_nguyen_lieu]
         );
@@ -242,7 +242,7 @@ const MonRepository = {
       `SELECT 
           ct.ma_nguyen_lieu, 
           ct.dinh_luong, 
-          nl.ml_thuc_te_ton, 
+          nl.ton_kho, 
           nl.ten_nguyen_lieu
        FROM congthuc ct
        LEFT JOIN nguyenlieu nl ON ct.ma_nguyen_lieu = nl.ma_nguyen_lieu
@@ -253,7 +253,7 @@ const MonRepository = {
     if (formulaItems.length === 0) return;
 
     for (const item of formulaItems) {
-      const canBo = Number(item.ml_thuc_te_ton || 0);
+      const canBo = Number(item.ton_kho || 0);
       const need = Number(item.dinh_luong) * Number(so_luong);
 
       if (canBo < need) {

@@ -53,7 +53,7 @@ async function recalculateBangCong({ ky_luong_id, thang, nam }) {
       END AS so_gio
     FROM phancong pc
     WHERE pc.ngay >= ? AND pc.ngay <= ?
-      AND pc.ngay < CURDATE()
+      AND pc.ngay + INTERVAL 7 HOUR < CURDATE() + INTERVAL 7 HOUR
   `;
 
   await db.execute(insertDetailsSql, [ky_luong_id, firstDay, lastDay]);

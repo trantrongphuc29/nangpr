@@ -19,7 +19,7 @@ export default function Login() {
     try {
       const res = await login({ username, password });
       localStorage.setItem("token", res.token);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       const errorMsg = err.response?.data?.message || "Đăng nhập thất bại. Vui lòng thử lại!";
       setMsg(errorMsg);

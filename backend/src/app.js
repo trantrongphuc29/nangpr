@@ -7,6 +7,7 @@ const nguyenlieuRoutes = require("./routes/nguyenlieuRoutes");
 const monRoutes = require('./routes/monRoutes');
 const payrollRoutes = require("./routes/payrollRoutes");
 const donHangRoutes = require("./routes/donHangRoutes");
+const congNoRoutes = require("./routes/congNoRoutes");
 const path = require("path");
 const app = express();
 app.use(cors({
@@ -32,6 +33,7 @@ app.use("/api/nguyenlieu", nguyenlieuRoutes);
 app.use('/api/mon', monRoutes);
 app.use("/api/payroll", payrollRoutes);
 app.use("/api/pos", donHangRoutes);
+app.use("/api/congno", congNoRoutes);
 app.get("/", (req, res) => {
     res.json({ message: "Nắng PR Server OK ✅" });
 });

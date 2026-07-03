@@ -54,15 +54,6 @@ const DonHangController = {
     }
   },
 
-  removeItem: async (req, res) => {
-    try {
-      const data = await DonHangService.removeItem(parseInt(req.params.id, 10), req.params.ma_mon);
-      res.json(data);
-    } catch (e) {
-      res.status(400).json({ message: e.message || "Lỗi xóa món" });
-    }
-  },
-
   cancel: async (req, res) => {
     try {
       const data = await DonHangService.cancel(parseInt(req.params.id, 10));
@@ -110,6 +101,60 @@ const DonHangController = {
     }
   },
 
+  /** Lấy lịch sử huỷ món của một đơn */
+  cancelHistory: async (req, res) => {
+    try {
+      const data = await DonHangService.getCancelHistory(parseInt(req.params.id, 10));
+      res.json(data);
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  },
+
+  /** Lấy danh sách đơn đã hoàn thành */
+  completedOrders: async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit, 10) || 50;
+      const offset = parseInt(req.query.offset, 10) || 0;
+      const data = await DonHangService.getCompletedOrders(limit, offset);
+      res.json(data);
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  },
+
+  /** Lấy báo cáo doanh thu với bộ lọc + phân trang */
+  revenueReport: async (req, res) => {
+    try {
+      const { period, date, from_date, to_date, loai_don, hinh_thuc_thanh_toan, limit, offset } = req.query;
+      const data = await DonHangService.getRevenueReport({
+        period,
+        date,
+        from_date,
+        to_date,
+        loai_don,
+        hinh_thuc_thanh_toan,
+        limit: parseInt(limit, 10) || 20,
+        offset: parseInt(offset, 10) || 0,
+      });
+      res.json(data);
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  },
+
+  /** Lấy tất cả lịch sử huỷ */
+  allCancelHistory: async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit, 10) || 50;
+      const offset = parseInt(req.query.offset, 10) || 0;
+      const data = await DonHangService.getAllCancelHistory(limit, offset);
+      res.json(data);
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  },
+
   updatePhiGiaoHang: async (req, res) => {
     try {
       const data = await DonHangService.updatePhiGiaoHang(
@@ -119,6 +164,19 @@ const DonHangController = {
       res.json({ message: "Đã cập nhật phí giao hàng", data });
     } catch (e) {
       res.status(e.status || 400).json({ message: e.message || "Lỗi cập nhật phí giao hàng" });
+    }
+  },
+
+  updateItemNote: async (req, res) => {
+    try {
+      const data = await DonHangService.updateItemNote(
+        parseInt(req.params.id, 10),
+        req.params.ma_mon,
+        req.body.ghi_chu_mon
+      );
+      res.json(data);
+    } catch (e) {
+      res.status(400).json({ message: e.message || "Lỗi cập nhật ghi chú" });
     }
   },
 

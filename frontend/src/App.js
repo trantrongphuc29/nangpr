@@ -11,6 +11,9 @@ import BangCong from "./pages/BangCong";
 import BanHang from "./pages/BanHang";
 import BangLuong from "./pages/BangLuong";
 import CauHinhLuongNhanVien from "./pages/CauHinhLuongNhanVien";
+import DoanhThu from "./pages/DoanhThu";
+import CongNo from "./pages/CongNo";
+
 import { ThemeProvider } from "./context/ThemeContext"; 
 
 function App() {
@@ -18,25 +21,29 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <Routes>
+          {/* Trang mặc định: Form đăng nhập */}
+          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
+
+          {/* Protected routes - giữ nguyên đường dẫn (sidebar không bị ảnh hưởng) */}
           <Route
-            path="/"
             element={
               <ProtectedRoute>
                 <Layout />
               </ProtectedRoute>
             }
           >
-            <Route index element={<Dashboard />} />
-            <Route path="ban" element={<Ban />} />
-            <Route path="nhanvien" element={<NhanVien />} />
-            <Route path="nguyenlieu" element={<NguyenLieu />} />
-            <Route path="bangcong" element={<BangCong />} />
-            <Route path="bangluong" element={<BangLuong />} />
-            <Route path="luongnhanvien" element={<CauHinhLuongNhanVien />} />
-            {/* ĐÃ FIX: Chuyển /menu thành menu để chạy ăn khớp 100% với hệ thống định tuyến con của Layout */}
-            <Route path="menu" element={<MonCongThuc />} />
-            <Route path="pos" element={<BanHang />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/ban" element={<Ban />} />
+            <Route path="/nhanvien" element={<NhanVien />} />
+            <Route path="/nguyenlieu" element={<NguyenLieu />} />
+            <Route path="/bangcong" element={<BangCong />} />
+            <Route path="/bangluong" element={<BangLuong />} />
+            <Route path="/luongnhanvien" element={<CauHinhLuongNhanVien />} />
+            <Route path="/menu" element={<MonCongThuc />} />
+            <Route path="/pos" element={<BanHang />} />
+            <Route path="/doanhthu" element={<DoanhThu />} />
+            <Route path="/congno" element={<CongNo />} />
           </Route>
         </Routes>
       </BrowserRouter>

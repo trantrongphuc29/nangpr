@@ -13,11 +13,17 @@ router.use(requireAdmin);
 router.get("/ban", DonHangController.banList);
 router.get("/bar/queue", DonHangController.barQueue);
 router.post("/open", DonHangController.openOrder);
+// ⚠️ Các route tĩnh PHẢI đặt trước route /:id — nếu không Express sẽ hiểu "completed-orders"
+//    hoặc "cancel-history" là tham số :id và chạy sai controller!
+router.get("/revenue", DonHangController.revenueReport);
+router.get("/completed-orders", DonHangController.completedOrders);
+router.get("/cancel-history", DonHangController.allCancelHistory);
+router.get("/:id/cancel-history", DonHangController.cancelHistory);
 router.get("/:id", DonHangController.getOrder);
 router.post("/:id/gui-bar", DonHangController.sendToBar);
 router.post("/:id/items", DonHangController.addItem);
 router.put("/:id/items/:ma_mon", DonHangController.updateItem);
-router.delete("/:id/items/:ma_mon", DonHangController.removeItem);
+router.put("/:id/items/:ma_mon/note", DonHangController.updateItemNote);
 router.post("/:id/cancel", DonHangController.cancel);
 router.post("/:id/checkout", DonHangController.checkout);
 router.post("/:id/move-ban", DonHangController.moveBan);

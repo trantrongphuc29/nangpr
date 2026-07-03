@@ -15,18 +15,25 @@ export default function PosMenu({ menu, busy, onAdd }) {
   const list = useMemo(() => {
     let items = [...menu];
     items = items.filter((m) => Number(m.so_luong_nguyen_lieu) > 0);
+    // Sắp xếp theo tên A-Z
+    items.sort((a, b) => a.ten_mon.localeCompare(b.ten_mon, 'vi'));
     if (cat !== "Tất cả") items = items.filter((m) => m.ten_danh_muc === cat);
     if (search.trim()) {
       const q = removeAccent(search.toLowerCase());
-      items = items.filter((m) => removeAccent(m.ten_mon.toLowerCase()).includes(q));
+      items = items.filter((m) => 
+        removeAccent(m.ten_mon.toLowerCase()).includes(q) ||
+        String(m.ma_mon).includes(q) ||
+        String(m.gia_ban || '').includes(q) ||
+        removeAccent((m.ten_danh_muc || '').toLowerCase()).includes(q)
+      );
     }
     return items;
   }, [menu, cat, search]);
 
   return (
-    <div className="flex flex-col h-full min-h-[400px]">
+    <div className="flex flex-col h-full min-h-0">
       {/* Search Bar */}
-      <div className="relative w-full mb-3 group">
+      <div className="relative w-full mb-3 group shrink-0">
         <input
           className="peer w-full bg-surface-container-low/70 border border-outline/20 rounded-2xl py-3 pl-4 pr-10 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-muted/60"
           placeholder="Tìm kiếm..."
@@ -40,7 +47,7 @@ export default function PosMenu({ menu, busy, onAdd }) {
       </div>
 
       {/* Category Pills */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-1">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-1 shrink-0">
         {categories.map((c) => (
           <button
             key={c}
@@ -58,7 +65,7 @@ export default function PosMenu({ menu, busy, onAdd }) {
       </div>
 
       {/* Menu Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto flex-1 pb-4 custom-scrollbar pr-1">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 overflow-y-auto flex-1 pb-4 custom-scrollbar pr-1">
         {list.map((mon) => {
           const img = dishImage(mon.hinh_anh);
           const locked = mon.het_hang;
@@ -76,10 +83,10 @@ export default function PosMenu({ menu, busy, onAdd }) {
               disabled={busy || locked}
               onClick={() => onAdd(mon)}
               title={locked ? "Hết kho — tạm khóa" : mon.ten_mon}
-              className="group bg-surface-container-lowest rounded-2xl border border-outline/15 hover:border-primary/30 hover:shadow-xl transition-all duration-300 p-3.5 text-left cursor-pointer active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+              className="group bg-surface-container-lowest rounded-2xl border border-outline/15 hover:border-primary/30 hover:shadow-xl transition-all duration-300 p-2.5 text-left cursor-pointer active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {/* Image */}
-              <div className="aspect-square overflow-hidden rounded-xl mb-3 bg-surface-container shadow-inner">
+              <div className="aspect-square overflow-hidden rounded-xl mb-2 bg-surface-container shadow-inner">
                 {img ? (
                   <div className="w-full h-full relative">
                     <img
@@ -113,18 +120,18 @@ export default function PosMenu({ menu, busy, onAdd }) {
               </div>
 
               {/* Info */}
-              <div className="space-y-1">
-                <h4 className="font-body font-bold text-on-surface text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
+              <div className="space-y-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                <h4 className="font-bold text-on-surface text-lg leading-tight line-clamp-2 min-h-[2.5rem]">
                   {mon.ten_mon}
                 </h4>
-                <p className="font-price-display text-xl text-primary font-bold tracking-tight">
+                <p className="text-2xl text-primary font-bold tracking-tight">
                   {fmtMoney(mon.gia_ban)}
                 </p>
                 <p
-                  className={`text-[10px] font-medium mt-0.5 ${
+                  className={`text-xs font-bold mt-1 ${
                     Number(mon.so_luong_co_the_lam) <= 5
                       ? "text-error"
-                      : "text-muted"
+                      : "text-on-surface-variant"
                   }`}
                 >
                   {stockText}

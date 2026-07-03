@@ -4,16 +4,17 @@ export default function Sidebar({ open, setOpen }) {
   const navigate = useNavigate();
 
  const menu = [
-    { name: "Dashboard", path: "/", icon: "dashboard" },
+    { name: "Dashboard", path: "/dashboard", icon: "dashboard" },
     { name: "Bán hàng", path: "/pos", icon: "point_of_sale" },
-    { name: "Nhân viên", path: "/nhanvien", icon: "badge" },
+    { name: "Doanh thu", path: "/doanhthu", icon: "payments" },
+    { name: "Công nợ", path: "/congno", icon: "account_balance" },
     { name: "Món & Công thức", path: "/menu", icon: "restaurant_menu" }, //  Đã gộp chung chuẩn chỉnh
     { name: "Nguyên liệu", path: "/nguyenlieu", icon: "inventory_2" },
-    { name: "Quản lý Bàn", path: "/ban", icon: "table_restaurant" },
-    { name: "Doanh thu", path: "/doanhthu", icon: "payments" },
+    { name: "Nhân viên", path: "/nhanvien", icon: "badge" },
     { name: "Bảng công", path: "/bangcong", icon: "schedule" },
     { name: "Bảng lương", path: "/bangluong", icon: "payments" },
     { name: "Cấu hình lương", path: "/luongnhanvien", icon: "tune" },
+    { name: "Quản lý bàn", path: "/ban", icon: "table_restaurant" },
   ];
 
   const handleLogout = async () => {

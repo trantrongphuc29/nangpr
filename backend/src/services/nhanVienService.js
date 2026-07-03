@@ -35,7 +35,8 @@ const createAssignment = async (payload) => {
   const status = normalizeTrangThai(staff?.trang_thai);
   const ngayStr = String(ngay).substring(0, 10);
   const d = new Date();
-  const todayStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().substring(0, 10);
+  // Lấy ngày Việt Nam (UTC+7) bất kể server timezone
+  const todayStr = new Date(d.getTime() + 7 * 3600000).toISOString().substring(0, 10);
   if (status !== "dang_lam" && ngayStr >= todayStr) {
     throw {
       status: 400,

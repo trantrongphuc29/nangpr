@@ -108,6 +108,60 @@ export function exportBangLuongExcel({ rows, totals, thang, nam, kyLabel }) {
   XLSX.writeFile(wb, `bang_luong_${nam}-${pad2(thang)}.xlsx`);
 }
 
+export function exportPhieuNhapExcel({ rows, tuNgay, denNgay }) {
+  if (!rows?.length) {
+    throw new Error("Không có dữ liệu để xuất");
+  }
+
+  const HEADERS = [
+    "Mã phiếu",
+    "Ngày nhập",
+    "Nhà cung cấp",
+    "Tổng tiền",
+    "Đã thanh toán",
+    "Còn nợ",
+    "Trạng thái",
+  ];
+
+  function rowToCells(r) {
+    const conNo = Number(r.con_no || 0);
+    const isPaid = conNo <= 0;
+    return [
+      String(r.ma_phieu || ""),
+      r.ngay_nhap ? new Date(r.ngay_nhap).toLocaleDateString("vi-VN") : "",
+      r.nha_cung_cap || "",
+      Math.round(Number(r.tong_tien) || 0),
+      Math.round(Number(r.so_tien_da_tra) || 0),
+      Math.round(conNo),
+      isPaid ? "Đã thanh toán" : "Chưa thanh toán",
+    ];
+  }
+
+  const sheetData = [
+    ["DANH SÁCH PHIẾU NHẬP"],
+    tuNgay && denNgay ? [`Từ ${tuNgay} đến ${denNgay}`] : [],
+    [`Số phiếu: ${rows.length}`],
+    [],
+    HEADERS,
+    ...rows.map(rowToCells),
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws["!cols"] = [
+    { wch: 12 },
+    { wch: 16 },
+    { wch: 28 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 18 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Phiếu nhập");
+  XLSX.writeFile(wb, `danh_sach_phieu_nhap_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
 export async function exportBangLuongPDF({ rows, totals, thang, nam, kyLabel }) {
   if (!rows?.length) {
     throw new Error("Không có dữ liệu để xuất");

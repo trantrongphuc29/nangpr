@@ -108,8 +108,8 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[rgba(250,250,245,0.7)] backdrop-blur-md">
-      <div className="bg-surface-container-lowest w-full max-w-2xl rounded-2xl shadow-[0_12px_32px_-4px_rgba(85,55,34,0.12)] overflow-hidden animate-in fade-in zoom-in duration-300">
+    <div className="modal-overlay">
+      <div className="modal-panel max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
         <div className="px-8 pt-8 pb-4 flex justify-between items-start">
           <div>
             <span className="text-secondary font-bold text-xs uppercase tracking-widest block mb-2">
@@ -140,7 +140,7 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
               </label>
               <input
                 type="text"
-                className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-outline-variant/60"
+                className="w-full input-field"
                 placeholder="VD: Latte Hạnh Nhân"
                 value={form.ten_mon}
                 onChange={(e) => setForm({ ...form, ten_mon: e.target.value })}
@@ -155,7 +155,7 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
 
               <div className="relative">
                 <select
-                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/40 appearance-none transition-all"
+                  className="w-full input-field appearance-none"
                   value={form.ma_danh_muc}
                   onChange={(e) =>
                     setForm({ ...form, ma_danh_muc: e.target.value })
@@ -184,7 +184,7 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
               <div className="relative">
                 <input
                   type="number"
-                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 pr-16 focus:ring-2 focus:ring-primary/40 transition-all"
+                  className="w-full input-field pr-16"
                   placeholder="0"
                   value={form.gia_ban}
                   onChange={(e) =>
@@ -203,7 +203,7 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
                 Hình ảnh
               </label>
 
-              <div className="group relative h-[160px] border-2 border-dashed border-outline-variant/30 rounded-xl flex items-center justify-center cursor-pointer hover:bg-surface-container-low transition-all overflow-hidden">
+              <div className="group relative h-[160px] border-2 border-dashed border-primary/20 rounded-xl flex items-center justify-center cursor-pointer hover:bg-primary/5 transition-all overflow-hidden">
                 {preview ? (
                   <img
                   src={preview}
@@ -235,7 +235,7 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
 
               <div className="relative">
                 <select
-                  className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/40 appearance-none transition-all"
+                  className="w-full input-field appearance-none"
                   value={form.trang_thai_ban}
                   onChange={(e) =>
                     setForm({
@@ -260,7 +260,7 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
               </label>
 
               <textarea
-                className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-outline-variant/60 resize-none"
+                className="w-full input-field resize-none"
                 placeholder="Nhập vài dòng giới thiệu về hương vị của món..."
                 rows="3"
                 value={form.mo_ta}
@@ -274,7 +274,7 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
               type="button"
               onClick={onClose}
               disabled={busy}
-              className="w-full md:w-auto px-6 py-3 text-on-surface-variant font-semibold hover:bg-surface-container-high rounded-lg transition-all active:scale-95"
+              className="w-full md:w-auto px-6 py-3 text-on-surface-variant font-semibold hover:bg-primary/5 rounded-lg transition-all active:scale-95"
             >
               Hủy
             </button>
@@ -282,26 +282,18 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
             <button
               type="submit"
               disabled={busy}
-              className="w-full md:w-auto bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-lg font-bold shadow-lg shadow-primary/20 transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="btn-primary !px-6 !py-2.5 !text-sm"
             >
-              <span>
-                {busy
-                  ? "Đang lưu..."
-                  : isEdit
-                  ? "Lưu thay đổi"
-                  : "Lưu & Tiếp tục tạo Công thức"}
-              </span>
-
-              {!busy && (
-                <span className="material-symbols-outlined text-lg">
-                  arrow_forward
-                </span>
-              )}
+              {busy
+                ? "Đang lưu..."
+                : isEdit
+                ? "Lưu thay đổi"
+                : "Lưu & Tiếp tục tạo Công thức"}
             </button>
           </div>
         </form>
 
-        <div className="h-1 w-full bg-gradient-to-r from-secondary-container via-primary-container to-secondary" />
+        <div className="h-1 w-full bg-gradient-to-r from-primary/40 via-primary to-secondary" />
       </div>
     </div>
   );
@@ -386,29 +378,27 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="modal-overlay" onClick={onClose}>
       <div
-        className="absolute inset-0 bg-[rgba(250,250,245,0.7)] backdrop-blur-md"
-        onClick={onClose}
-      />
-
-      <div className="relative w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="px-6 py-5 flex items-center justify-between border-b border-surface-container">
+        className="modal-panel max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-5 flex items-center justify-between border-b border-outline">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-primary-fixed text-on-primary-fixed flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
               <span className="material-symbols-outlined text-sm">assignment</span>
             </div>
 
             <h3 className="font-display text-xl font-extrabold text-primary truncate">
               Gán Công thức:{" "}
-              <span className="text-primary-container">{mon.ten_mon}</span>
+              <span className="text-secondary">{mon.ten_mon}</span>
             </h3>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-low text-on-surface-variant"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-primary/10 text-on-surface-variant"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -426,8 +416,8 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
               Chọn Nguyên liệu từ Kho
             </label>
 
-            <div className="flex items-center bg-surface-container-low rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-primary/20">
-              <span className="material-symbols-outlined text-outline-variant mr-3">
+            <div className="flex items-center bg-primary/5 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-primary/20">
+              <span className="material-symbols-outlined text-muted mr-3">
                 inventory
               </span>
 
@@ -447,25 +437,25 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
                 ))}
               </select>
 
-              <span className="material-symbols-outlined text-outline-variant">
+              <span className="material-symbols-outlined text-muted">
                 arrow_drop_down
               </span>
             </div>
           </section>
 
-          <section className="mb-10 p-6 bg-surface-container-low rounded-xl">
+          <section className="mb-10 p-6 bg-primary/5 rounded-xl border border-primary/10">
             <h4 className="text-xs font-bold text-primary uppercase tracking-widest mb-4">
               Định lượng thành phần
             </h4>
 
             <div className="flex flex-wrap md:flex-nowrap gap-4">
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-outline uppercase mb-1 px-1">
+                <label className="block text-[10px] font-bold text-muted uppercase mb-1 px-1">
                   Số lượng
                 </label>
 
                 <input
-                  className="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 font-semibold text-primary"
+                  className="w-full input-field font-semibold text-primary"
                   placeholder="25"
                   type="number"
                   min="0.1"
@@ -476,12 +466,12 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
               </div>
 
               <div className="w-32">
-                <label className="block text-[10px] font-bold text-outline uppercase mb-1 px-1">
+                <label className="block text-[10px] font-bold text-muted uppercase mb-1 px-1">
                   Đơn vị
                 </label>
 
                 <select
-                  className="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 font-medium appearance-none"
+                  className="w-full input-field font-medium appearance-none"
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
                 >
@@ -512,30 +502,30 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
                 Thành phần đã thêm
               </h4>
 
-              <span className="text-xs font-medium text-on-surface-variant">
+              <span className="text-xs font-medium text-muted">
                 Tổng cộng: {formulaItems.length} nguyên liệu
               </span>
             </div>
 
             <div className="space-y-1">
               {formulaItems.length === 0 ? (
-                <div className="p-8 text-center bg-surface-container-low rounded-lg text-outline-variant text-sm font-bold">
+                <div className="p-8 text-center bg-primary/5 rounded-lg border border-dashed border-primary/20 text-muted text-sm font-bold">
                   Chưa có nguyên liệu nào
                 </div>
               ) : (
                 formulaItems.map((item) => (
                   <div
                     key={item.ma_nguyen_lieu}
-                    className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg group hover:bg-surface-container transition-colors"
+                    className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg group hover:bg-primary/5 transition-colors border border-outline/10"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-2 h-2 rounded-full bg-secondary-container" />
+                      <div className="w-2 h-2 rounded-full bg-primary/30" />
 
                       <div>
                         <p className="font-bold text-primary text-sm">
                           {item.ten_nguyen_lieu}
                         </p>
-                        <p className="text-[10px] text-on-surface-variant font-medium">
+                        <p className="text-[10px] text-muted font-medium">
                           Nguyên liệu trong kho
                         </p>
                       </div>
@@ -550,7 +540,7 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
                         type="button"
                         onClick={() => handleRemove(item.ma_nguyen_lieu)}
                         disabled={busy}
-                        className="text-outline-variant hover:text-error transition-colors"
+                        className="text-muted hover:text-error transition-colors"
                       >
                         <span className="material-symbols-outlined">
                           delete_outline
@@ -564,12 +554,12 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
           </section>
         </div>
 
-        <div className="px-8 py-6 bg-surface-container-low/50 flex justify-end items-center gap-3">
+        <div className="px-8 py-6 bg-primary/5 flex justify-end items-center gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors"
+            className="px-6 py-2.5 rounded-lg font-bold text-on-surface-variant hover:bg-primary/10 transition-colors"
           >
             Hủy
           </button>
@@ -679,10 +669,15 @@ export default function MonCongThuc() {
       result = result.filter(m => m && m.ten_danh_muc === selectedCategory);
     }
 
-    // Lọc theo ký tự tìm kiếm không dấu
+    // Lọc theo ký tự tìm kiếm không dấu (tên, mã, danh mục, giá)
     if (searchTerm.trim() !== '') {
       const searchClean = removeVietnameseTones(searchTerm);
-      result = result.filter(m => m && removeVietnameseTones(m.ten_mon || '').includes(searchClean));
+      result = result.filter(m => m && (
+        removeVietnameseTones(m.ten_mon || '').includes(searchClean) ||
+        String(m.ma_mon).includes(searchClean) ||
+        removeVietnameseTones(m.ten_danh_muc || '').includes(searchClean) ||
+        String(m.gia_ban || '').includes(searchClean)
+      ));
     }
 
     return result;
@@ -711,20 +706,20 @@ export default function MonCongThuc() {
 
   if (loading) {
     return (
-      <div className="p-20 text-center font-bold text-primary animate-pulse tracking-widest uppercase text-xs">
-        Đang đồng bộ thực đơn...
-      </div>
+      <div className="flex justify-center py-20">
+          <div className="w-12 h-12 border-4 border-primary border-dashed rounded-full animate-spin" />
+        </div>
     );
   }
 
   return (
-    <div className="p-10 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-3 text-on-surface pb-8">
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full pb-6 border-b gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold text-primary tracking-tight">Thực đơn Atelier</h2>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary tracking-tight">Quản lý món &amp; công thức</h1>
           <p className="text-on-surface-variant text-sm font-medium">Quản lý danh sách món ăn và đồ uống của Atelier Nắng PR</p>
         </div>
         <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
@@ -740,9 +735,9 @@ export default function MonCongThuc() {
               <span className="material-symbols-outlined text-xl">search</span>
             </span>
           </div>
-          <button onClick={handleOpenCreate} className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary-container text-on-primary px-6 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all">
-            <span className="material-symbols-outlined">add</span>
-            <span>Thêm món mới</span>
+          <button onClick={handleOpenCreate} className="btn-primary !py-2.5 !px-4 !text-sm">
+            <span className="material-symbols-outlined text-lg">add</span>
+            Thêm món mới
           </button>
         </div>
       </header>
@@ -834,11 +829,9 @@ export default function MonCongThuc() {
                   <button onClick={() => handleOpenFormula(mon)} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${hasFormula ? 'bg-[var(--color-input-bg)] text-primary hover:bg-primary hover:text-on-primary' : 'badge-error hover:bg-error hover:text-white border-0'}`}>
                     <span className="material-symbols-outlined text-base">menu_book</span>
                     <span>Công thức</span>
-                  </button>
-                  <button onClick={() => handleOpenEdit(mon)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-primary bg-surface-container-high border border-outline rounded-lg hover:bg-primary hover:text-on-primary transition-all">
+                  </button>                    <button onClick={() => handleOpenEdit(mon)} className="btn-icon-edit !w-8 !h-8 !p-0">
                     <span className="material-symbols-outlined text-base">edit</span>
-                  </button>
-                  <button onClick={() => handleDelete(mon.ma_mon, mon.ten_mon)} className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-error bg-error-container rounded-lg hover:bg-error hover:text-on-error transition-all">
+                  </button>                    <button onClick={() => handleDelete(mon.ma_mon, mon.ten_mon)} className="btn-icon-delete !w-8 !h-8 !p-0">
                     <span className="material-symbols-outlined text-base">delete</span>
                   </button>
                 </div>

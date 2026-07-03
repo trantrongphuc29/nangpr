@@ -148,23 +148,71 @@ const DonHangRepository = {
     }
   },
 
+  /** Cập nhật ghi chú cho một món trong đơn */
+  updateItemNote: async (ma_don_hang, ma_mon, ghi_chu_mon) => {
+    await db.execute(
+      `UPDATE chitiethoadon SET ghi_chu_mon = ? WHERE ma_don_hang = ? AND ma_mon = ?`,
+      [ghi_chu_mon || null, ma_don_hang, ma_mon]
+    );
+  },
+
+  /** Ghi log huỷ món */
+  logCancelItem: async (ma_don_hang, ma_mon, ten_mon, so_luong_huy) => {
+    await db.execute(
+      `INSERT INTO huy_mon_log (ma_don_hang, ma_mon, ten_mon, so_luong_huy, ngay_huy)
+       VALUES (?, ?, ?, ?, NOW())`,
+      [ma_don_hang, ma_mon, ten_mon, so_luong_huy]
+    );
+  },
+
   updateItemQty: async (ma_don_hang, ma_mon, so_luong) => {
     const qty = parseInt(so_luong, 10);
 
-    // Lấy so_luong_da_gui_bar hiện tại
+    // Lấy thông tin hiện tại (gồm so_luong_da_gui_bar + ten_mon)
     const [rows] = await db.execute(
-      `SELECT so_luong_da_gui_bar FROM chitiethoadon WHERE ma_don_hang = ? AND ma_mon = ?`,
+      `SELECT ct.*, m.ten_mon FROM chitiethoadon ct
+       JOIN mon m ON ct.ma_mon = m.ma_mon
+       WHERE ct.ma_don_hang = ? AND ct.ma_mon = ?`,
       [ma_don_hang, ma_mon]
     );
-    const daGui = rows.length ? Number(rows[0].so_luong_da_gui_bar) : 0;
+    if (!rows.length) throw new Error("Món không tồn tại trong đơn");
 
-    if (qty < daGui) {
-      throw new Error(
-        `Món này đã in ${daGui} cái xuống bar. Không thể giảm dưới số lượng đã in.`
+    const daGui = Number(rows[0].so_luong_da_gui_bar);
+    const currentQty = Number(rows[0].so_luong);
+    const tenMon = rows[0].ten_mon;
+
+    if (qty > currentQty) {
+      // Tăng số lượng — kiểm tra tồn kho trước
+      const delta = qty - currentQty;
+      await MonRepository.assertCanSell(ma_mon, delta);
+      await db.execute(
+        `UPDATE chitiethoadon SET so_luong = ? WHERE ma_don_hang = ? AND ma_mon = ?`,
+        [qty, ma_don_hang, ma_mon]
+      );
+      return;
+    }
+
+    if (qty === currentQty) {
+      return; // Không thay đổi
+    }
+
+    // Đây là trường hợp GIẢM số lượng
+    const soLuongHuy = currentQty - qty;
+
+    // Nếu món đã in → ghi log huỷ
+    if (daGui > 0 && soLuongHuy > 0) {
+      await DonHangRepository.logCancelItem(
+        ma_don_hang, ma_mon, tenMon, soLuongHuy
       );
     }
 
     if (qty <= 0) {
+      // Hoàn trả kho cho món đã gửi bar trước khi xoá
+      if (daGui > 0) {
+        await MonRepository.deductStockByOrder(ma_mon, -daGui);
+      }
+
+      // Xoá hẳn món khỏi đơn
       await db.execute(`DELETE FROM chitiethoadon WHERE ma_don_hang = ? AND ma_mon = ?`, [
         ma_don_hang,
         ma_mon,
@@ -182,12 +230,195 @@ const DonHangRepository = {
       }
       return;
     }
+
+    // Giảm số lượng (qty > 0)
+    // Hoàn trả kho nếu giảm số lượng đã gửi bar
+    if (daGui > qty) {
+      await MonRepository.deductStockByOrder(ma_mon, -(daGui - qty));
+    }
+
     await db.execute(
       `UPDATE chitiethoadon SET so_luong = ?,
         so_luong_da_gui_bar = LEAST(COALESCE(so_luong_da_gui_bar, 0), ?)
        WHERE ma_don_hang = ? AND ma_mon = ?`,
       [qty, qty, ma_don_hang, ma_mon]
     );
+  },
+
+  /** Lấy lịch sử huỷ món của một đơn */
+  getCancelHistory: async (ma_don_hang) => {
+    const [rows] = await db.execute(
+      `SELECT * FROM huy_mon_log WHERE ma_don_hang = ? ORDER BY ngay_huy DESC`,
+      [ma_don_hang]
+    );
+    return rows;
+  },
+
+  /** Lấy danh sách đơn đã hoàn thành (cho lịch sử bán hàng) */
+  getCompletedOrders: async (limit = 50, offset = 0) => {
+    const [rows] = await db.execute(
+      `SELECT dh.*, b.ten_ban,
+              COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien
+       FROM donhang dh
+       LEFT JOIN ban b ON dh.ma_ban = b.ma_ban
+       LEFT JOIN chitiethoadon ct ON dh.ma_don_hang = ct.ma_don_hang
+       WHERE dh.trang_thai_thanh_toan = 'Da thanh toan'
+       GROUP BY dh.ma_don_hang
+       ORDER BY dh.ngay_tao DESC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    return rows;
+  },
+
+  /** Format Date thành YYYY-MM-DD theo giờ Việt Nam (UTC+7) bất kể server timezone */
+  fmtLocalDate: (d) => {
+    const vn = new Date(d.getTime() + 7 * 3600000);
+    const y = vn.getUTCFullYear();
+    const m = String(vn.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(vn.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  },
+
+  /** Báo cáo doanh thu với bộ lọc + phân trang */
+  getRevenueReport: async ({ period, date, from_date, to_date, loai_don, hinh_thuc_thanh_toan, limit = 20, offset = 0 }) => {
+    let dateFilter;
+    const fmtLocal = DonHangRepository.fmtLocalDate;
+
+    if (from_date && to_date) {
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${from_date} 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${to_date}' + INTERVAL 1 DAY`;
+    } else {
+      const refDate = date ? new Date(date) : new Date();
+      if (period === 'day') {
+      const d = fmtLocal(refDate);
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${d} 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${d}' + INTERVAL 1 DAY`;
+    } else if (period === 'week') {
+      const dayOfWeek = refDate.getDay();
+      const monday = new Date(refDate);
+      monday.setDate(refDate.getDate() - ((dayOfWeek + 6) % 7));
+      const mondayStr = fmtLocal(monday);
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${mondayStr} 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${mondayStr}' + INTERVAL 7 DAY`;
+    } else if (period === 'month') {
+      const y = refDate.getFullYear();
+      const m = String(refDate.getMonth() + 1).padStart(2, '0');
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${y}-${m}-01 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${y}-${m}-01' + INTERVAL 1 MONTH`;
+    } else if (period === 'year') {
+      const y = refDate.getFullYear();
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${y}-01-01 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${y + 1}-01-01 00:00:00'`;
+    } else {
+      dateFilter = '1=1';
+    }
+    }
+
+    const whereParts = [`dh.trang_thai_thanh_toan = 'Da thanh toan'`, dateFilter];
+    const params = [];
+    if (loai_don) { whereParts.push('dh.loai_don = ?'); params.push(loai_don); }
+    if (hinh_thuc_thanh_toan) { whereParts.push('dh.hinh_thuc_thanh_toan = ?'); params.push(hinh_thuc_thanh_toan); }
+    const where = whereParts.join(' AND ');
+
+    // Đếm tổng số đơn (không phân trang)
+    const [countRows] = await db.execute(
+      `SELECT COUNT(*) AS cnt FROM (
+         SELECT dh.ma_don_hang FROM donhang dh WHERE ${where} GROUP BY dh.ma_don_hang
+       ) sub`,
+      params
+    );
+    const total_count = Number(countRows[0].cnt);
+
+    // Tính tổng doanh thu (không phân trang) — dùng subquery để tránh JOIN duplicate
+    const [totalRows] = await db.execute(
+      `SELECT COALESCE(SUM(sub.tong_tien), 0) AS total_revenue,
+              COALESCE(SUM(sub.phi), 0) AS total_phi_gh
+       FROM (
+         SELECT dh.ma_don_hang, dh.phi_giao_hang AS phi,
+                COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien
+         FROM donhang dh
+         LEFT JOIN chitiethoadon ct ON dh.ma_don_hang = ct.ma_don_hang
+         WHERE ${where}
+         GROUP BY dh.ma_don_hang
+       ) sub`,
+      params
+    );
+
+    if (!total_count) {
+      return {
+        orders: [],
+        summary: { total_orders: 0, total_revenue: 0, total_phi_gh: 0 },
+        pagination: { total: 0, limit, offset, page: Math.floor(offset / limit) + 1, total_pages: 0 },
+      };
+    }
+
+    // Lấy danh sách đơn có phân trang
+    const [orders] = await db.execute(
+      `SELECT dh.*, b.ten_ban,
+              COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien
+       FROM donhang dh
+       LEFT JOIN ban b ON dh.ma_ban = b.ma_ban
+       LEFT JOIN chitiethoadon ct ON dh.ma_don_hang = ct.ma_don_hang
+       WHERE ${where}
+       GROUP BY dh.ma_don_hang
+       ORDER BY dh.ngay_tao DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    // Lấy items cho các đơn ở trang hiện tại
+    const ids = orders.map(o => o.ma_don_hang);
+    const [items] = await db.execute(
+      `SELECT ct.*, m.ten_mon, dm.ten_danh_muc
+       FROM chitiethoadon ct
+       JOIN mon m ON ct.ma_mon = m.ma_mon
+       LEFT JOIN danhmucmon dm ON m.ma_danh_muc = dm.ma_danh_muc
+       WHERE ct.ma_don_hang IN (${ids.join(',')})
+       ORDER BY ct.ma_don_hang, ct.ma_mon`
+    );
+
+    // Gộp items vào orders
+    const itemMap = {};
+    items.forEach(i => {
+      if (!itemMap[i.ma_don_hang]) itemMap[i.ma_don_hang] = [];
+      itemMap[i.ma_don_hang].push(i);
+    });
+
+    const ordersWithItems = orders.map(o => ({
+      ...o,
+      items: itemMap[o.ma_don_hang] || [],
+    }));
+
+    const total_pages = Math.ceil(total_count / limit) || 1;
+    const current_page = Math.floor(offset / limit) + 1;
+
+    return {
+      orders: ordersWithItems,
+      summary: {
+        total_orders: total_count,
+        total_revenue: Number(totalRows[0].total_revenue),
+        total_phi_gh: Number(totalRows[0].total_phi_gh),
+      },
+      pagination: {
+        total: total_count,
+        limit,
+        offset,
+        page: current_page,
+        total_pages,
+        has_next: current_page < total_pages,
+        has_prev: current_page > 1,
+      },
+    };
+  },
+
+  /** Lấy tất cả lịch sử huỷ (có phân trang) */
+  getAllCancelHistory: async (limit = 50, offset = 0) => {
+    const [rows] = await db.execute(
+      `SELECT h.*, dh.ma_ban, b.ten_ban
+       FROM huy_mon_log h
+       LEFT JOIN donhang dh ON h.ma_don_hang = dh.ma_don_hang
+       LEFT JOIN ban b ON dh.ma_ban = b.ma_ban
+       ORDER BY h.ngay_huy DESC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    return rows;
   },
 
   sendToBar: async (ma_don_hang) => {
@@ -245,6 +476,16 @@ const DonHangRepository = {
   cancelOrder: async (ma_don_hang) => {
     const order = await DonHangRepository.getById(ma_don_hang);
     if (!order) throw new Error("Đơn không tồn tại");
+
+    // Hoàn trả kho cho món đã gửi bar trước khi xoá
+    const items = await DonHangRepository.getItems(ma_don_hang);
+    for (const item of items) {
+      const daGui = Number(item.so_luong_da_gui_bar || 0);
+      if (daGui > 0) {
+        await MonRepository.deductStockByOrder(item.ma_mon, -daGui);
+      }
+    }
+
     await db.execute(`DELETE FROM chitiethoadon WHERE ma_don_hang = ?`, [ma_don_hang]);
     await db.execute(
       `UPDATE donhang SET trang_thai_don = 'Da huy', trang_thai_thanh_toan = 'Da huy' WHERE ma_don_hang = ?`,
@@ -270,12 +511,14 @@ const DonHangRepository = {
     const items = await DonHangRepository.getItems(ma_don_hang);
     if (!items.length) throw new Error("Đơn trống");
 
+    // Chỉ trừ kho cho món chưa gửi bar
+    // Món đã gửi bar đã được kiểm tra + trừ kho lúc gửi
     for (const item of items) {
-      await MonRepository.assertCanSell(item.ma_mon, item.so_luong);
-    }
-
-    for (const item of items) {
-      await MonRepository.deductStockByOrder(item.ma_mon, item.so_luong);
+      const soLuongChuaGui = Number(item.so_luong) - Number(item.so_luong_da_gui_bar || 0);
+      if (soLuongChuaGui > 0) {
+        await MonRepository.assertCanSell(item.ma_mon, soLuongChuaGui);
+        await MonRepository.deductStockByOrder(item.ma_mon, soLuongChuaGui);
+      }
     }
 
     if (hinh_thuc_thanh_toan) {

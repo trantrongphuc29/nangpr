@@ -5,7 +5,7 @@
 const NguyenLieuRepository = require("../repositories/nguyenlieuRepository");
 
 function enrichNguyenLieu(row) {
-  const ton = Number(row.ml_thuc_te_ton || 0);
+  const ton = Number(row.ton_kho || 0);
   const nguong = Number(row.nguong_canh_bao || 0);
   let trang_thai_ton = "con_hang";
   if (ton <= 0) trang_thai_ton = "het_hang";

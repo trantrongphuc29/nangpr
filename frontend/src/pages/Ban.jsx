@@ -1,10 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createBan, deleteBanById, getBanList, updateBanById } from "../services/banService";
+
+const removeVietnameseTones = (str) => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .trim();
+};
 
 export default function Ban() {
   const [list, setList] = useState([]);
   const [tenBan, setTenBan] = useState("");
   const [editId, setEditId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
   const loadData = async () => {
@@ -18,6 +29,12 @@ export default function Ban() {
       setLoading(false);
     }
   };
+
+  const filteredList = useMemo(() => {
+    if (!searchTerm.trim()) return list;
+    const q = removeVietnameseTones(searchTerm);
+    return list.filter((b) => removeVietnameseTones(b.ten_ban || '').includes(q));
+  }, [list, searchTerm]);
 
   useEffect(() => {
     loadData();
@@ -76,7 +93,7 @@ export default function Ban() {
       </div>
 
       {/* FORM: Ô nhập và nút thêm */}
-      <div className="card p-4 md:p-6 mb-10 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center border-none shadow-lg">
+      <div className="card p-4 md:p-6 mb-6 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center border-none shadow-lg">
         <input
           value={tenBan}
           onChange={(e) => setTenBan(e.target.value)}
@@ -103,6 +120,22 @@ export default function Ban() {
         )}
       </div>
 
+      {/* SEARCH */}
+      <div className="mb-6">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Tìm kiếm bàn..."
+            className="peer input-field !pr-10 !py-2.5"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xl pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">
+            search
+          </span>
+        </div>
+      </div>
+
       {/* LOADING */}
       {loading ? (
         <div className="flex justify-center mt-20">
@@ -114,9 +147,14 @@ export default function Ban() {
           <p className="text-xs mt-2 font-medium uppercase opacity-60">Hãy bắt đầu thêm bàn đầu tiên của bạn</p>
         </div>
       ) : (
-        // LIST
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-          {list.map((ban) => (
+          {filteredList.length === 0 ? (
+            <div className="col-span-full text-center py-16 text-on-surface opacity-50">
+              <p className="text-lg font-bold uppercase tracking-widest">🔍 Không tìm thấy bàn</p>
+              <p className="text-xs mt-2 font-medium uppercase opacity-60">Thử thay đổi từ khóa tìm kiếm</p>
+            </div>
+          ) : (
+            filteredList.map((ban) => (
             <div
               key={ban.ma_ban}
               className="card p-6 hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 border-none relative overflow-hidden group"
@@ -150,7 +188,7 @@ export default function Ban() {
                 </button>
               </div>
             </div>
-          ))}
+          )))}
         </div>
       )}
     </div>
