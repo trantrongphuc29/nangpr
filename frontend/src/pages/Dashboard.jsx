@@ -406,13 +406,14 @@ export default function Dashboard() {
     <div className="transition-colors duration-500 space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <h1 className="text-3xl font-black text-primary uppercase tracking-tighter italic">
-            Dashboard
-          </h1>
-          <p className="text-muted mt-1 text-sm font-medium">
-            {dateStr}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
+            <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>dashboard</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Dashboard</h2>
+            <p className="text-xs text-muted">{dateStr}</p>
+          </div>
         </div>
         <button
           type="button"

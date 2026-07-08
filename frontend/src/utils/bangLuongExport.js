@@ -162,6 +162,60 @@ export function exportPhieuNhapExcel({ rows, tuNgay, denNgay }) {
   XLSX.writeFile(wb, `danh_sach_phieu_nhap_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
+export function exportDoanhThuExcel({ orders, tuNgay, denNgay }) {
+  if (!orders?.length) {
+    throw new Error("Không có dữ liệu để xuất");
+  }
+
+  const HEADERS = [
+    "Mã đơn hàng",
+    "Thời gian",
+    "Bàn / Loại",
+    "Số lượng",
+    "Tổng tiền",
+    "Hình thức thanh toán",
+  ];
+
+  const loaiDonLabel = { tai_cho: "Tại chỗ", mang_ve: "Mang về", giao_hang: "Giao hàng" };
+  const hinhThucLabel = { tien_mat: "Tiền mặt", chuyen_khoan: "Chuyển khoản" };
+
+  function rowToCells(r) {
+    const items = r.items || [];
+    const soLuong = items.reduce((s, item) => s + Number(item.so_luong || 0), 0);
+    return [
+      String(r.ma_don_hang || ""),
+      r.ngay_tao ? new Date(r.ngay_tao).toLocaleString("vi-VN") : "",
+      r.ten_ban || loaiDonLabel[r.loai_don] || "",
+      soLuong,
+      Math.round(Number(r.tong_tien) || 0),
+      hinhThucLabel[r.hinh_thuc_thanh_toan] || "Tiền mặt",
+    ];
+  }
+
+  const sheetData = [
+    ["DANH SÁCH ĐƠN HÀNG"],
+    tuNgay && denNgay ? [`Từ ${tuNgay} đến ${denNgay}`] : [],
+    [`Số đơn: ${orders.length}`],
+    [],
+    HEADERS,
+    ...orders.map(rowToCells),
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws["!cols"] = [
+    { wch: 14 },
+    { wch: 22 },
+    { wch: 16 },
+    { wch: 12 },
+    { wch: 16 },
+    { wch: 18 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Doanh thu");
+  XLSX.writeFile(wb, `danh_sach_don_hang_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
 export async function exportBangLuongPDF({ rows, totals, thang, nam, kyLabel }) {
   if (!rows?.length) {
     throw new Error("Không có dữ liệu để xuất");

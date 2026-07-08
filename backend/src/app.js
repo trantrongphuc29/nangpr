@@ -35,7 +35,7 @@ app.use("/api/payroll", payrollRoutes);
 app.use("/api/pos", donHangRoutes);
 app.use("/api/congno", congNoRoutes);
 app.get("/", (req, res) => {
-    res.json({ message: "Nắng PR Server OK ✅" });
+    res.json({ message: "Nắng PR Server OK " });
 });
 
 module.exports = app;

@@ -1,4 +1,4 @@
-/* ===== 🪑 BÁN HÀNG - BÀN - SERVICE =====
+/* =====   BÀN  =====
  * Xử lý nghiệp vụ quản lý bàn (CRUD) + danh sách POS
  * Liên kết: banController → banService → banRepository
  * ======================================= */

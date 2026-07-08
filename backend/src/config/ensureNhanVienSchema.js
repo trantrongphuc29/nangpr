@@ -39,7 +39,6 @@ async function ensureNhanVienSchema() {
       COMMENT 'Trạng thái làm việc'
     `);
 
-    console.log("✅ Đã chuyển nhanvien.trang_thai sang ENUM 3 trạng thái");
   }
 
   await db.execute(`

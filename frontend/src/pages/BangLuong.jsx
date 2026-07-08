@@ -292,11 +292,14 @@ export default function BangLuong() {
 
   return (
     <div className="space-y-5 md:space-y-6 text-on-surface pb-8">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-primary tracking-tight">Bảng lương</h1>
-        <p className="text-muted text-sm mt-1">
-          Tự động tính lương khi kỳ ở trạng thái “Chưa chốt”. Khi đã chốt/đã thanh toán sẽ không tự động thay đổi dữ liệu.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
+          <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>payments</span>
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Bảng lương</h2>
+          <p className="text-xs text-muted">Tự động tính lương khi kỳ ở trạng thái Chưa chốt</p>
+        </div>
       </div>
 
       {/* Filters */}

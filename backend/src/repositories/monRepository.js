@@ -1,4 +1,4 @@
-/* ===== 🍽️ MÓN & CÔNG THỨC - REPOSITORY =====
+/* =====  MÓN  CÔNG THỨC  =====
  * Thao tác SQL với bảng mon, congthuc, danhmucmon, nguyenlieu
  * ============================================= */
 const db = require("../config/database");

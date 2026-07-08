@@ -1,4 +1,4 @@
-/* ===== 🍽️ MÓN & CÔNG THỨC - CONTROLLER =====
+/* =====  MÓN CÔNG THỨC  =====
  * Tiếp nhận request HTTP cho module Món & Công thức
  * ============================================== */
 const MonService = require("../services/monService");
@@ -135,7 +135,7 @@ const MonController = {
       );
 
       res.json({
-        message: "✅ Đã xuất kho pha chế và trừ vật tư thành công!",
+        message: " Đã xuất kho pha chế và trừ vật tư thành công!",
       });
     } catch (error) {
       res.status(400).json({ message: error.message });
@@ -162,7 +162,7 @@ const MonController = {
       );
 
       res.json({
-        message: "✅ Cập nhật công thức thành công!",
+        message: " Cập nhật công thức thành công!",
       });
     } catch (error) {
       res.status(400).json({ message: error.message });

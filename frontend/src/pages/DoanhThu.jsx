@@ -1,10 +1,11 @@
-/* ===== 💰 DOANH THU - TRANG CHÍNH =====
+/* =====  DOANH THU - TRANG CHÍNH =====
  * Giao diện tổng hợp doanh thu bán hàng, món đã hủy
  * và tổng doanh thu sau khi trừ công nợ nhà cung cấp
  * ======================================= */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getAllCancelHistory, getRevenueReport } from "../services/donHangService";
 import { getCongNoStats } from "../services/congNoService";
+import { exportDoanhThuExcel } from "../utils/bangLuongExport";
 
 const dinhDangTien = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 const dinhDangNgay = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "—");
@@ -41,20 +42,23 @@ const CAC_KHOANG_THOI_GIAN = [
 function baseHTML(body) {
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>In đơn hàng</title>
+<head><meta charset="utf-8"><title>In don hang</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Courier New',monospace;color:#000;background:#fff;padding:24px}
+  body{font-family:'Courier New',monospace;color:#000;background:#fff;font-size:13px;line-height:1.4}
   @media print{body{background:#fff}}
-  table{width:100%;border-collapse:collapse;margin-top:12px}
-  th,td{padding:8px 6px;text-align:left;border-bottom:1px solid #ddd;font-size:13px}
-  th{font-size:10px;text-transform:uppercase;color:#666;border-bottom:2px solid #000}
-  .total{font-size:16px;font-weight:900;text-align:right;border-top:2px solid #000;padding-top:8px;margin-top:4px}
-  .header{text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #000}
-  .header h1{font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:1px}
-  .header p{font-size:11px;color:#888;margin-top:4px}
-  .info{display:flex;justify-content:space-between;font-size:12px;margin:8px 0;padding:0 2px}
-  .footer{text-align:center;margin-top:16px;font-size:10px;color:#aaa}
+  table{width:100%;border-collapse:collapse}
+  td,th{padding:4px 6px;font-size:13px}
+  .line{border-top:1px solid #000;margin:8px 0}
+  .center{text-align:center}
+  .right{text-align:right}
+  .bold{font-weight:700}
+  .small{font-size:11px}
+  .xsmall{font-size:10px}
+  .mt8{margin-top:8px}
+  .mt4{margin-top:4px}
+  .mb8{margin-bottom:8px}
+  .mb4{margin-bottom:4px}
 </style></head>
 <body>${body}</body></html>`;
 }
@@ -65,59 +69,62 @@ function buildPrintBill(order, loaiDonLabel, hinhThucThanhToanLabel) {
   const phi = Number(order.phi_giao_hang || 0);
   const rows = items.map((item) => `
     <tr>
-      <td>${item.ten_mon}${item.ghi_chu_mon ? `<br><span style="font-size:10px;color:#888;font-style:italic">📝 ${item.ghi_chu_mon}</span>` : ''}</td>
-      <td style="text-align:center;width:40px">${item.so_luong}</td>
-      <td style="text-align:right;width:80px">${dinhDangTien(item.don_gia)}</td>
-      <td style="text-align:right;width:90px">${dinhDangTien(item.so_luong * item.don_gia)}</td>
+      <td>${item.ten_mon}${item.ghi_chu_mon ? `<br><span class="xsmall">(Ghi chú: ${item.ghi_chu_mon})</span>` : ''}</td>
+      <td class="center" style="width:30px">${item.so_luong}</td>
+      <td class="right" style="width:70px">${dinhDangTien(item.don_gia)}</td>
+      <td class="right" style="width:80px">${dinhDangTien(item.so_luong * item.don_gia)}</td>
     </tr>
   `).join("");
 
   return baseHTML(`
-    <div class="header">
-      <h1>Nắng PR</h1>
-      <p>Chi tiết đơn hàng</p>
-    </div>
-    <div class="info">
-      <span><strong>Đơn #${order.ma_don_hang}</strong></span>
-      <span>${dinhDangNgay(order.ngay_tao)}</span>
-    </div>
-    <div class="info">
-      <span>${loaiDonLabel[order.loai_don] || "Tại chỗ"}${order.ten_ban ? ` · ${order.ten_ban}` : ""}</span>
-      <span>${hinhThucThanhToanLabel[order.hinh_thuc_thanh_toan] || "Tiền mặt"}</span>
-    </div>
-    <table>
-      <thead>
-        <tr><th>Món</th><th style="text-align:center">SL</th><th style="text-align:right">Đơn giá</th><th style="text-align:right">Tiền</th></tr>
-      </thead>
-      <tbody>
-        ${rows || '<tr><td colspan="4" style="text-align:center;padding:20px;color:#999">Trống</td></tr>'}
-      </tbody>
-    </table>
-    <div style="margin-top:8px;padding-top:6px">
+    <div style="padding:16px;max-width:360px;margin:0 auto">
+      <div class="center mb8">
+        <div style="font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:1px">NANG PR</div>
+        <div class="xsmall mt4">CHI TIẾT ĐƠN HÀNG</div>
+      </div>
+      <div class="line"></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0">
+        <span class="bold">Đơn #${order.ma_don_hang}</span>
+        <span>${dinhDangNgay(order.ngay_tao)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0">
+        <span>${loaiDonLabel[order.loai_don] || "Tại chỗ"}${order.ten_ban ? " - " + order.ten_ban : ""}</span>
+        <span>${hinhThucThanhToanLabel[order.hinh_thuc_thanh_toan] || "Tiền mặt"}</span>
+      </div>
+      <div class="line"></div>
+      <table>
+        <thead>
+          <tr style="border-bottom:2px solid #000;font-size:10px;text-transform:uppercase">
+            <th style="text-align:left">Mon</th>
+            <th class="center" style="width:28px">SL</th>
+            <th class="right" style="width:65px">Don gia</th>
+            <th class="right" style="width:75px">Tien</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr><td colspan="4" class="center small" style="padding:20px 0">Trống</td></tr>'}
+        </tbody>
+      </table>
+      <div class="line"></div>
       ${order.loai_don === "giao_hang" && phi > 0 ? `
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">
-          <span>Tiền món:</span><span>${dinhDangTien(tien)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:#666">
-          <span>Phí giao hàng:</span><span>${dinhDangTien(phi)}</span>
-        </div>
-        <div class="total" style="display:flex;justify-content:space-between">
-          <span>Tổng cộng:</span><span>${dinhDangTien(tien + phi)}</span>
-        </div>
-      ` : `
-        <div class="total" style="display:flex;justify-content:space-between">
-          <span>Tổng cộng:</span><span>${dinhDangTien(tien)}</span>
-        </div>
-      `}
-    </div>
-    <div class="footer">
-      <p>Cảm ơn quý khách!</p>
-      <p style="margin-top:2px">${new Date().toLocaleString("vi-VN")}</p>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 6px">
+        <span>Tiền món:</span><span>${dinhDangTien(tien)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 6px">
+        <span>Phí giao hàng:</span><span>${dinhDangTien(phi)}</span>
+      </div>
+      ` : ''}
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900;padding:4px 6px;border-top:2px solid #000">
+        <span>TỔNG CỘNG:</span><span>${dinhDangTien(tien + phi)}</span>
+      </div>
+      <div class="line"></div>
+      <div class="center small mt8">Cảm ơn quý khách!</div>
+      <div class="center xsmall">${new Date().toLocaleString("vi-VN")}</div>
     </div>
   `);
 }
 
-/* ── Thẻ thống kê (giống Dashboard) ── */
+/* ── Thẻ thống kê  ── */
 function SummaryCard({ nhan, giaTri, sub, icon, accent }) {
   return (
     <div className="card p-5 border-none shadow-lg hover:shadow-xl transition-all duration-300 group">
@@ -140,7 +147,7 @@ function SummaryCard({ nhan, giaTri, sub, icon, accent }) {
 /* ── Nút chọn khoảng thời gian ── */  function NutKhoangThoiGian({ active, onClick, label }) {
   return (
     <button
-      onClick={onClick}              className={`flex-1 px-2 py-4 text-xs font-bold rounded-md transition-all duration-200 text-center ${
+      onClick={onClick}              className={`flex-1 px-2 py-2.5 md:py-4 text-xs font-bold rounded-md transition-all duration-200 text-center ${
         active
           ? "bg-primary text-white shadow-sm"
           : "text-on-surface-variant hover:text-on-surface hover:bg-primary/5"
@@ -240,7 +247,7 @@ function ModalChiTietDon({ donHang, onDong }) {
                     <tr key={item.ma_mon || idx} className="border-b" style={{ borderColor: "color-mix(in srgb, var(--color-border) 40%, transparent)" }}>
                       <td className="py-3 text-on-surface">
                         <div className="font-medium">{item.ten_mon}</div>
-                        {item.ghi_chu_mon && <div className="text-[10px] text-muted mt-0.5 italic">📝 {item.ghi_chu_mon}</div>}
+                        {item.ghi_chu_mon && <div className="text-[10px] text-muted mt-0.5 italic"><span className="material-symbols-outlined text-[10px] align-text-bottom">edit_note</span> {item.ghi_chu_mon}</div>}
                       </td>
                       <td className="py-3 text-center font-semibold text-on-surface">{item.so_luong}</td>
                       <td className="py-3 text-right text-on-surface-variant">{dinhDangTien(item.don_gia)}</td>
@@ -282,7 +289,7 @@ function ModalChiTietDon({ donHang, onDong }) {
               className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all hover:opacity-90"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
-              🖨 In đơn
+              <span className="material-symbols-outlined text-sm">print</span> In đơn
             </button>
           </div>
         </div>
@@ -534,7 +541,7 @@ export default function DoanhThu() {
           </div>
 
           {/* ── Search + Summary Cards: Tìm kiếm 50% | Số đơn hàng + Món hủy 50% ── */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative">
               <input type="text" placeholder="Tìm đơn hàng..." value={timKiem} onChange={(e) => setTimKiem(e.target.value)}
                 className="w-full border-none rounded-xl pl-3 pr-9 py-1.5 text-sm transition-all h-full focus:ring-1"
@@ -570,7 +577,7 @@ export default function DoanhThu() {
           {/* ── Main Table ── */}
           <div className="card border-none shadow-lg rounded-2xl overflow-hidden">
             {/* Tabs + Filters */}
-            <div className="flex items-center justify-between border-b" style={{ borderColor: "var(--color-border)" }}>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b" style={{ borderColor: "var(--color-border)" }}>
               <div className="flex">
                 <button onClick={() => setTabHienTai("don_hang")}
                   className="px-5 py-3.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2"
@@ -597,8 +604,27 @@ export default function DoanhThu() {
                   )}
                 </button>
               </div>
-              {/* Combobox filters */}
+              {/* Export + Combo filters */}
               <div className="flex items-center gap-2 px-4">
+                {orders.length > 0 && (
+                  <button
+                    onClick={() => {
+                      try {
+                        exportDoanhThuExcel({
+                          orders,
+                          tuNgay: tuNgay || undefined,
+                          denNgay: denNgay || undefined,
+                        });
+                      } catch (err) {
+                        setLoi(err.message || "Không thể xuất Excel");
+                      }
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold transition-all hover:bg-primary/10"
+                    style={{ color: "var(--color-primary)", backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" }}
+                  >
+                    Xuất Excel
+                  </button>
+                )}
                 <select
                   value={loaiDonFilter}
                   onChange={(e) => { setLoaiDonFilter(e.target.value); setTrangHienTai(1); }}
@@ -634,7 +660,7 @@ export default function DoanhThu() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left" style={{ tableLayout: "fixed" }}>
+                    <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "700px" }}>
                       <thead>
                         <tr className="text-[10px] font-bold text-muted uppercase tracking-wider" style={{ backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
                           <th className="px-5 py-3.5 w-[15%]">Đơn hàng</th>
@@ -690,7 +716,7 @@ export default function DoanhThu() {
               <>
                 {monDaHuy.length === 0 ? (
                   <div className="flex flex-col items-center py-16 text-muted">
-                    <span className="text-4xl mb-2">✅</span>
+                    <span className="material-symbols-outlined text-4xl mb-2">check_circle</span>
                     <p className="font-medium">Chưa có món nào bị hủy</p>
                     <p className="text-xs mt-1">Khi bạn giảm số lượng món đã in xuống bếp, thông tin sẽ hiển thị tại đây</p>
                   </div>

@@ -1,4 +1,4 @@
-/* ===== 🪑 BÁN HÀNG - BÀN - ROUTES =====
+/* =====   BÀN  =====
  * Endpoint API cho Quản lý Bàn + POS
  * Prefix: /api/ban
  * ===================================== */

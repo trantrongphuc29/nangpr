@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Jul 03, 2026 at 03:26 PM
+-- Generation Time: Jul 08, 2026 at 05:40 PM
 -- Server version: 5.7.31
 -- PHP Version: 7.3.21
 
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `ban` (
   `ten_ban` varchar(50) DEFAULT NULL,
   `trang_thai` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`ma_ban`)
-) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `ban`
@@ -43,38 +43,39 @@ INSERT INTO `ban` (`ma_ban`, `ten_ban`, `trang_thai`) VALUES
 (1, 'Bàn 1', 'Trong'),
 (2, 'Bàn 2', 'Trong'),
 (3, 'Bàn 3', 'Trong'),
-(8, 'bàn 5', 'Trong'),
-(9, 'bàn 4', 'Trong'),
-(10, 'Bàn 6', 'Trong'),
-(11, 'Bàn 7', 'Trong'),
-(12, 'Bàn 8', 'Trong'),
-(13, 'Bàn 9', 'Trong'),
-(14, 'Bàn 10', 'Trong'),
-(15, 'Bàn 11', 'Trong'),
-(16, 'Bàn 12', 'Trong'),
-(17, 'Bàn 13', 'Trong'),
-(18, 'Bàn 15', 'Trong'),
-(19, 'Bàn 14', 'Trong'),
-(20, 'Bàn 16', 'Trong'),
-(21, 'Bàn 17', 'Trong'),
-(22, 'Bàn 18', 'Trong'),
-(23, 'bàn 19', 'Trong'),
-(24, 'bàn 20', 'Trong'),
-(25, 'bàn 21', 'Trong'),
-(26, 'Bàn 22', 'Trong'),
-(27, 'bàn 23', 'Trong'),
-(28, 'bàn 24', 'Trong'),
-(29, 'bàn 25', 'Trong'),
-(30, 'bàn 26', 'Trong'),
-(31, 'bàn 27', 'Trong'),
-(32, 'bàn 28', 'Trong'),
-(33, 'bàn 29', 'Trong'),
-(34, 'bàn 30', 'Trong'),
-(35, 'bàn 32', 'Trong'),
-(36, 'bàn 31', 'Trong'),
-(37, 'bàn 33', 'Trong'),
-(38, 'bàn 34', 'Trong'),
-(39, 'bàn 35', 'Trong');
+(4, 'Bàn 4', 'Trong'),
+(5, 'Bàn 5', 'Trong'),
+(6, 'Bàn 6', 'Trong'),
+(7, 'Bàn 7', 'Trong'),
+(8, 'Bàn 8', 'Trong'),
+(9, 'Bàn 9', 'Trong'),
+(10, 'Bàn 10', 'Trong'),
+(11, 'Bàn 11', 'Trong'),
+(12, 'Bàn 12', 'Trong'),
+(13, 'Bàn 13', 'Trong'),
+(14, 'Bàn 14', 'Trong'),
+(15, 'Bàn 15', 'Trong'),
+(16, 'Bàn 16', 'Trong'),
+(17, 'Bàn 17', 'Trong'),
+(18, 'Bàn 18', 'Trong'),
+(19, 'Bàn 19', 'Trong'),
+(20, 'Bàn 20', 'Trong'),
+(21, 'Bàn 21', 'Trong'),
+(22, 'Bàn 22', 'Trong'),
+(23, 'Bàn 23', 'Trong'),
+(24, 'Bàn 24', 'Trong'),
+(25, 'Bàn 25', 'Trong'),
+(26, 'Bàn 26', 'Trong'),
+(27, 'Bàn 27', 'Trong'),
+(28, 'Bàn 28', 'Trong'),
+(29, 'Bàn 29', 'Trong'),
+(30, 'Bàn 30', 'Trong'),
+(31, 'Bàn 31', 'Trong'),
+(32, 'Bàn 32', 'Trong'),
+(33, 'Bàn 33', 'Trong'),
+(34, 'Bàn 34', 'Trong'),
+(35, 'Bàn 35', 'Trong'),
+(36, 'Bàn 36', 'Trong');
 
 -- --------------------------------------------------------
 
@@ -96,7 +97,7 @@ CREATE TABLE IF NOT EXISTS `bang_cong_chi_tiet` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_bcc` (`ky_luong_id`,`ma_nhan_vien`,`ngay`,`ma_ca`),
   KEY `idx_bcc_nv` (`ma_nhan_vien`,`ky_luong_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4269 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=4459 DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `bang_cong_chi_tiet`
@@ -134,7 +135,13 @@ INSERT INTO `bang_cong_chi_tiet` (`id`, `ky_luong_id`, `ma_nhan_vien`, `ngay`, `
 (4253, 1, 6, '2026-06-03', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-06-29 23:58:56'),
 (4254, 1, 7, '2026-06-05', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-06-29 23:58:56'),
 (4255, 1, 11, '2026-06-03', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-06-29 23:58:56'),
-(4256, 1, 16, '2026-06-04', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-06-29 23:58:56');
+(4256, 1, 16, '2026-06-04', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-06-29 23:58:56'),
+(4452, 405, 17, '2026-07-05', 1, 'Ca Sáng', '06:00-12:00', '6.00', '2026-07-08 17:32:38'),
+(4453, 405, 18, '2026-07-06', 1, 'Ca Sáng', '06:00-12:00', '6.00', '2026-07-08 17:32:38'),
+(4454, 405, 17, '2026-07-05', 2, 'Ca Chiều', '12:00-18:00', '6.00', '2026-07-08 17:32:38'),
+(4455, 405, 18, '2026-07-06', 2, 'Ca Chiều', '12:00-18:00', '6.00', '2026-07-08 17:32:38'),
+(4456, 405, 17, '2026-07-05', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-07-08 17:32:38'),
+(4457, 405, 18, '2026-07-06', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-07-08 17:32:38');
 
 -- --------------------------------------------------------
 
@@ -176,7 +183,9 @@ INSERT INTO `bang_cong_thang` (`ky_luong_id`, `ma_nhan_vien`, `so_ca_sang`, `so_
 (146, 5, 2, 0, 0, 2, 2, '12.00', '2026-06-04 21:44:57'),
 (146, 7, 1, 0, 0, 1, 1, '6.00', '2026-06-04 21:44:57'),
 (146, 12, 1, 0, 1, 1, 2, '11.00', '2026-06-04 21:44:57'),
-(146, 14, 1, 0, 0, 1, 1, '6.00', '2026-06-04 21:44:57');
+(146, 14, 1, 0, 0, 1, 1, '6.00', '2026-06-04 21:44:57'),
+(405, 17, 1, 1, 1, 1, 3, '17.00', '2026-07-08 17:32:38'),
+(405, 18, 1, 1, 1, 1, 3, '17.00', '2026-07-08 17:32:38');
 
 -- --------------------------------------------------------
 
@@ -210,20 +219,22 @@ CREATE TABLE IF NOT EXISTS `bang_luong_thang` (
 --
 
 INSERT INTO `bang_luong_thang` (`ky_luong_id`, `ma_nhan_vien`, `tong_ca`, `tong_gio`, `luong_gio`, `luong_co_ban`, `phu_cap`, `thuong`, `khau_tru`, `tam_ung`, `luong_thuc_nhan`, `last_recalc_at`, `created_at`, `updated_at`) VALUES
-(1, 3, 3, '18.00', '29000.00', '522000.00', '150000.00', '0.00', '0.00', '0.00', '672000.00', '2026-06-29 21:38:57', '2026-06-02 16:11:51', '2026-06-29 21:38:57'),
-(1, 4, 1, '6.00', '30000.00', '180000.00', '200000.00', '0.00', '0.00', '0.00', '380000.00', '2026-06-29 21:38:57', '2026-06-02 16:11:51', '2026-06-29 21:38:57'),
-(1, 5, 2, '11.00', '32000.00', '352000.00', '250000.00', '100000.00', '200000.00', '0.00', '502000.00', '2026-06-29 21:38:57', '2026-06-02 16:11:51', '2026-06-29 21:38:57'),
-(1, 6, 2, '11.00', '35000.00', '385000.00', '250000.00', '0.00', '0.00', '0.00', '635000.00', '2026-06-29 21:38:57', '2026-06-02 16:11:51', '2026-06-29 21:38:57'),
-(1, 7, 3, '17.00', '36000.00', '612000.00', '350000.00', '0.00', '0.00', '0.00', '962000.00', '2026-06-29 21:38:57', '2026-06-02 16:11:51', '2026-06-29 21:38:57'),
-(1, 11, 1, '5.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-06-29 21:38:57', '2026-06-05 12:38:27', '2026-06-29 21:38:57'),
-(1, 12, 1, '6.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-06-29 21:38:57', '2026-06-18 11:45:00', '2026-06-29 21:38:57'),
-(1, 16, 6, '35.00', '36000.00', '1260000.00', '320000.00', '0.00', '0.00', '0.00', '1580000.00', '2026-06-29 21:38:57', '2026-06-04 22:03:51', '2026-06-29 21:38:57'),
-(146, 3, 6, '35.00', '29000.00', '1015000.00', '150000.00', '0.00', '0.00', '0.00', '1165000.00', '2026-06-05 00:52:07', '2026-06-04 21:44:57', '2026-06-05 00:52:07'),
-(146, 4, 1, '6.00', '30000.00', '180000.00', '200000.00', '0.00', '0.00', '0.00', '380000.00', '2026-06-05 00:52:07', '2026-06-04 21:44:57', '2026-06-05 00:52:07'),
-(146, 5, 2, '12.00', '32000.00', '384000.00', '250000.00', '0.00', '0.00', '0.00', '634000.00', '2026-06-05 00:52:07', '2026-06-04 21:44:57', '2026-06-05 00:52:07'),
-(146, 7, 1, '6.00', '36000.00', '216000.00', '350000.00', '0.00', '0.00', '0.00', '566000.00', '2026-06-05 00:52:07', '2026-06-04 21:44:57', '2026-06-05 00:52:07'),
-(146, 12, 2, '11.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-06-05 00:52:07', '2026-06-04 21:44:57', '2026-06-05 00:52:07'),
-(146, 14, 1, '6.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-06-05 00:52:07', '2026-06-04 21:44:57', '2026-06-05 00:52:07');
+(1, 3, 3, '18.00', '29000.00', '522000.00', '150000.00', '0.00', '0.00', '0.00', '672000.00', '2026-07-07 08:38:35', '2026-06-02 16:11:51', '2026-07-07 08:38:35'),
+(1, 4, 1, '6.00', '30000.00', '180000.00', '200000.00', '0.00', '0.00', '0.00', '380000.00', '2026-07-07 08:38:35', '2026-06-02 16:11:51', '2026-07-07 08:38:35'),
+(1, 5, 2, '11.00', '32000.00', '352000.00', '250000.00', '100000.00', '200000.00', '0.00', '502000.00', '2026-07-07 08:38:35', '2026-06-02 16:11:51', '2026-07-07 08:38:35'),
+(1, 6, 2, '11.00', '35000.00', '385000.00', '250000.00', '0.00', '0.00', '0.00', '635000.00', '2026-07-07 08:38:35', '2026-06-02 16:11:51', '2026-07-07 08:38:35'),
+(1, 7, 3, '17.00', '36000.00', '612000.00', '350000.00', '0.00', '0.00', '0.00', '962000.00', '2026-07-07 08:38:35', '2026-06-02 16:11:51', '2026-07-07 08:38:35'),
+(1, 11, 1, '5.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-07-07 08:38:35', '2026-06-05 12:38:27', '2026-07-07 08:38:35'),
+(1, 12, 1, '6.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-07-07 08:38:35', '2026-06-18 11:45:00', '2026-07-07 08:38:35'),
+(1, 16, 6, '35.00', '36000.00', '1260000.00', '320000.00', '0.00', '0.00', '0.00', '1580000.00', '2026-07-07 08:38:35', '2026-06-04 22:03:51', '2026-07-07 08:38:35'),
+(146, 3, 6, '35.00', '29000.00', '1015000.00', '150000.00', '0.00', '0.00', '0.00', '1165000.00', '2026-07-07 08:38:35', '2026-06-04 21:44:57', '2026-07-07 08:38:35'),
+(146, 4, 1, '6.00', '30000.00', '180000.00', '200000.00', '0.00', '0.00', '0.00', '380000.00', '2026-07-07 08:38:35', '2026-06-04 21:44:57', '2026-07-07 08:38:35'),
+(146, 5, 2, '12.00', '32000.00', '384000.00', '250000.00', '0.00', '0.00', '0.00', '634000.00', '2026-07-07 08:38:35', '2026-06-04 21:44:57', '2026-07-07 08:38:35'),
+(146, 7, 1, '6.00', '36000.00', '216000.00', '350000.00', '0.00', '0.00', '0.00', '566000.00', '2026-07-07 08:38:35', '2026-06-04 21:44:57', '2026-07-07 08:38:35'),
+(146, 12, 2, '11.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-07-07 08:38:35', '2026-06-04 21:44:57', '2026-07-07 08:38:35'),
+(146, 14, 1, '6.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-07-07 08:38:35', '2026-06-04 21:44:57', '2026-07-07 08:38:35'),
+(405, 17, 3, '17.00', '40000.00', '680000.00', '500000.00', '0.00', '0.00', '0.00', '1180000.00', '2026-07-08 17:32:38', '2026-07-06 14:09:15', '2026-07-08 17:32:38'),
+(405, 18, 3, '17.00', '26000.00', '442000.00', '200000.00', '0.00', '0.00', '0.00', '642000.00', '2026-07-08 17:32:38', '2026-07-07 08:37:37', '2026-07-08 17:32:38');
 
 -- --------------------------------------------------------
 
@@ -266,340 +277,41 @@ CREATE TABLE IF NOT EXISTS `chitiethoadon` (
   PRIMARY KEY (`ma_don_hang`,`ma_mon`),
   KEY `ma_mon` (`ma_mon`),
   KEY `idx_cthd_trang_thai` (`trang_thai_mon`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `chitiethoadon`
 --
 
 INSERT INTO `chitiethoadon` (`ma_don_hang`, `ma_mon`, `so_luong`, `so_luong_da_gui_bar`, `ghi_chu_mon`, `trang_thai_mon`, `don_gia`) VALUES
-(1, 39, 1, 1, NULL, 'Dang lam', '15000.00'),
-(1, 40, 2, 2, NULL, 'Dang lam', '15000.00'),
-(1, 41, 1, 1, NULL, 'Dang lam', '15000.00'),
-(2, 28, 1, 1, NULL, 'Dang lam', '32000.00'),
-(2, 29, 1, 1, NULL, 'Dang lam', '32000.00'),
-(2, 31, 1, 1, NULL, 'Dang lam', '32000.00'),
-(2, 32, 1, 1, NULL, 'Dang lam', '35000.00'),
-(2, 33, 1, 1, NULL, 'Dang lam', '30000.00'),
-(2, 34, 2, 2, NULL, 'Dang lam', '30000.00'),
-(2, 35, 2, 2, NULL, 'Dang lam', '15000.00'),
-(2, 36, 2, 2, NULL, 'Dang lam', '18000.00'),
-(2, 37, 2, 2, NULL, 'Dang lam', '15000.00'),
-(2, 38, 2, 2, NULL, 'Dang lam', '15000.00'),
-(2, 39, 4, 4, NULL, 'Dang lam', '15000.00'),
-(2, 40, 3, 3, NULL, 'Dang lam', '15000.00'),
-(2, 41, 3, 3, NULL, 'Dang lam', '15000.00'),
-(3, 39, 1, 0, NULL, 'Dang cho', '15000.00'),
-(4, 39, 1, 0, NULL, 'Dang cho', '15000.00'),
-(5, 39, 2, 2, NULL, 'Dang lam', '15000.00'),
-(5, 40, 3, 3, NULL, 'Dang lam', '15000.00'),
-(6, 21, 1, 1, NULL, 'Dang lam', '25000.00'),
-(6, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
-(6, 23, 1, 1, NULL, 'Dang lam', '20000.00'),
-(6, 24, 1, 1, NULL, 'Dang lam', '25000.00'),
-(6, 25, 1, 1, NULL, 'Dang lam', '25000.00'),
-(6, 26, 1, 1, NULL, 'Dang lam', '25000.00'),
-(6, 27, 1, 1, NULL, 'Dang lam', '25000.00'),
-(6, 28, 1, 1, NULL, 'Dang lam', '32000.00'),
-(6, 29, 1, 1, NULL, 'Dang lam', '32000.00'),
-(6, 31, 1, 1, NULL, 'Dang lam', '32000.00'),
-(6, 32, 1, 1, NULL, 'Dang lam', '35000.00'),
-(6, 33, 1, 1, NULL, 'Dang lam', '30000.00'),
-(6, 34, 2, 2, NULL, 'Dang lam', '30000.00'),
-(6, 35, 2, 2, NULL, 'Dang lam', '15000.00'),
-(6, 37, 2, 2, NULL, 'Dang lam', '15000.00'),
-(6, 39, 1, 1, NULL, 'Dang lam', '15000.00'),
-(6, 40, 1, 1, NULL, 'Dang lam', '15000.00'),
-(7, 37, 1, 1, NULL, 'Dang lam', '15000.00'),
-(7, 39, 1, 1, NULL, 'Dang lam', '15000.00'),
-(7, 40, 3, 3, NULL, 'Dang lam', '15000.00'),
-(8, 40, 1, 0, NULL, 'Dang cho', '15000.00'),
-(9, 40, 3, 0, NULL, 'Dang cho', '15000.00'),
-(10, 18, 10, 0, NULL, 'Dang cho', '20000.00'),
-(11, 18, 1, 1, NULL, 'Dang lam', '20000.00'),
-(11, 19, 1, 1, NULL, 'Dang lam', '20000.00'),
-(12, 18, 1, 0, NULL, 'Dang cho', '20000.00'),
-(12, 19, 1, 0, NULL, 'Dang cho', '20000.00'),
-(12, 20, 1, 0, NULL, 'Dang cho', '10000.00'),
-(13, 18, 3, 0, NULL, 'Dang cho', '20000.00'),
-(13, 19, 5, 0, NULL, 'Dang cho', '20000.00'),
-(13, 20, 8, 0, NULL, 'Dang cho', '10000.00'),
-(13, 21, 5, 0, NULL, 'Dang cho', '25000.00'),
-(14, 21, 12, 0, NULL, 'Dang cho', '25000.00'),
-(15, 21, 10, 0, NULL, 'Dang cho', '25000.00'),
-(16, 19, 1, 0, NULL, 'Dang cho', '20000.00'),
-(17, 18, 1, 0, NULL, 'Dang cho', '20000.00'),
-(17, 19, 1, 0, NULL, 'Dang cho', '20000.00'),
-(17, 20, 1, 0, NULL, 'Dang cho', '10000.00'),
-(17, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(18, 19, 2, 0, NULL, 'Dang cho', '20000.00'),
-(18, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(19, 18, 3, 0, NULL, 'Dang cho', '20000.00'),
-(19, 19, 2, 0, NULL, 'Dang cho', '20000.00'),
-(19, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(20, 18, 1, 0, NULL, 'Dang cho', '20000.00'),
-(20, 19, 1, 0, NULL, 'Dang cho', '20000.00'),
-(20, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(21, 19, 1, 0, NULL, 'Dang cho', '20000.00'),
-(21, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(22, 19, 1, 0, NULL, 'Dang cho', '20000.00'),
-(22, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(23, 19, 2, 0, NULL, 'Dang cho', '20000.00'),
-(23, 21, 2, 0, NULL, 'Dang cho', '25000.00'),
-(24, 19, 2, 0, NULL, 'Dang cho', '20000.00'),
-(25, 21, 6, 0, NULL, 'Dang cho', '25000.00'),
-(26, 21, 6, 0, NULL, 'Dang cho', '25000.00'),
-(27, 21, 9, 0, NULL, 'Dang cho', '25000.00'),
-(28, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(29, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(30, 22, 1, 0, NULL, 'Dang cho', '28000.00'),
-(31, 22, 1, 0, NULL, 'Dang cho', '28000.00'),
-(32, 23, 10, 0, NULL, 'Dang cho', '10000.00'),
-(33, 21, 4, 0, NULL, 'Dang cho', '25000.00'),
-(33, 22, 4, 0, NULL, 'Dang cho', '28000.00'),
-(34, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(34, 22, 4, 0, NULL, 'Dang cho', '28000.00'),
-(35, 21, 5, 0, NULL, 'Dang cho', '25000.00'),
-(35, 22, 4, 0, NULL, 'Dang cho', '28000.00'),
-(36, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(36, 22, 1, 0, NULL, 'Dang cho', '28000.00'),
-(37, 21, 1, 1, NULL, 'Dang lam', '25000.00'),
-(37, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
-(38, 22, 2, 0, NULL, 'Dang cho', '28000.00'),
-(39, 26, 3, 0, NULL, 'Dang cho', '20000.00'),
-(40, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(40, 22, 1, 0, NULL, 'Dang cho', '28000.00'),
-(40, 26, 3, 0, NULL, 'Dang cho', '20000.00'),
-(41, 27, 2, 0, NULL, 'Dang cho', '15000.00'),
-(42, 27, 1, 0, NULL, 'Dang cho', '15000.00'),
-(43, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(44, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(44, 22, 1, 0, NULL, 'Dang cho', '28000.00'),
-(45, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(45, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(46, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(46, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(47, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(48, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(49, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(52, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(83, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(83, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(84, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(84, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(85, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(85, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(86, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(86, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(89, 21, 3, 0, NULL, 'Dang cho', '25000.00'),
-(90, 21, 9, 0, NULL, 'Dang cho', '25000.00'),
-(91, 29, 2, 0, NULL, 'Dang cho', '20000.00'),
-(91, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(92, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(92, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(92, 30, 2, 0, NULL, 'Dang cho', '40000.00'),
-(94, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(94, 30, 4, 0, NULL, 'Dang cho', '40000.00'),
-(97, 29, 4, 0, NULL, 'Dang cho', '20000.00'),
-(97, 30, 2, 0, NULL, 'Dang cho', '40000.00'),
-(98, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(98, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(98, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(99, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(99, 29, 3, 0, NULL, 'Dang cho', '20000.00'),
-(99, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(100, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(100, 29, 2, 0, NULL, 'Dang cho', '20000.00'),
-(100, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(103, 26, 1, 0, NULL, 'Dang cho', '20000.00'),
-(103, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(103, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(104, 26, 2, 0, NULL, 'Dang cho', '20000.00'),
-(104, 30, 2, 0, NULL, 'Dang cho', '40000.00'),
-(105, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(106, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(112, 30, 2, 2, NULL, 'Dang lam', '40000.00'),
-(113, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(113, 30, 2, 2, NULL, 'Dang lam', '40000.00'),
-(117, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(117, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(118, 21, 1, 1, NULL, 'Dang lam', '25000.00'),
-(118, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
-(118, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(118, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(119, 21, 1, 1, NULL, 'Dang lam', '25000.00'),
-(119, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
-(119, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(119, 30, 3, 3, NULL, 'Dang lam', '40000.00'),
-(121, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(122, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(122, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(123, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(125, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(126, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(127, 22, 1, 0, NULL, 'Dang cho', '28000.00'),
-(127, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
-(128, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
-(128, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(129, 22, 2, 0, NULL, 'Dang cho', '28000.00'),
-(129, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
-(129, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(130, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
-(130, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(130, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(132, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
-(132, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(133, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
-(133, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(134, 30, 3, 3, NULL, 'Dang lam', '40000.00'),
-(135, 21, 1, 1, NULL, 'Dang lam', '25000.00'),
-(135, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
-(135, 23, 2, 2, NULL, 'Dang lam', '10000.00'),
-(135, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(136, 29, 2, 2, NULL, 'Dang lam', '20000.00'),
-(137, 21, 1, 0, NULL, 'Dang cho', '25000.00'),
-(137, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
-(137, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(138, 30, 5, 5, NULL, 'Dang lam', '40000.00'),
-(140, 30, 2, 2, NULL, 'Dang lam', '40000.00'),
-(141, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(141, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(142, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(143, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
-(143, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(144, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
-(144, 30, 3, 3, NULL, 'Dang lam', '40000.00'),
-(145, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(145, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(146, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(146, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(146, 30, 3, 3, NULL, 'Dang lam', '40000.00'),
-(147, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(147, 30, 2, 2, NULL, 'Dang lam', '40000.00'),
-(148, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(148, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(149, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(150, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(150, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(151, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(151, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(152, 21, 1, 1, 'nhiều đường', 'Dang lam', '25000.00'),
-(152, 22, 1, 1, NULL, 'Dang lam', '28000.00'),
-(152, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(153, 30, 3, 3, NULL, 'Dang lam', '40000.00'),
-(154, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(155, 30, 3, 3, NULL, 'Dang lam', '40000.00'),
-(156, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(156, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(158, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(158, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(159, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(159, 29, 2, 2, NULL, 'Dang lam', '20000.00'),
-(160, 29, 5, 1, NULL, 'Dang lam', '20000.00'),
-(161, 29, 3, 3, NULL, 'Dang lam', '20000.00'),
-(162, 29, 2, 0, NULL, 'Dang cho', '20000.00'),
-(163, 23, 1, 0, NULL, 'Dang cho', '10000.00'),
-(163, 29, 1, 0, NULL, 'Dang cho', '20000.00'),
-(164, 21, 2, 2, NULL, 'Dang lam', '25000.00'),
-(164, 23, 2, 2, NULL, 'Dang lam', '10000.00'),
-(165, 21, 5, 5, NULL, 'Dang lam', '25000.00'),
-(166, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(166, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(167, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(167, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(168, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(169, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(169, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(170, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(171, 29, 2, 2, NULL, 'Dang lam', '20000.00'),
-(172, 26, 2, 2, NULL, 'Dang lam', '20000.00'),
-(173, 26, 8, 8, NULL, 'Dang lam', '20000.00'),
-(174, 26, 5, 5, NULL, 'Dang lam', '20000.00'),
-(175, 26, 4, 4, NULL, 'Dang lam', '20000.00'),
-(176, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(176, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(178, 26, 4, 4, NULL, 'Dang lam', '20000.00'),
-(179, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(186, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(186, 25, 2, 2, NULL, 'Dang lam', '20000.00'),
-(187, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(188, 23, 2, 2, NULL, 'Dang lam', '10000.00'),
-(188, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
-(189, 23, 2, 2, NULL, 'Dang lam', '10000.00'),
-(189, 26, 2, 2, NULL, 'Dang lam', '20000.00'),
-(189, 29, 2, 2, NULL, 'Dang lam', '20000.00'),
-(190, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(191, 21, 1, 1, NULL, 'Dang lam', '25000.00'),
-(191, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
-(191, 29, 2, 2, NULL, 'Dang lam', '20000.00'),
-(192, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(192, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(193, 29, 3, 3, NULL, 'Dang lam', '20000.00'),
-(194, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(194, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
-(194, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(194, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(195, 21, 1, 1, NULL, 'Dang lam', '25000.00'),
-(195, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(195, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
-(195, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(195, 29, 1, 1, NULL, 'Dang lam', '20000.00'),
-(195, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(195, 32, 1, 1, NULL, 'Dang lam', '20000.00'),
-(196, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(196, 32, 2, 2, NULL, 'Dang lam', '20000.00'),
-(197, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(197, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(197, 32, 1, 1, NULL, 'Dang lam', '20000.00'),
-(198, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(199, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
-(199, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(199, 32, 1, 1, NULL, 'Dang lam', '20000.00'),
-(200, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(201, 31, 3, 3, NULL, 'Dang lam', '25000.00'),
-(201, 32, 2, 2, NULL, 'Dang lam', '20000.00'),
-(202, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(202, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(203, 32, 2, 2, NULL, 'Dang lam', '20000.00'),
-(204, 23, 3, 3, NULL, 'Dang lam', '10000.00'),
-(204, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
-(204, 29, 2, 2, NULL, 'Dang lam', '20000.00'),
-(204, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(204, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(204, 32, 1, 1, NULL, 'Dang lam', '20000.00'),
-(205, 31, 2, 2, NULL, 'Dang lam', '25000.00'),
-(205, 32, 2, 2, NULL, 'Dang lam', '20000.00'),
-(206, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(206, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(206, 32, 1, 1, NULL, 'Dang lam', '20000.00'),
-(207, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
-(207, 31, 1, 0, NULL, 'Dang cho', '25000.00'),
-(207, 32, 1, 0, NULL, 'Dang cho', '20000.00'),
-(208, 31, 4, 4, NULL, 'Dang lam', '25000.00'),
-(208, 32, 2, 2, NULL, 'Dang lam', '20000.00'),
-(209, 32, 4, 4, NULL, 'Dang lam', '20000.00'),
-(210, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(210, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(210, 32, 1, 1, NULL, 'Dang lam', '20000.00'),
-(211, 29, 3, 3, NULL, 'Dang lam', '20000.00'),
-(211, 30, 2, 2, NULL, 'Dang lam', '40000.00'),
-(212, 29, 3, 0, NULL, 'Dang cho', '20000.00'),
-(212, 30, 2, 0, NULL, 'Dang cho', '40000.00'),
-(213, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(213, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
-(213, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
-(213, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(213, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(214, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(214, 31, 1, 1, NULL, 'Dang lam', '25000.00'),
-(214, 32, 1, 1, NULL, 'Dang lam', '20000.00'),
-(215, 21, 1, 1, NULL, 'Dang lam', '25000.00'),
-(215, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
-(215, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
-(216, 23, 1, 1, NULL, 'Dang lam', '10000.00'),
-(216, 26, 5, 5, NULL, 'Dang lam', '20000.00'),
-(216, 31, 2, 2, NULL, 'Dang lam', '25000.00'),
-(216, 33, 1, 1, NULL, 'Dang lam', '30000.00');
+(1, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
+(1, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
+(1, 30, 2, 2, NULL, 'Dang lam', '40000.00'),
+(2, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
+(2, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
+(2, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
+(3, 25, 2, 2, NULL, 'Dang lam', '20000.00'),
+(3, 26, 2, 2, NULL, 'Dang lam', '20000.00'),
+(3, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
+(4, 25, 2, 0, NULL, 'Dang cho', '20000.00'),
+(4, 26, 2, 0, NULL, 'Dang cho', '20000.00'),
+(4, 30, 1, 0, NULL, 'Dang cho', '40000.00'),
+(5, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
+(5, 30, 2, 2, NULL, 'Dang lam', '40000.00'),
+(6, 25, 1, 0, NULL, 'Dang cho', '20000.00'),
+(6, 30, 2, 0, NULL, 'Dang cho', '40000.00'),
+(7, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
+(7, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
+(8, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
+(8, 26, 1, 1, NULL, 'Dang lam', '20000.00'),
+(9, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
+(10, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
+(10, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
+(11, 25, 1, 1, NULL, 'Dang lam', '20000.00'),
+(11, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
+(12, 25, 2, 2, NULL, 'Dang lam', '20000.00'),
+(12, 30, 1, 1, NULL, 'Dang lam', '40000.00'),
+(13, 34, 5, 5, NULL, 'Dang lam', '35000.00');
 
 -- --------------------------------------------------------
 
@@ -617,55 +329,22 @@ CREATE TABLE IF NOT EXISTS `chitiet_phieunhap` (
   PRIMARY KEY (`ma_chi_tiet`),
   KEY `fk_ctpn_phieu` (`ma_phieu`),
   KEY `fk_ctpn_nguyenlieu` (`ma_nguyen_lieu`)
-) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `chitiet_phieunhap`
 --
 
 INSERT INTO `chitiet_phieunhap` (`ma_chi_tiet`, `ma_phieu`, `ma_nguyen_lieu`, `so_luong_nhap`, `gia_nhap`) VALUES
-(1, 17, 3, '2.00', '200000.00'),
-(2, 18, 1, '20.00', '10000.00'),
-(3, 19, 2, '20.00', '10000.00'),
-(4, 20, 4, '20.00', '5000.00'),
-(5, 21, 3, '2.00', '200000.00'),
-(6, 22, 5, '2.00', '200000.00'),
-(7, 23, 6, '2.00', '30000.00'),
-(8, 24, 4, '10.00', '5000.00'),
-(9, 25, 7, '20.00', '10000.00'),
-(10, 26, 8, '20.00', '10000.00'),
-(11, 27, 4, '20.00', '5000.00'),
-(12, 28, 9, '2.00', '400000.00'),
-(13, 29, 10, '20.00', '10000.00'),
-(14, 30, 11, '5.00', '10000.00'),
-(15, 31, 8, '20.00', '10000.00'),
-(16, 32, 13, '2.00', '100000.00'),
-(17, 33, 3, '2.00', '100000.00'),
-(18, 34, 1, '30.00', '10000.00'),
-(19, 35, 4, '30.00', '10000.00'),
-(20, 36, 2, '30.00', '9999.00'),
-(21, 37, 7, '30.00', '10000.00'),
-(22, 38, 8, '3.00', '10000.00'),
-(23, 39, 8, '3.00', '10000.00'),
-(24, 40, 8, '5.00', '10000.00'),
-(25, 41, 8, '20.00', '10000.00'),
-(26, 42, 7, '10.00', '10000.00'),
-(27, 43, 8, '10.00', '10000.00'),
-(28, 44, 7, '5.00', '10000.00'),
-(29, 45, 8, '2.00', '100000.00'),
-(30, 46, 15, '1.00', '20000.00'),
-(31, 47, 14, '20.00', '10000.00'),
-(32, 48, 15, '1.00', '20000.00'),
-(33, 49, 15, '1.00', '20000.00'),
-(34, 50, 15, '1.00', '20000.00'),
-(35, 51, 9, '1.00', '300000.00'),
-(36, 52, 14, '20.00', '10000.00'),
-(37, 53, 14, '20.00', '10000.00'),
-(38, 54, 6, '5.00', '30000.00'),
-(39, 55, 12, '5.00', '50000.00'),
-(40, 56, 16, '2.00', '100000.00'),
-(41, 57, 17, '20.00', '4999.00'),
-(42, 58, 17, '10.00', '5000.00');
+(1, 1, 1, '20.00', '20000.00'),
+(2, 2, 7, '20.00', '1000.00'),
+(3, 3, 9, '2.00', '300000.00'),
+(4, 4, 10, '30.00', '15000.00'),
+(5, 5, 11, '2.00', '20000.00'),
+(6, 6, 8, '10.00', '10000.00'),
+(7, 7, 18, '2.00', '40000.00'),
+(8, 8, 19, '1.00', '100000.00'),
+(9, 9, 20, '1.00', '50000.00');
 
 -- --------------------------------------------------------
 
@@ -688,7 +367,7 @@ CREATE TABLE IF NOT EXISTS `chuquan` (
 --
 
 INSERT INTO `chuquan` (`ma_admin`, `ten_dang_nhap`, `mat_khau`, `role`) VALUES
-(1, 'admin', '$2b$10$LEuvxuGCO12pxcTDkTskWe0N60c/BGN1zPAjqZRkiwwtH2vB4QfAW', 'admin');
+(1, 'admin', '$2b$10$vvjwPWr2huOTsXmVY9kC1u9XVBpw.FoMMvjeCwOB5sZyuHgIG4W4S', 'admin');
 
 -- --------------------------------------------------------
 
@@ -727,7 +406,13 @@ INSERT INTO `congthuc` (`ma_mon`, `ma_nguyen_lieu`, `dinh_luong`, `don_vi_tinh_c
 (33, 6, '30.00', 'ml'),
 (33, 12, '40.00', 'ml'),
 (33, 16, '30.00', 'ml'),
-(33, 17, '100.00', 'ml');
+(33, 17, '100.00', 'ml'),
+(34, 11, '5.00', 'g'),
+(34, 18, '2.00', 'g'),
+(34, 20, '10.00', 'g'),
+(35, 11, '8.00', 'g'),
+(35, 21, '8.00', 'g'),
+(35, 22, '5.00', 'g');
 
 -- --------------------------------------------------------
 
@@ -775,229 +460,26 @@ CREATE TABLE IF NOT EXISTS `donhang` (
   `trang_thai_thanh_toan` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`ma_don_hang`),
   KEY `ma_ban` (`ma_ban`)
-) ENGINE=InnoDB AUTO_INCREMENT=217 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `donhang`
 --
 
 INSERT INTO `donhang` (`ma_don_hang`, `ma_ban`, `loai_don`, `ten_khach`, `phi_giao_hang`, `hinh_thuc_thanh_toan`, `so_dien_thoai_giao`, `dia_chi_giao`, `ngay_tao`, `trang_thai_don`, `trang_thai_thanh_toan`) VALUES
-(1, 8, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 13:52:23', 'Hoan thanh', 'Da thanh toan'),
-(2, 9, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 13:53:02', 'Hoan thanh', 'Da thanh toan'),
-(3, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 13:56:59', 'Hoan thanh', 'Da thanh toan'),
-(4, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 14:03:35', 'Hoan thanh', 'Da thanh toan'),
-(5, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 14:15:11', 'Hoan thanh', 'Da thanh toan'),
-(6, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 15:20:45', 'Hoan thanh', 'Da thanh toan'),
-(7, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 15:27:01', 'Hoan thanh', 'Da thanh toan'),
-(8, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 15:27:52', 'Hoan thanh', 'Da thanh toan'),
-(9, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 15:38:02', 'Hoan thanh', 'Da thanh toan'),
-(10, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 15:54:35', 'Hoan thanh', 'Da thanh toan'),
-(11, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:00:54', 'Hoan thanh', 'Da thanh toan'),
-(12, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:04:50', 'Hoan thanh', 'Da thanh toan'),
-(13, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:07:28', 'Hoan thanh', 'Da thanh toan'),
-(14, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:17:50', 'Hoan thanh', 'Da thanh toan'),
-(15, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:18:26', 'Hoan thanh', 'Da thanh toan'),
-(16, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:18:57', 'Hoan thanh', 'Da thanh toan'),
-(17, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:30:39', 'Hoan thanh', 'Da thanh toan'),
-(18, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:50:25', 'Hoan thanh', 'Da thanh toan'),
-(19, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:58:34', 'Hoan thanh', 'Da thanh toan'),
-(20, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:58:46', 'Hoan thanh', 'Da thanh toan'),
-(21, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:58:50', 'Hoan thanh', 'Da thanh toan'),
-(22, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:58:55', 'Hoan thanh', 'Da thanh toan'),
-(23, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:58:59', 'Hoan thanh', 'Da thanh toan'),
-(24, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:59:04', 'Hoan thanh', 'Da thanh toan'),
-(25, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:59:24', 'Hoan thanh', 'Da thanh toan'),
-(26, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:59:32', 'Hoan thanh', 'Da thanh toan'),
-(27, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:59:37', 'Hoan thanh', 'Da thanh toan'),
-(28, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 22:59:43', 'Hoan thanh', 'Da thanh toan'),
-(29, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 23:00:10', 'Hoan thanh', 'Da thanh toan'),
-(30, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 23:04:15', 'Hoan thanh', 'Da thanh toan'),
-(31, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 23:05:23', 'Hoan thanh', 'Da thanh toan'),
-(32, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 23:05:32', 'Hoan thanh', 'Da thanh toan'),
-(33, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 23:12:33', 'Hoan thanh', 'Da thanh toan'),
-(34, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 23:23:36', 'Hoan thanh', 'Da thanh toan'),
-(35, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 23:32:43', 'Hoan thanh', 'Da thanh toan'),
-(36, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-05 23:47:44', 'Hoan thanh', 'Da thanh toan'),
-(37, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-06 17:36:30', 'Hoan thanh', 'Da thanh toan'),
-(38, 8, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-07 18:32:28', 'Hoan thanh', 'Da thanh toan'),
-(39, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-07 18:32:55', 'Hoan thanh', 'Da thanh toan'),
-(40, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-07 18:54:48', 'Hoan thanh', 'Da thanh toan'),
-(41, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-11 16:29:16', 'Hoan thanh', 'Da thanh toan'),
-(42, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-11 16:53:57', 'Hoan thanh', 'Da thanh toan'),
-(43, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-11 16:56:01', 'Hoan thanh', 'Da thanh toan'),
-(44, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 15:31:57', 'Hoan thanh', 'Da thanh toan'),
-(45, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 15:52:32', 'Hoan thanh', 'Da thanh toan'),
-(46, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 15:56:59', 'Hoan thanh', 'Da thanh toan'),
-(47, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 16:13:16', 'Hoan thanh', 'Da thanh toan'),
-(48, 3, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 16:45:39', 'Hoan thanh', 'Da thanh toan'),
-(49, 8, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:15:37', 'Hoan thanh', 'Da thanh toan'),
-(50, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:33:42', 'Dang phuc vu', 'Chua thanh toan'),
-(51, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:33:55', 'Dang phuc vu', 'Chua thanh toan'),
-(52, 10, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:09', 'Hoan thanh', 'Da thanh toan'),
-(53, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:25', 'Dang phuc vu', 'Chua thanh toan'),
-(54, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:39', 'Dang phuc vu', 'Chua thanh toan'),
-(55, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:42', 'Dang phuc vu', 'Chua thanh toan'),
-(56, NULL, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:42', 'Dang phuc vu', 'Chua thanh toan'),
-(57, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:42', 'Dang phuc vu', 'Chua thanh toan'),
-(58, NULL, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:44', 'Dang phuc vu', 'Chua thanh toan'),
-(59, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:44', 'Dang phuc vu', 'Chua thanh toan'),
-(60, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:44', 'Dang phuc vu', 'Chua thanh toan'),
-(61, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:45', 'Dang phuc vu', 'Chua thanh toan'),
-(62, NULL, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:45', 'Dang phuc vu', 'Chua thanh toan'),
-(63, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:47', 'Dang phuc vu', 'Chua thanh toan'),
-(64, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:47', 'Dang phuc vu', 'Chua thanh toan'),
-(65, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:47', 'Dang phuc vu', 'Chua thanh toan'),
-(66, NULL, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:48', 'Dang phuc vu', 'Chua thanh toan'),
-(67, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:48', 'Dang phuc vu', 'Chua thanh toan'),
-(68, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:34:48', 'Dang phuc vu', 'Chua thanh toan'),
-(69, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:36:01', 'Dang phuc vu', 'Chua thanh toan'),
-(70, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:36:06', 'Dang phuc vu', 'Chua thanh toan'),
-(71, NULL, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:36:12', 'Dang phuc vu', 'Chua thanh toan'),
-(72, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:36:27', 'Dang phuc vu', 'Chua thanh toan'),
-(73, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:37:09', 'Dang phuc vu', 'Chua thanh toan'),
-(74, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:37:19', 'Dang phuc vu', 'Chua thanh toan'),
-(75, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:40:06', 'Dang phuc vu', 'Chua thanh toan'),
-(76, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:40:11', 'Dang phuc vu', 'Chua thanh toan'),
-(77, NULL, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:40:18', 'Dang phuc vu', 'Chua thanh toan'),
-(78, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:40:19', 'Dang phuc vu', 'Chua thanh toan'),
-(79, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:40:20', 'Dang phuc vu', 'Chua thanh toan'),
-(80, NULL, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:40:20', 'Dang phuc vu', 'Chua thanh toan'),
-(81, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:40:21', 'Dang phuc vu', 'Chua thanh toan'),
-(82, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:40:21', 'Dang phuc vu', 'Chua thanh toan'),
-(83, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:42:04', 'Dang phuc vu', 'Chua thanh toan'),
-(84, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:42:21', 'Dang phuc vu', 'Chua thanh toan'),
-(85, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:43:23', 'Hoan thanh', 'Da thanh toan'),
-(86, NULL, 'giao_hang', NULL, '20000.00', NULL, NULL, '12a t', '2026-06-12 17:44:13', 'Hoan thanh', 'Da thanh toan'),
-(87, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:47:21', 'Dang phuc vu', 'Chua thanh toan'),
-(88, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:47:28', 'Dang phuc vu', 'Chua thanh toan'),
-(89, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:51:32', 'Hoan thanh', 'Da thanh toan'),
-(90, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:51:57', 'Hoan thanh', 'Da thanh toan'),
-(91, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-12 17:52:05', 'Hoan thanh', 'Da thanh toan'),
-(92, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 16:54:29', 'Hoan thanh', 'Da thanh toan'),
-(93, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 18:51:22', 'Dang phuc vu', 'Chua thanh toan'),
-(94, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:01:10', 'Hoan thanh', 'Da thanh toan'),
-(95, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:15:28', 'Dang phuc vu', 'Chua thanh toan'),
-(96, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:15:56', 'Dang phuc vu', 'Chua thanh toan'),
-(97, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:15:58', 'Dang phuc vu', 'Chua thanh toan'),
-(98, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:17:20', 'Hoan thanh', 'Da thanh toan'),
-(99, NULL, 'giao_hang', NULL, '20000.00', NULL, '1212131212', '12a', '2026-06-14 19:17:52', 'Hoan thanh', 'Da thanh toan'),
-(100, NULL, 'giao_hang', NULL, '30000.00', NULL, '032212122', '12a', '2026-06-14 19:21:50', 'Hoan thanh', 'Da thanh toan'),
-(101, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:24:32', 'Dang phuc vu', 'Chua thanh toan'),
-(102, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:24:38', 'Dang phuc vu', 'Chua thanh toan'),
-(103, NULL, 'giao_hang', NULL, '20000.00', NULL, '1231223', '1a ', '2026-06-14 19:29:27', 'Hoan thanh', 'Da thanh toan'),
-(104, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:30:31', 'Hoan thanh', 'Da thanh toan'),
-(105, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:35:17', 'Hoan thanh', 'Da thanh toan'),
-(106, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:35:27', 'Hoan thanh', 'Da thanh toan'),
-(107, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:37:50', 'Dang phuc vu', 'Chua thanh toan'),
-(108, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:37:53', 'Dang phuc vu', 'Chua thanh toan'),
-(109, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:38:48', 'Dang phuc vu', 'Chua thanh toan'),
-(110, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:38:53', 'Dang phuc vu', 'Chua thanh toan'),
-(111, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:40:02', 'Dang phuc vu', 'Chua thanh toan'),
-(112, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:48:49', 'Hoan thanh', 'Da thanh toan'),
-(113, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:49:46', 'Dang phuc vu', 'Chua thanh toan'),
-(114, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:50:02', 'Dang phuc vu', 'Chua thanh toan'),
-(115, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:53:51', 'Dang phuc vu', 'Chua thanh toan'),
-(116, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 19:54:02', 'Dang phuc vu', 'Chua thanh toan'),
-(117, NULL, 'giao_hang', 'ph', '20000.00', 'chuyen_khoan', NULL, NULL, '2026-06-14 20:12:57', 'Hoan thanh', 'Da thanh toan'),
-(118, NULL, 'giao_hang', 'han', '30000.00', 'tien_mat', '123432432', '12 b', '2026-06-14 20:14:22', 'Hoan thanh', 'Da thanh toan'),
-(119, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-14 20:15:18', 'Hoan thanh', 'Da thanh toan'),
-(120, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 20:20:39', 'Dang phuc vu', 'Chua thanh toan'),
-(121, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 20:21:58', 'Hoan thanh', 'Da thanh toan'),
-(122, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-14 20:35:00', 'Hoan thanh', 'Da thanh toan'),
-(123, NULL, 'giao_hang', 'giao', '20000.00', 'tien_mat', '1233414132', '1d', '2026-06-14 20:35:25', 'Hoan thanh', 'Da thanh toan'),
-(124, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 20:44:46', 'Dang phuc vu', 'Chua thanh toan'),
-(125, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-14 20:49:50', 'Hoan thanh', 'Da thanh toan'),
-(126, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:01:52', 'Hoan thanh', 'Da thanh toan'),
-(127, 2, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:01:57', 'Hoan thanh', 'Da thanh toan'),
-(128, 3, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:02:00', 'Hoan thanh', 'Da thanh toan'),
-(129, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:09:52', 'Hoan thanh', 'Da thanh toan'),
-(130, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:10:09', 'Hoan thanh', 'Da thanh toan'),
-(131, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:15:27', 'Dang phuc vu', 'Chua thanh toan'),
-(132, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:40:46', 'Hoan thanh', 'Da thanh toan'),
-(133, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-15 15:40:50', 'Hoan thanh', 'Da thanh toan'),
-(134, NULL, 'giao_hang', 'giao', '29000.00', 'tien_mat', '11212211', '12w', '2026-06-15 15:41:28', 'Hoan thanh', 'Da thanh toan'),
-(135, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 15:54:44', 'Hoan thanh', 'Da thanh toan'),
-(136, 2, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-15 15:54:57', 'Hoan thanh', 'Da thanh toan'),
-(137, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 16:04:11', 'Hoan thanh', 'Da thanh toan'),
-(138, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-15 16:34:09', 'Hoan thanh', 'Da thanh toan'),
-(139, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-18 11:28:53', 'Dang phuc vu', 'Chua thanh toan'),
-(140, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-18 11:41:06', 'Hoan thanh', 'Da thanh toan'),
-(141, 3, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-18 11:41:30', 'Hoan thanh', 'Da thanh toan'),
-(142, NULL, 'giao_hang', 'A', '20000.00', 'tien_mat', '123131', 'a', '2026-06-18 11:42:25', 'Hoan thanh', 'Da thanh toan'),
-(143, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-18 11:43:56', 'Dang phuc vu', 'Chua thanh toan'),
-(144, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-26 13:44:23', 'Hoan thanh', 'Da thanh toan'),
-(145, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-26 14:40:42', 'Hoan thanh', 'Da thanh toan'),
-(146, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-26 14:44:06', 'Hoan thanh', 'Da thanh toan'),
-(147, 1, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-26 14:46:07', 'Hoan thanh', 'Da thanh toan'),
-(148, 12, 'tai_cho', NULL, '0.00', NULL, NULL, NULL, '2026-06-26 14:51:28', 'Hoan thanh', 'Da thanh toan'),
-(149, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-26 15:01:25', 'Hoan thanh', 'Da thanh toan'),
-(150, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-26 15:06:25', 'Hoan thanh', 'Da thanh toan'),
-(151, NULL, 'giao_hang', 'a', '20000.00', 'tien_mat', '1232222', 'bd', '2026-06-26 15:07:17', 'Hoan thanh', 'Da thanh toan'),
-(152, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-06-26 15:08:34', 'Hoan thanh', 'Da thanh toan'),
-(153, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-26 15:16:40', 'Hoan thanh', 'Da thanh toan'),
-(154, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-26 15:20:06', 'Hoan thanh', 'Da thanh toan'),
-(155, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-06-26 16:11:11', 'Hoan thanh', 'Da thanh toan'),
-(156, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-26 16:18:56', 'Dang phuc vu', 'Chua thanh toan'),
-(157, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-06-26 16:19:10', 'Dang phuc vu', 'Chua thanh toan'),
-(158, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 20:45:08', 'Hoan thanh', 'Da thanh toan'),
-(159, NULL, 'giao_hang', 'A', '20000.00', 'tien_mat', '020202q', 'a', '2026-06-29 20:47:06', 'Hoan thanh', 'Da thanh toan'),
-(160, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 21:07:14', 'Hoan thanh', 'Da thanh toan'),
-(161, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 21:13:19', 'Hoan thanh', 'Da thanh toan'),
-(162, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 21:13:59', 'Hoan thanh', 'Da thanh toan'),
-(163, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 21:26:41', 'Hoan thanh', 'Da thanh toan'),
-(164, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 21:26:51', 'Hoan thanh', 'Da thanh toan'),
-(165, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 21:44:27', 'Hoan thanh', 'Da thanh toan'),
-(166, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 21:51:24', 'Hoan thanh', 'Da thanh toan'),
-(167, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-06-29 22:22:11', 'Hoan thanh', 'Da thanh toan'),
-(168, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 22:32:21', 'Hoan thanh', 'Da thanh toan'),
-(169, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-29 22:58:33', 'Hoan thanh', 'Da thanh toan'),
-(170, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-06-30 00:12:55', 'Hoan thanh', 'Da thanh toan'),
-(171, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-30 00:19:12', 'Hoan thanh', 'Da thanh toan'),
-(172, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-30 00:43:53', 'Hoan thanh', 'Da thanh toan'),
-(173, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-30 00:46:35', 'Hoan thanh', 'Da thanh toan'),
-(174, 2, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-30 00:46:49', 'Hoan thanh', 'Da thanh toan'),
-(175, 3, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-30 00:47:02', 'Hoan thanh', 'Da thanh toan'),
-(176, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-06-30 00:47:48', 'Hoan thanh', 'Da thanh toan'),
-(177, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-06-30 01:19:05', 'Dang phuc vu', 'Chua thanh toan'),
-(178, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-06-30 01:20:59', 'Hoan thanh', 'Da thanh toan'),
-(179, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-01 22:22:45', 'Hoan thanh', 'Da thanh toan'),
-(180, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-07-01 22:56:35', 'Dang phuc vu', 'Chua thanh toan'),
-(181, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-07-01 22:56:43', 'Dang phuc vu', 'Chua thanh toan'),
-(182, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-07-01 22:56:46', 'Dang phuc vu', 'Chua thanh toan'),
-(183, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-07-01 22:56:47', 'Dang phuc vu', 'Chua thanh toan'),
-(184, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-07-01 22:56:50', 'Dang phuc vu', 'Chua thanh toan'),
-(185, NULL, 'giao_hang', NULL, '0.00', NULL, NULL, NULL, '2026-07-01 22:56:55', 'Dang phuc vu', 'Chua thanh toan'),
-(186, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-02 12:04:35', 'Hoan thanh', 'Da thanh toan'),
-(187, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-02 12:04:40', 'Hoan thanh', 'Da thanh toan'),
-(188, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-02 12:08:47', 'Hoan thanh', 'Da thanh toan'),
-(189, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-02 21:16:40', 'Hoan thanh', 'Da thanh toan'),
-(190, 2, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-02 21:17:04', 'Hoan thanh', 'Da thanh toan'),
-(191, 15, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-07-02 21:35:01', 'Hoan thanh', 'Da thanh toan'),
-(192, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 00:37:41', 'Hoan thanh', 'Da thanh toan'),
-(193, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 00:53:38', 'Hoan thanh', 'Da thanh toan'),
-(194, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 15:30:58', 'Hoan thanh', 'Da thanh toan'),
-(195, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-07-03 16:42:49', 'Hoan thanh', 'Da thanh toan'),
-(196, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 16:55:45', 'Hoan thanh', 'Da thanh toan'),
-(197, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 17:07:40', 'Hoan thanh', 'Da thanh toan'),
-(198, 27, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 17:12:36', 'Hoan thanh', 'Da thanh toan'),
-(199, 12, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 17:14:09', 'Hoan thanh', 'Da thanh toan'),
-(200, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 20:47:18', 'Hoan thanh', 'Da thanh toan'),
-(201, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 20:51:45', 'Hoan thanh', 'Da thanh toan'),
-(202, 14, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 20:51:54', 'Hoan thanh', 'Da thanh toan'),
-(203, 13, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 20:51:56', 'Hoan thanh', 'Da thanh toan'),
-(204, 8, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 20:53:21', 'Hoan thanh', 'Da thanh toan'),
-(205, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 21:08:54', 'Hoan thanh', 'Da thanh toan'),
-(206, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-07-03 21:10:26', 'Dang phuc vu', 'Chua thanh toan'),
-(207, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 21:10:26', 'Hoan thanh', 'Da thanh toan'),
-(208, 3, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 14:30:28', 'Hoan thanh', 'Da thanh toan'),
-(209, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-07-03 14:33:03', 'Hoan thanh', 'Da thanh toan'),
-(210, 3, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-07-03 14:33:14', 'Hoan thanh', 'Da thanh toan'),
-(211, NULL, 'giao_hang', 'phuc', '20000.00', NULL, '0929929202', '21sdsa', '2026-07-03 14:35:42', 'Dang phuc vu', 'Chua thanh toan'),
-(212, NULL, 'giao_hang', 'phuc', '20000.00', 'tien_mat', '0929929202', '21sdsa', '2026-07-03 14:35:42', 'Hoan thanh', 'Da thanh toan'),
-(213, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-07-03 14:38:33', 'Hoan thanh', 'Da thanh toan'),
-(214, 3, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 14:53:29', 'Hoan thanh', 'Da thanh toan'),
-(215, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 15:09:40', 'Hoan thanh', 'Da thanh toan'),
-(216, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-03 15:23:10', 'Hoan thanh', 'Da thanh toan');
+(1, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-07 18:41:57', 'Hoan thanh', 'Da thanh toan'),
+(2, 23, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-07-07 18:43:09', 'Hoan thanh', 'Da thanh toan'),
+(3, NULL, 'mang_ve', NULL, '0.00', NULL, NULL, NULL, '2026-07-07 18:44:09', 'Dang phuc vu', 'Chua thanh toan'),
+(4, NULL, 'mang_ve', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-07 18:44:10', 'Hoan thanh', 'Da thanh toan'),
+(5, NULL, 'giao_hang', 'A', '10000.00', NULL, '12334', '16 cao lo', '2026-07-07 18:44:59', 'Dang phuc vu', 'Chua thanh toan'),
+(6, NULL, 'giao_hang', 'A', '10000.00', 'tien_mat', '12334', '16 cao lo', '2026-07-07 18:44:59', 'Hoan thanh', 'Da thanh toan'),
+(7, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-07 19:13:09', 'Hoan thanh', 'Da thanh toan'),
+(8, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-07 19:19:46', 'Hoan thanh', 'Da thanh toan'),
+(9, 1, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-08 16:19:42', 'Hoan thanh', 'Da thanh toan'),
+(10, 2, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-08 16:20:10', 'Hoan thanh', 'Da thanh toan'),
+(11, 3, 'tai_cho', NULL, '0.00', 'tien_mat', NULL, NULL, '2026-07-08 16:27:53', 'Hoan thanh', 'Da thanh toan'),
+(12, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-07-08 16:32:33', 'Hoan thanh', 'Da thanh toan'),
+(13, 1, 'tai_cho', NULL, '0.00', 'chuyen_khoan', NULL, NULL, '2026-07-08 17:12:49', 'Hoan thanh', 'Da thanh toan');
 
 -- --------------------------------------------------------
 
@@ -1016,44 +498,17 @@ CREATE TABLE IF NOT EXISTS `huy_mon_log` (
   PRIMARY KEY (`id`),
   KEY `idx_huy_don` (`ma_don_hang`),
   KEY `idx_huy_ngay` (`ngay_huy`)
-) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `huy_mon_log`
 --
 
 INSERT INTO `huy_mon_log` (`id`, `ma_don_hang`, `ma_mon`, `ten_mon`, `so_luong_huy`, `ngay_huy`) VALUES
-(1, 144, 30, 'MatCha Latte', 1, '2026-06-26 14:14:35'),
-(2, 145, 29, 'Revive', 1, '2026-06-26 14:41:04'),
-(3, 145, 29, 'Revive', 1, '2026-06-26 14:41:10'),
-(4, 148, 30, 'MatCha Latte', 2, '2026-06-26 14:52:01'),
-(5, 147, 30, 'MatCha Latte', 3, '2026-06-26 14:53:21'),
-(6, 149, 29, 'Revive', 1, '2026-06-26 15:01:44'),
-(7, 153, 30, 'MatCha Latte', 2, '2026-06-26 15:17:36'),
-(8, 155, 30, 'MatCha Latte', 5, '2026-06-26 16:11:29'),
-(9, 164, 23, 'Nước Suối', 1, '2026-06-29 21:33:48'),
-(10, 165, 21, 'Cafe den', 1, '2026-06-29 21:44:49'),
-(11, 168, 29, 'Revive', 2, '2026-06-29 22:32:39'),
-(12, 170, 29, 'Revive', 2, '2026-06-30 00:13:17'),
-(13, 171, 29, 'Revive', 4, '2026-06-30 00:23:46'),
-(14, 171, 29, 'Revive', 4, '2026-06-30 00:24:28'),
-(15, 171, 29, 'Revive', 3, '2026-06-30 00:31:31'),
-(16, 171, 29, 'Revive', 3, '2026-06-30 00:32:05'),
-(17, 171, 29, 'Revive', 3, '2026-06-30 00:37:23'),
-(18, 136, 29, 'Revive', 1, '2026-06-30 00:43:33'),
-(19, 173, 29, 'Revive', 1, '2026-06-30 00:47:18'),
-(20, 178, 26, 'Pepsi', 1, '2026-07-01 22:12:59'),
-(21, 191, 29, 'Revive', 2, '2026-07-02 21:36:14'),
-(22, 213, 30, 'MatCha Latte', 1, '2026-07-03 14:52:12'),
-(23, 213, 31, 'Soda chanh ', 1, '2026-07-03 14:53:06'),
-(24, 215, 30, 'MatCha Latte', 1, '2026-07-03 15:10:05'),
-(25, 216, 33, 'Sữa chua dâu', 1, '2026-07-03 15:23:24'),
-(26, 216, 26, 'Pepsi', 3, '2026-07-03 15:24:07'),
-(27, 216, 26, 'Pepsi', 1, '2026-07-03 15:24:32'),
-(28, 216, 26, 'Pepsi', 1, '2026-07-03 15:24:32'),
-(29, 216, 26, 'Pepsi', 1, '2026-07-03 15:24:33'),
-(30, 216, 26, 'Pepsi', 1, '2026-07-03 15:24:33'),
-(31, 216, 26, 'Pepsi', 1, '2026-07-03 15:24:33');
+(1, 1, 25, 'Coca', 5, '2026-07-07 18:42:32'),
+(2, 8, 25, 'Coca', 1, '2026-07-07 19:20:23'),
+(3, 12, 30, 'MatCha Latte', 1, '2026-07-08 16:32:59'),
+(4, 13, 34, 'Trà Đào', 5, '2026-07-08 17:13:17');
 
 -- --------------------------------------------------------
 
@@ -1073,16 +528,66 @@ CREATE TABLE IF NOT EXISTS `ky_luong` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_thang_nam` (`thang`,`nam`),
   KEY `idx_ky_luong_trang_thai` (`trang_thai`)
-) ENGINE=InnoDB AUTO_INCREMENT=433 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=474 DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `ky_luong`
 --
 
 INSERT INTO `ky_luong` (`id`, `thang`, `nam`, `trang_thai`, `chot_luc`, `created_at`, `updated_at`) VALUES
-(1, 6, 2026, 'chua_chot', '2026-06-05 00:39:22', '2026-06-02 14:23:43', '2026-06-05 00:39:25'),
+(1, 6, 2026, 'chua_chot', NULL, '2026-06-02 14:23:43', '2026-06-05 00:39:25'),
 (146, 5, 2026, 'chua_chot', NULL, '2026-06-04 21:44:57', '2026-06-04 21:44:57'),
 (405, 7, 2026, 'chua_chot', NULL, '2026-07-01 21:35:22', '2026-07-01 21:35:22');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lich_su_nguyen_lieu_het_han`
+--
+
+DROP TABLE IF EXISTS `lich_su_nguyen_lieu_het_han`;
+CREATE TABLE IF NOT EXISTS `lich_su_nguyen_lieu_het_han` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ma_nguyen_lieu` int(11) NOT NULL,
+  `ten_nguyen_lieu` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `han_su_dung` date DEFAULT NULL,
+  `ton_kho_con_lai` decimal(10,2) DEFAULT '0.00',
+  `don_vi` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ngay_xu_ly` date DEFAULT NULL,
+  `ghi_chu` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_ls_nguyenlieu` (`ma_nguyen_lieu`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lich_su_thanh_toan`
+--
+
+DROP TABLE IF EXISTS `lich_su_thanh_toan`;
+CREATE TABLE IF NOT EXISTS `lich_su_thanh_toan` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ma_phieu` int(11) NOT NULL,
+  `nha_cung_cap` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `so_tien` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `con_no_sau_khi_tra` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `ngay_thanh_toan` datetime NOT NULL,
+  `ghi_chu` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_lstt_phieunhap` (`ma_phieu`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `lich_su_thanh_toan`
+--
+
+INSERT INTO `lich_su_thanh_toan` (`id`, `ma_phieu`, `nha_cung_cap`, `so_tien`, `con_no_sau_khi_tra`, `ngay_thanh_toan`, `ghi_chu`, `created_at`) VALUES
+(1, 1, 'A', '200000.00', '200000.00', '2026-07-07 18:59:45', 'Thanh toán một phần', '2026-07-07 18:59:45'),
+(2, 9, 'Q', '50000.00', '0.00', '2026-07-08 17:10:03', 'Thanh toán hết', '2026-07-08 17:10:02'),
+(3, 7, 'ABC', '50000.00', '30000.00', '2026-07-08 17:10:15', 'Thanh toán một phần', '2026-07-08 17:10:14');
 
 -- --------------------------------------------------------
 
@@ -1101,7 +606,7 @@ CREATE TABLE IF NOT EXISTS `mon` (
   `trang_thai_ban` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1: Đang bán, 0: Tạm ngưng',
   PRIMARY KEY (`ma_mon`),
   KEY `fk_mon_danhmucmon` (`ma_danh_muc`)
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `mon`
@@ -1117,7 +622,9 @@ INSERT INTO `mon` (`ma_mon`, `ma_danh_muc`, `ten_mon`, `gia_ban`, `hinh_anh`, `m
 (30, 5, 'MatCha Latte', '40000.00', '/uploads/anh-mon/mon-1781430661731.png', NULL, 1),
 (31, 2, 'Soda chanh ', '25000.00', '/uploads/anh-mon/mon-1783072023661.png', NULL, 1),
 (32, 2, 'Soda', '20000.00', '/uploads/anh-mon/mon-1783072082762.png', NULL, 1),
-(33, 4, 'Sữa chua dâu', '30000.00', '/uploads/anh-mon/mon-1783091944696.png', NULL, 1);
+(33, 4, 'Sữa chua dâu', '30000.00', '/uploads/anh-mon/mon-1783091944696.png', NULL, 1),
+(34, 3, 'Trà Đào', '35000.00', '/uploads/anh-mon/mon-1783347335276.png', NULL, 1),
+(35, 3, 'Trà tắc', '30000.00', '/uploads/anh-mon/mon-1783412873649.png', NULL, 1);
 
 --
 -- Triggers `mon`
@@ -1168,37 +675,42 @@ CREATE TABLE IF NOT EXISTS `nguyenlieu` (
   `danh_muc` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT 'Khác',
   `don_vi_tinh` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT 'g',
   `don_vi_nhap` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `don_vi_dong_goi` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `dung_tich_san_pham` decimal(10,2) NOT NULL DEFAULT '1.00',
   `ton_kho` decimal(10,2) NOT NULL DEFAULT '0.00',
   `nguong_canh_bao` decimal(10,2) NOT NULL DEFAULT '1000.00',
   `ghi_chu` text COLLATE utf8mb4_unicode_ci,
   `trang_thai` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1=đang dùng, 0=ngưng',
+  `han_su_dung` date DEFAULT NULL,
   PRIMARY KEY (`ma_nguyen_lieu`)
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `nguyenlieu`
 --
 
-INSERT INTO `nguyenlieu` (`ma_nguyen_lieu`, `ten_nguyen_lieu`, `danh_muc`, `don_vi_tinh`, `don_vi_nhap`, `don_vi_dong_goi`, `dung_tich_san_pham`, `ton_kho`, `nguong_canh_bao`, `ghi_chu`, `trang_thai`) VALUES
-(1, 'CoCa', 'Nước uống đóng chai', 'lon', 'lon', NULL, '1.00', '20.00', '10.00', NULL, 1),
-(2, 'Sting', 'Nước uống đóng chai', 'lon', 'lon', NULL, '1.00', '30.00', '10.00', NULL, 1),
-(3, 'Bột Cafe Đen', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '1000.00', '1850.00', '100.00', NULL, 1),
-(4, 'Nước Suối', 'Nước uống đóng chai', 'chai', 'chai', NULL, '1.00', '16.00', '1.00', NULL, 1),
-(5, 'Bột Cafe Sữa', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '1000.00', '500.00', '1000.00', NULL, 1),
-(6, 'Sữa Đặc', 'Nguyên liệu pha chế', 'ml', 'lon', 'Lon', '300.00', '1470.00', '100.00', NULL, 1),
-(7, 'Pepsi', 'Nước uống đóng chai', 'lon', 'lon', NULL, '1.00', '3.00', '10.00', NULL, 1),
-(8, 'Revive', 'Nước uống đóng chai', 'chai', 'chai', NULL, '1.00', '14.00', '10.00', NULL, 1),
-(9, 'Bột Matcha', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '1000.00', '630.00', '200.00', NULL, 1),
-(10, 'Sữa Gấu', 'Nguyên liệu pha chế', 'ml', 'lon', 'Lon', '280.00', '2721.00', '280.00', NULL, 1),
-(11, 'Đường', 'Nguyên liệu pha chế', 'g', 'gói', 'KG', '500.00', '1315.00', '200.00', NULL, 1),
-(12, 'Sữa tươi', 'Nguyên liệu pha chế', 'ml', 'hộp', 'Hộp', '500.00', '2460.00', '100.00', NULL, 1),
-(13, 'Bột cafe sữa tươi', 'Nguyên liệu pha chế', 'g', 'gói', 'Gói', '1000.00', '2000.00', '200.00', NULL, 1),
-(14, 'Soda', 'Nước uống đóng chai', 'lon', 'lon', NULL, '1.00', '15.00', '10.00', NULL, 1),
-(15, 'Chanh', 'Nguyên liệu hết trong ngày', 'g', 'kg', NULL, '1000.00', '888.00', '500.00', NULL, 1),
-(16, 'Mứt Dâu', 'Nguyên liệu pha chế', 'ml', 'chai', NULL, '500.00', '970.00', '100.00', NULL, 1),
-(17, 'Sữa chua không đường', 'Nguyên liệu pha chế', 'g', 'hộp', NULL, '100.00', '2999.00', '10.00', NULL, 1);
+INSERT INTO `nguyenlieu` (`ma_nguyen_lieu`, `ten_nguyen_lieu`, `danh_muc`, `don_vi_tinh`, `don_vi_nhap`, `dung_tich_san_pham`, `ton_kho`, `nguong_canh_bao`, `ghi_chu`, `trang_thai`, `han_su_dung`) VALUES
+(1, 'CoCa', 'Nước uống đóng chai', 'lon', 'lon', '1.00', '5.00', '10.00', NULL, 1, '2026-07-11'),
+(2, 'Sting', 'Nước uống đóng chai', 'lon', 'lon', '1.00', '0.00', '10.00', NULL, 1, NULL),
+(3, 'Bột Cafe Đen', 'Nguyên liệu pha chế', 'g', 'gói', '1000.00', '0.00', '100.00', NULL, 1, NULL),
+(4, 'Nước Suối', 'Nước uống đóng chai', 'chai', 'chai', '1.00', '0.00', '1.00', NULL, 1, NULL),
+(5, 'Bột Cafe Sữa', 'Nguyên liệu pha chế', 'g', 'gói', '1000.00', '0.00', '1000.00', NULL, 1, NULL),
+(6, 'Sữa Đặc', 'Nguyên liệu pha chế', 'ml', 'lon', '300.00', '0.00', '100.00', NULL, 1, NULL),
+(7, 'Pepsi', 'Nước uống đóng chai', 'lon', 'lon', '1.00', '12.00', '10.00', NULL, 1, '2026-07-14'),
+(8, 'Revive', 'Nước uống đóng chai', 'chai', 'chai', '1.00', '10.00', '10.00', NULL, 1, '2026-07-09'),
+(9, 'Bột Matcha', 'Nguyên liệu pha chế', 'g', 'gói', '1000.00', '1640.00', '200.00', NULL, 1, '2026-07-17'),
+(10, 'Sữa Gấu', 'Nước uống đóng chai', 'lon', 'lon', '1.00', '18.00', '10.00', NULL, 1, '2026-07-18'),
+(11, 'Đường', 'Nguyên liệu pha chế', 'g', 'gói', '500.00', '795.00', '200.00', NULL, 1, NULL),
+(12, 'Sữa tươi', 'Nguyên liệu pha chế', 'ml', 'hộp', '500.00', '0.00', '100.00', NULL, 1, NULL),
+(13, 'Bột cafe sữa tươi', 'Nguyên liệu pha chế', 'g', 'gói', '1000.00', '0.00', '200.00', NULL, 1, NULL),
+(14, 'Soda', 'Nước uống đóng chai', 'lon', 'lon', '1.00', '0.00', '10.00', NULL, 1, NULL),
+(15, 'Chanh', 'Nguyên liệu pha chế', 'g', 'kg', '1000.00', '0.00', '500.00', NULL, 1, NULL),
+(16, 'Mứt Dâu', 'Nguyên liệu pha chế', 'ml', 'chai', '500.00', '0.00', '100.00', NULL, 1, NULL),
+(17, 'Sữa chua không đường', 'Nguyên liệu pha chế', 'g', 'hộp', '100.00', '0.00', '10.00', NULL, 1, NULL),
+(18, 'Trà Cozy Đào', 'Nguyên liệu pha chế', 'g', 'hộp', '150.00', '290.00', '50.00', NULL, 1, '2026-07-10'),
+(19, 'Siro Đào', 'Nguyên liệu pha chế', 'ml', 'chai', '500.00', '500.00', '100.00', NULL, 1, '2026-07-10'),
+(20, 'Đào Ngâm', 'Nguyên liệu pha chế', 'g', 'kg', '1000.00', '950.00', '50.00', NULL, 1, '2026-07-10'),
+(21, 'Trà Thái Xanh', 'Nguyên liệu pha chế', 'g', 'hộp', '500.00', '0.00', '51.00', NULL, 1, NULL),
+(22, 'Tắc', 'Nguyên liệu pha chế', 'g', 'kg', '1000.00', '0.00', '100.00', NULL, 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -1215,7 +727,7 @@ CREATE TABLE IF NOT EXISTS `nhanvien` (
   `dia_chi` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `trang_thai` enum('dang_lam','tam_nghi','da_nghi') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'dang_lam' COMMENT 'Trạng thái làm việc',
   PRIMARY KEY (`ma_nhan_vien`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `nhanvien`
@@ -1231,7 +743,9 @@ INSERT INTO `nhanvien` (`ma_nhan_vien`, `ten`, `ngay_sinh`, `so_dien_thoai`, `di
 (12, 'Lê Trọng Khiêm', '2003-02-02', '23232232', '121e', 'dang_lam'),
 (14, 'Lê Văn Cam', '1999-11-12', '121212121', '12ww', 'dang_lam'),
 (15, 'Lê Văn H', '1999-02-02', '1212121', '12g', 'dang_lam'),
-(16, 'Trần Trọng Phúc', '2004-06-29', '0929459371', 'Cao Lỗ', 'dang_lam');
+(16, 'Trần Trọng Phúc', '2004-06-29', '0929459371', 'Cao Lỗ', 'dang_lam'),
+(17, 'Lê Đặng Hải Phục', '2008-11-05', '012131241', '12a', 'dang_lam'),
+(18, 'lê van a', '2017-02-07', '1234556', '12A cao lo', 'dang_lam');
 
 -- --------------------------------------------------------
 
@@ -1264,7 +778,9 @@ INSERT INTO `nhanvien_luong` (`ma_nhan_vien`, `luong_gio`, `phu_cap_mac_dinh`, `
 (12, '0.00', '0.00', 'dang_lam', '2026-06-04 21:17:53', '2026-06-04 21:17:53'),
 (14, '0.00', '0.00', 'dang_lam', '2026-06-04 21:17:53', '2026-06-04 21:17:53'),
 (15, '0.00', '0.00', 'dang_lam', '2026-06-04 21:17:53', '2026-06-04 21:17:53'),
-(16, '36000.00', '320000.00', 'dang_lam', '2026-06-04 21:17:53', '2026-06-05 00:45:10');
+(16, '36000.00', '320000.00', 'dang_lam', '2026-06-04 21:17:53', '2026-06-05 00:45:10'),
+(17, '40000.00', '500000.00', 'dang_lam', '2026-07-06 14:08:02', '2026-07-06 14:08:02'),
+(18, '26000.00', '200000.00', 'dang_lam', '2026-07-07 08:38:35', '2026-07-07 08:38:35');
 
 -- --------------------------------------------------------
 
@@ -1329,6 +845,8 @@ INSERT INTO `phancong` (`ma_nhan_vien`, `ma_ca`, `ngay`) VALUES
 (16, 1, '2026-06-02'),
 (16, 1, '2026-06-04'),
 (16, 1, '2026-06-05'),
+(17, 1, '2026-07-05'),
+(18, 1, '2026-07-06'),
 (1, 2, '2026-04-13'),
 (1, 2, '2026-05-14'),
 (3, 2, '2026-04-06'),
@@ -1357,6 +875,8 @@ INSERT INTO `phancong` (`ma_nhan_vien`, `ma_ca`, `ngay`) VALUES
 (12, 2, '2026-06-05'),
 (16, 2, '2026-06-02'),
 (16, 2, '2026-06-04'),
+(17, 2, '2026-07-05'),
+(18, 2, '2026-07-06'),
 (1, 3, '2026-04-10'),
 (3, 3, '2026-04-09'),
 (3, 3, '2026-04-11'),
@@ -1381,7 +901,9 @@ INSERT INTO `phancong` (`ma_nhan_vien`, `ma_ca`, `ngay`) VALUES
 (11, 3, '2026-04-12'),
 (11, 3, '2026-06-03'),
 (12, 3, '2026-05-17'),
-(16, 3, '2026-06-04');
+(16, 3, '2026-06-04'),
+(17, 3, '2026-07-05'),
+(18, 3, '2026-07-06');
 
 -- --------------------------------------------------------
 
@@ -1400,71 +922,36 @@ CREATE TABLE IF NOT EXISTS `phieunhap` (
   `ngay_thanh_toan` datetime DEFAULT NULL,
   `so_tien_da_tra` decimal(12,2) NOT NULL DEFAULT '0.00',
   PRIMARY KEY (`ma_phieu`)
-) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `phieunhap`
 --
 
 INSERT INTO `phieunhap` (`ma_phieu`, `ngay_nhap`, `nha_cung_cap`, `tong_tien`, `ghi_chu`, `da_thanh_toan`, `ngay_thanh_toan`, `so_tien_da_tra`) VALUES
-(1, '2026-05-16 21:10:33', 'ACH', '500000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(2, '2026-05-16 21:15:10', 'a', '120000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(3, '2026-05-16 21:25:38', 'CH', '100000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(4, '2026-05-17 15:07:51', 'A', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(5, '2026-05-17 15:26:50', 'ACX', '400000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(6, '2026-05-17 15:27:46', 'a', '400000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(7, '2026-05-17 15:29:03', 'a', '400000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(8, '2026-05-17 15:30:50', 'q', '400000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(9, '2026-05-19 00:00:00', 'TEA', '800000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(10, '2026-05-19 00:00:00', 'A', '100000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(11, '2026-05-19 00:00:00', 'A', '100000000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(12, '2026-05-19 00:00:00', 'Đại lý tự do', '100000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(13, '2026-05-19 00:00:00', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(14, '2026-05-19 00:00:00', 'Đại lý tự do', '200000000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(15, '2026-05-19 00:00:00', 'Đại lý tự do', '20000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(16, '2026-05-19 00:00:00', 'AD', '10000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(17, '2026-06-05 22:47:53', 'ABC', '400000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(18, '2026-06-05 22:48:15', 'A', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(19, '2026-06-05 22:48:29', 'A', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(20, '2026-06-05 22:53:09', 'A', '100000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(21, '2026-06-06 06:01:33', 'A', '400000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(22, '2026-06-06 06:03:53', 'ASS', '400000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(23, '2026-06-06 06:04:12', 'Đại lý tự do', '60000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(24, '2026-06-06 06:08:51', 'd', '50000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(25, '2026-06-08 01:40:07', 'AS', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(26, '2026-06-11 23:30:10', 'A', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(27, '2026-06-13 00:52:33', 'ASX', '100000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(28, '2026-06-14 23:52:38', 'AC', '800000.00', 'A', 0, NULL, '0.00'),
-(29, '2026-06-14 23:53:25', 'AGGG', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(30, '2026-06-14 23:53:47', 'A', '50000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(31, '2026-06-26 21:40:39', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(32, '2026-06-30 04:46:24', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(33, '2026-06-30 04:46:37', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(34, '2026-06-30 04:47:01', 'Đại lý tự do', '300000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(35, '2026-06-30 04:47:12', 'Đại lý tự do', '300000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(36, '2026-06-30 04:47:32', 'Đại lý tự do', '299970.00', 'Nhập kho hệ thống', 1, '2026-07-02 11:10:41', '299970.00'),
-(37, '2026-06-30 04:50:08', 'Đại lý tự do', '300000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(38, '2026-06-30 04:55:13', 'Đại lý tự do', '30000.00', 'Nhập kho hệ thống', 1, '2026-07-02 11:10:19', '30000.00'),
-(39, '2026-06-30 07:19:47', 'Đại lý tự do', '30000.00', 'Nhập kho hệ thống', 1, '2026-07-01 21:59:13', '30000.00'),
-(40, '2026-06-30 07:38:13', 'Đại lý tự do', '50000.00', 'Nhập kho hệ thống', 1, '2026-07-01 21:58:53', '50000.00'),
-(41, '2026-07-03 04:34:19', 'ABC', '200000.00', 'Nhập kho hệ thống', 1, '2026-07-03 14:48:54', '200000.00'),
-(42, '2026-07-03 07:01:55', 'Đại lý tự do', '100000.00', 'Nhập kho hệ thống', 1, '2026-07-03 00:04:28', '100000.00'),
-(43, '2026-07-03 07:15:03', 'Đại lý tự do', '100000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(44, '2026-07-03 07:21:21', 'Đại lý tự do', '50000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(45, '2026-07-03 07:29:45', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống', 1, '2026-07-03 10:03:01', '200000.00'),
-(46, '2026-07-02 17:00:00', 'Đại lý tự do', '20000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(47, '2026-07-02 17:00:00', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(48, '2026-07-02 17:00:00', 'Đại lý tự do', '20000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(49, '2026-07-02 17:00:00', 'Đại lý tự do', '20000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(50, '2026-07-02 17:00:00', 'Đại lý tự do', '20000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(51, '2026-07-02 17:00:00', 'Đại lý tự do', '300000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(52, '2026-07-02 17:00:00', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(53, '2026-07-02 17:00:00', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(54, '2026-07-02 17:00:00', 'Đại lý tự do', '150000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(55, '2026-07-02 17:00:00', 'Đại lý tự do', '250000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(56, '2026-07-02 17:00:00', 'Đại lý tự do', '200000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(57, '2026-07-02 17:00:00', 'Đại lý tự do', '99980.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
-(58, '2026-07-02 17:00:00', 'Đại lý tự do', '50000.00', 'Nhập kho hệ thống', 0, NULL, '0.00');
+(1, '2026-07-06 17:00:00', 'A', '400000.00', 'Nhập kho hệ thống', 0, '2026-07-07 18:59:45', '200000.00'),
+(2, '2026-07-06 17:00:00', 'B', '20000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
+(3, '2026-07-06 17:00:00', 'C', '600000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
+(4, '2026-07-06 17:00:00', 'G', '450000.00', 'ABCD', 0, NULL, '0.00'),
+(5, '2026-07-06 17:00:00', 'H', '40000.00', 'A', 0, NULL, '0.00'),
+(6, '2026-07-07 17:00:00', 'Đại lý tự do', '100000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
+(7, '2026-07-08 17:00:00', 'ABC', '80000.00', 'Nhập kho hệ thống', 0, '2026-07-08 17:10:15', '50000.00'),
+(8, '2026-07-08 17:00:00', 'A', '100000.00', 'Nhập kho hệ thống', 0, NULL, '0.00'),
+(9, '2026-07-08 17:00:00', 'Q', '50000.00', 'Nhập kho hệ thống', 1, '2026-07-08 17:10:03', '50000.00');
+
+--
+-- Constraints for table `phancong`
+--
+ALTER TABLE `phancong`
+  ADD CONSTRAINT `fk_pc_calam` FOREIGN KEY (`ma_ca`) REFERENCES `calam` (`ma_ca`) ON DELETE CASCADE;
+
+--
+-- Indexes for performance
+--
+ALTER TABLE `donhang` ADD INDEX `idx_dh_ngay_tao` (`ngay_tao`);
+ALTER TABLE `donhang` ADD INDEX `idx_dh_trang_thai_thanh_toan` (`trang_thai_thanh_toan`);
+ALTER TABLE `phieunhap` ADD INDEX `idx_pn_ngay_nhap` (`ngay_nhap`);
+ALTER TABLE `phieunhap` ADD INDEX `idx_pn_da_thanh_toan` (`da_thanh_toan`);
 
 --
 -- Constraints for dumped tables

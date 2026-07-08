@@ -1,4 +1,4 @@
-/* ===== 🧾 BÁN HÀNG - ĐƠN HÀNG - ROUTES =====
+/* =====  BÁN HÀNG - ĐƠN HÀNG  =====
  * Endpoint API cho Đơn hàng POS (mở đơn, thêm món, thanh toán...)
  * Prefix: /api/pos
  * ========================================== */

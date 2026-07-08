@@ -1,4 +1,4 @@
-/* ===== 🧾 BÁN HÀNG - ĐƠN HÀNG - SERVICE =====
+/* ===== BÁN HÀNG - ĐƠN HÀNG  =====
  * Xử lý nghiệp vụ: mở đơn, thêm món, gửi bar, thanh toán, chuyển bàn
  * Liên kết: donHangController → donHangService → donHangRepository
  * ============================================ */

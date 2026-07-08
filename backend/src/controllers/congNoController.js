@@ -1,4 +1,4 @@
-/* ===== 💰 CÔNG NỢ - CONTROLLER =====
+/* =====  CÔNG NỢ  =====
  * Tiếp nhận request HTTP, gọi Service, trả response
  * ================================== */
 const CongNoService = require("../services/congNoService");
@@ -53,6 +53,23 @@ const CongNoController = {
       res.json({ message: `Đã thanh toán ${result.so_phieu} phiếu với tổng ${result.tong_tien.toLocaleString('vi-VN')}đ`, data: result });
     } catch (error) {
       res.status(400).json({ message: error.message });
+    }
+  },
+
+  /** Lấy lịch sử thanh toán */
+  getPayments: async (req, res) => {
+    try {
+      const { from_date, to_date, search, limit, offset } = req.query;
+      const data = await CongNoService.getLichSuThanhToan({
+        from_date,
+        to_date,
+        search,
+        limit: parseInt(limit, 10) || 50,
+        offset: parseInt(offset, 10) || 0,
+      });
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
   },
 };

@@ -19,7 +19,6 @@ async function ensurePOSSchema() {
        AFTER so_luong,
        ADD INDEX idx_cthd_trang_thai (trang_thai_mon)`
     );
-    console.log("✅ Đã thêm cột chitiethoadon.so_luong_da_gui_bar");
   }
 
   // Thêm cột loai_don vào donhang nếu chưa có (tai_cho, mang_ve, giao_hang)
@@ -30,7 +29,6 @@ async function ensurePOSSchema() {
        ADD COLUMN loai_don VARCHAR(20) NOT NULL DEFAULT 'tai_cho'
        AFTER ma_ban`
     );
-    console.log("✅ Đã thêm cột donhang.loai_don");
   }
 
   // Thêm cột phi_giao_hang vào donhang nếu chưa có
@@ -41,7 +39,6 @@ async function ensurePOSSchema() {
        ADD COLUMN phi_giao_hang DECIMAL(12,2) NOT NULL DEFAULT 0.00
        AFTER loai_don`
     );
-    console.log("✅ Đã thêm cột donhang.phi_giao_hang");
   }
 
   // Thêm cột so_dien_thoai_giao và dia_chi_giao vào donhang nếu chưa có
@@ -52,7 +49,6 @@ async function ensurePOSSchema() {
        ADD COLUMN so_dien_thoai_giao VARCHAR(20) DEFAULT NULL AFTER phi_giao_hang,
        ADD COLUMN dia_chi_giao VARCHAR(500) DEFAULT NULL AFTER so_dien_thoai_giao`
     );
-    console.log("✅ Đã thêm cột donhang.so_dien_thoai_giao và dia_chi_giao");
   }
 
   // Thêm cột ten_khach vào donhang nếu chưa có
@@ -62,7 +58,6 @@ async function ensurePOSSchema() {
       `ALTER TABLE donhang
        ADD COLUMN ten_khach VARCHAR(100) DEFAULT NULL AFTER loai_don`
     );
-    console.log("✅ Đã thêm cột donhang.ten_khach");
   }
 
   // Thêm cột hinh_thuc_thanh_toan vào donhang nếu chưa có
@@ -72,7 +67,6 @@ async function ensurePOSSchema() {
       `ALTER TABLE donhang
        ADD COLUMN hinh_thuc_thanh_toan VARCHAR(20) DEFAULT NULL AFTER phi_giao_hang`
     );
-    console.log("✅ Đã thêm cột donhang.hinh_thuc_thanh_toan");
   }
 
   // Tạo bảng huy_mon_log nếu chưa có
@@ -94,30 +88,22 @@ async function ensurePOSSchema() {
         KEY idx_huy_ngay (ngay_huy)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     );
-    console.log("✅ Đã tạo bảng huy_mon_log");
-  } else {
-    console.log("✅ Bảng huy_mon_log đã tồn tại");
   }
 
-  // 🔄 MIGRATION: Đổi tên cột ml_thuc_te_ton → ton_kho (nếu cột cũ còn tồn tại)
+  //  MIGRATION: Đổi tên cột ml_thuc_te_ton → ton_kho (nếu cột cũ còn tồn tại)
   const oldColExists = await columnExists("nguyenlieu", "ml_thuc_te_ton");
   if (oldColExists) {
     await db.execute(
       `ALTER TABLE nguyenlieu CHANGE COLUMN ml_thuc_te_ton ton_kho DECIMAL(10,2) NOT NULL DEFAULT '0.00'`
     );
-    console.log("✅ Đã đổi tên cột nguyenlieu.ml_thuc_te_ton → ton_kho");
   } else {
-    // Kiểm tra cột mới đã tồn tại chưa (trường hợp import SQL mới hoặc đã migrate)
     const newColExists = await columnExists("nguyenlieu", "ton_kho");
     if (!newColExists) {
       await db.execute(
         `ALTER TABLE nguyenlieu ADD COLUMN ton_kho DECIMAL(10,2) NOT NULL DEFAULT '0.00'`
       );
-      console.log("✅ Đã thêm cột nguyenlieu.ton_kho");
     }
   }
-
-  console.log("✅ Đã đảm bảo schema POS");
 }
 
 module.exports = { ensurePOSSchema };

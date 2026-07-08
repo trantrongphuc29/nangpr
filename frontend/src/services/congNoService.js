@@ -39,3 +39,16 @@ export const payAllCongNo = async () => {
   const response = await axiosClient.post('/api/congno/pay-all');
   return response.data;
 };
+
+/** Lấy lịch sử thanh toán công nợ */
+export const getPaymentHistory = async ({ from_date, to_date, search, limit, offset } = {}) => {
+  const params = new URLSearchParams();
+  if (from_date) params.append("from_date", from_date);
+  if (to_date) params.append("to_date", to_date);
+  if (search) params.append("search", search);
+  if (limit) params.append("limit", limit);
+  if (offset) params.append("offset", offset);
+  const url = `/api/congno/payments${params.toString() ? `?${params}` : ''}`;
+  const response = await axiosClient.get(url);
+  return response.data;
+};

@@ -1,4 +1,4 @@
-/* ===== 💰 CÔNG NỢ - SERVICE =====
+/* =====  CÔNG NỢ  =====
  * Xử lý nghiệp vụ công nợ nhà cung cấp
  * Liên kết: congNoController → congNoService → congNoRepository
  * ================================ */
@@ -27,6 +27,16 @@ const CongNoService = {
   },
 
   thanhToanTatCa: async () => CongNoRepository.payAll(),
+
+  getLichSuThanhToan: async ({ from_date, to_date, search, limit, offset } = {}) => {
+    return await CongNoRepository.getPayments({
+      from_date,
+      to_date,
+      search,
+      limit: parseInt(limit, 10) || 50,
+      offset: parseInt(offset, 10) || 0,
+    });
+  },
 };
 
 module.exports = CongNoService;

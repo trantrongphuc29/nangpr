@@ -83,112 +83,105 @@ export default function Ban() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-container-low p-4 md:p-8 transition-colors duration-500">
-      
+    <div className="space-y-4 text-on-surface pb-8">
       {/* HEADER */}
-      <div className="mb-10">
-        <h1 className="text-3xl md:text-4xl font-black text-primary mb-2 uppercase tracking-tighter italic">
-          ☕ Quản lý bàn
-        </h1>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
+            <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>table_restaurant</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Quản Lý Bàn</h2>
+            <p className="text-xs text-muted">Quản lý danh sách bàn phục vụ tại quán</p>
+          </div>
+        </div>
       </div>
 
       {/* FORM: Ô nhập và nút thêm */}
-      <div className="card p-4 md:p-6 mb-6 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center border-none shadow-lg">
+      <div className="card p-4 md:p-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center border-none">
         <input
           value={tenBan}
           onChange={(e) => setTenBan(e.target.value)}
           placeholder="Nhập tên bàn (ví dụ: Bàn 01)..."
-          className="flex-1 min-w-0"
+          className="input-field flex-1 min-w-0"
         />
 
         {editId ? (
-          <button
-            onClick={updateBan}
-            className="btn-secondary"
-          >
+          <button onClick={updateBan} className="btn-secondary shrink-0 uppercase">
             <span className="material-symbols-outlined">check</span>
-            Cập nhật
+            Cập Nhật
           </button>
         ) : (
-          <button
-            onClick={addBan}
-            className="btn-primary"
-          >
+          <button onClick={addBan} className="btn-primary shrink-0 uppercase">
             <span className="material-symbols-outlined">add</span>
-            Thêm bàn mới
+            Thêm Bàn
           </button>
         )}
       </div>
 
       {/* SEARCH */}
-      <div className="mb-6">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Tìm kiếm bàn..."
-            className="peer input-field !pr-10 !py-2.5"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xl pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">
-            search
-          </span>
-        </div>
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Tìm kiếm bàn..."
+          className="peer input-field !pr-10 !py-2.5"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xl pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">
+          search
+        </span>
       </div>
 
       {/* LOADING */}
       {loading ? (
-        <div className="flex justify-center mt-20">
-          <div className="w-12 h-12 border-4 border-primary border-dashed rounded-full animate-spin"></div>
+        <div className="flex justify-center py-16">
+          <div className="w-10 h-10 border-4 border-primary border-dashed rounded-full animate-spin" />
         </div>
       ) : list.length === 0 ? (
-        <div className="text-center mt-20 text-on-surface opacity-50 uppercase font-bold tracking-widest">
-          <p className="text-xl">😢 Chưa có dữ liệu bàn</p>
-          <p className="text-xs mt-2 font-medium uppercase opacity-60">Hãy bắt đầu thêm bàn đầu tiên của bạn</p>
+        <div className="flex flex-col items-center py-16 text-muted">
+          <span className="material-symbols-outlined text-5xl text-muted/40 block mb-3">table_restaurant</span>
+          <p className="font-medium uppercase">Chưa Có Dữ Liệu Bàn</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredList.length === 0 ? (
-            <div className="col-span-full text-center py-16 text-on-surface opacity-50">
-              <p className="text-lg font-bold uppercase tracking-widest">🔍 Không tìm thấy bàn</p>
-              <p className="text-xs mt-2 font-medium uppercase opacity-60">Thử thay đổi từ khóa tìm kiếm</p>
+            <div className="col-span-full flex flex-col items-center py-16 text-muted">
+              <span className="material-symbols-outlined text-4xl mb-2">search_off</span>
+              <p className="font-medium uppercase">Không Tìm Thấy Bàn</p>
             </div>
           ) : (
             filteredList.map((ban) => (
-            <div
-              key={ban.ma_ban}
-              className="card p-6 hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 border-none relative overflow-hidden group"
-            >
-              {/* Trang trí nhẹ cho Card bàn */}
-              <div className="absolute top-0 right-0 p-2 opacity-5">
-                <span className="material-symbols-outlined text-6xl">table_restaurant</span>
+              <div
+                key={ban.ma_ban}
+                className="card p-5 hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 border-none"
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-xl font-bold text-on-surface uppercase">
+                    {ban.ten_ban}
+                  </h2>
+                  <span className="material-symbols-outlined text-2xl text-muted/20">table_restaurant</span>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(ban)}
+                    className="flex-1 btn-outline !py-2 !text-xs"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                    SỬA
+                  </button>
+                  <button
+                    onClick={() => deleteBan(ban.ma_ban)}
+                    className="flex-1 btn-outline !py-2 !text-xs !border-error/40 !text-error hover:!bg-error/10 hover:!border-error uppercase"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                    XÓA
+                  </button>
+                </div>
               </div>
-
-              <h2 className="text-2xl font-black text-on-surface mb-6 uppercase italic relative z-10">
-                {ban.ten_ban}
-              </h2>
-
-              <div className="flex gap-2 relative z-10">
-                {/* Nút Sửa: Dùng màu Amber (vàng cam) nhạt để thanh lịch */}
-                <button
-                  onClick={() => handleEdit(ban)}
-                  className="flex-1 btn-action-edit"
-                >
-                  <span className="material-symbols-outlined text-sm">edit</span>
-                  Sửa
-                </button>
-
-                {/* Nút Xóa: Dùng btn-error từ index.css */}
-                <button
-                  onClick={() => deleteBan(ban.ma_ban)}
-                  className="flex-1 flex items-center justify-center gap-1 btn-error !text-[10px] !py-2.5"
-                >
-                  <span className="material-symbols-outlined text-sm">delete</span>
-                  Xóa
-                </button>
-              </div>
-            </div>
-          )))}
+            ))
+          )}
         </div>
       )}
     </div>

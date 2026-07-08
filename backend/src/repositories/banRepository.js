@@ -1,11 +1,11 @@
-/* ===== 🪑 BÁN HÀNG - BÀN - REPOSITORY =====
+/* =====   BÀN  =====
  * Thao tác SQL với bảng ban
  * ========================================= */
 const db = require("../config/database");
 
 const getAll = async (sort) => {
-  const orderBy = sort === "desc" ? "ten_ban DESC" : "ten_ban ASC";
-  const sql = `SELECT * FROM ban ORDER BY ${orderBy}`;
+  const orderBy = sort === "desc" ? "DESC" : "ASC";
+  const sql = `SELECT * FROM ban ORDER BY ten_ban ${orderBy}`;
   const [rows] = await db.execute(sql);
   return rows;
 };

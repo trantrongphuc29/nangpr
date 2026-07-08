@@ -18,7 +18,6 @@ const removeVietnameseTones = (str) => {
 
 const DANH_MUC_OPTIONS = [
   'Nước uống đóng chai',
-  'Nguyên liệu hết trong ngày',
   'Dụng cụ đóng gói',
   'Nguyên liệu pha chế'
 ];
@@ -33,7 +32,6 @@ const EMPTY_CRUD = {
   danh_muc: 'Nguyên liệu pha chế',
   don_vi_tinh: 'g',
   don_vi_nhap: 'kg',
-  don_vi_dong_goi: '',
   dung_tich_san_pham: 1000,
   nguong_canh_bao: 1000,
   ghi_chu: '',
@@ -45,6 +43,7 @@ const EMPTY_IMPORT = {
   ngay_nhap: new Date().toISOString().split('T')[0],
   so_luong: '',
   gia_nhap: '',
+  han_su_dung: '',
   ghi_chu: '',
 };
 
@@ -54,6 +53,13 @@ function StockStatusBadge({ status }) {
   if (status === 'het_hang') return <span className="badge-error">Hết hàng</span>;
   if (status === 'sap_het') return <span className="badge-warning">Sắp hết</span>;
   return <span className="badge-success">Còn hàng</span>;
+}
+
+function ExpiryStatusBadge({ status, daysLeft }) {
+  if (status === 'het_han') return <span className="badge-error" title={`Quá hạn ${Math.abs(daysLeft)} ngày`}><span className="material-symbols-outlined text-[10px]">block</span> Hết hạn</span>;
+  if (status === 'sap_het_han') return <span className="badge-warning" title={`Còn ${daysLeft} ngày`}><span className="material-symbols-outlined text-[10px]">warning</span> Sắp hết hạn</span>;
+  if (status === 'con_han') return <span className="badge-success">Còn hạn</span>;
+  return <span className="badge-neutral">—</span>;
 }
 
 function StatCard({ label, value, icon, accent }) {
@@ -80,6 +86,7 @@ export default function NguyenLieu() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [expiryFilter, setExpiryFilter] = useState('all');
   const [sortConfig, setSortConfig] = useState({ key: 'ten_nguyen_lieu', direction: 'asc' });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -90,6 +97,9 @@ export default function NguyenLieu() {
   const [crudData, setCrudData] = useState(EMPTY_CRUD);
   const [importData, setImportData] = useState(EMPTY_IMPORT);
   const [importPresetId, setImportPresetId] = useState(null);
+  const [showExpiredHistory, setShowExpiredHistory] = useState(false);
+  const [expiredHistory, setExpiredHistory] = useState([]);
+  const [expiredLoading, setExpiredLoading] = useState(false);
 
   const enrichItem = (item) => {
     const ton = Number(item.ton_kho ?? 0);
@@ -97,7 +107,23 @@ export default function NguyenLieu() {
     let trang_thai_ton = 'con_hang';
     if (ton <= 0) trang_thai_ton = 'het_hang';
     else if (ton <= nguong) trang_thai_ton = 'sap_het';
-    return { ...item, so_luong_ton: ton, trang_thai_ton };
+
+    // Tính trạng thái hạn sử dụng
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let trang_thai_han = 'khong_co_han';
+    let so_ngay_con_lai = null;
+    if (item.han_su_dung) {
+      const hanDate = new Date(item.han_su_dung);
+      const diffTime = hanDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      so_ngay_con_lai = diffDays;
+      if (diffDays < 0) trang_thai_han = 'het_han';
+      else if (diffDays <= 7) trang_thai_han = 'sap_het_han';
+      else trang_thai_han = 'con_han';
+    }
+
+    return { ...item, so_luong_ton: ton, trang_thai_ton, trang_thai_han, so_ngay_con_lai };
   };
 
   const loadData = useCallback(async () => {
@@ -118,7 +144,7 @@ export default function NguyenLieu() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, categoryFilter]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, categoryFilter, expiryFilter]);
 
   /* Form động: tự động cập nhật đơn vị theo danh mục */
   const handleDanhMucFormChange = (targetCat) => {
@@ -135,12 +161,6 @@ export default function NguyenLieu() {
         updateFields.don_vi_nhap = 'cái';
         updateFields.don_vi_tinh = 'cái';
         updateFields.dung_tich_san_pham = 1;
-        break;
-
-      case 'Nguyên liệu hết trong ngày':
-        updateFields.don_vi_nhap = 'kg';
-        updateFields.don_vi_tinh = 'g';
-        updateFields.dung_tich_san_pham = 1000;
         break;
 
       case 'Nguyên liệu pha chế':
@@ -196,6 +216,8 @@ const categories = useMemo(() => {
       total: active.length,
       sapHet: active.filter((i) => i.trang_thai_ton === 'sap_het').length,
       hetHang: active.filter((i) => i.trang_thai_ton === 'het_hang').length,
+      sapHetHan: active.filter((i) => i.trang_thai_han === 'sap_het_han').length,
+      hetHan: active.filter((i) => i.trang_thai_han === 'het_han').length,
       chiThang: Number(stats.month || 0),
     };
   }, [list, stats]);
@@ -223,9 +245,10 @@ const categories = useMemo(() => {
         removeVietnameseTones(item.ghi_chu || '').includes(searchClean);
       const matchCat = categoryFilter === 'all' || item.danh_muc === categoryFilter;
       const matchStatus = statusFilter === 'all' || item.trang_thai_ton === statusFilter;
-      return matchSearch && matchCat && matchStatus;
+      const matchExpiry = expiryFilter === 'all' || item.trang_thai_han === expiryFilter;
+      return matchSearch && matchCat && matchStatus && matchExpiry;
     });
-  }, [list, searchTerm, categoryFilter, statusFilter]);
+  }, [list, searchTerm, categoryFilter, statusFilter, expiryFilter]);
 
   const sortedList = useMemo(() => {
     const items = [...filteredList];
@@ -264,7 +287,7 @@ const categories = useMemo(() => {
 
   const formatTonKho = (item) => {
     const ton = Number(item.so_luong_ton ?? item.ton_kho ?? 0);
-    const isVolumeSystem = item.danh_muc === 'Nguyên liệu pha chế' || item.danh_muc === 'Nguyên liệu hết trong ngày';
+    const isVolumeSystem = item.danh_muc === 'Nguyên liệu pha chế';
     const labelUnit = isVolumeSystem ? item.don_vi_tinh : item.don_vi_nhap;
     return `${ton.toLocaleString('vi-VN')} ${labelUnit}`;
   };
@@ -278,7 +301,6 @@ const categories = useMemo(() => {
       danh_muc: item.danh_muc || 'Nguyên liệu pha chế',
       don_vi_tinh: item.don_vi_tinh || 'g',
       don_vi_nhap: item.don_vi_nhap || 'kg',
-      don_vi_dong_goi: item.don_vi_dong_goi || '',
       dung_tich_san_pham: item.dung_tich_san_pham || 1,
       nguong_canh_bao: item.nguong_canh_bao ?? 0,
       ghi_chu: item.ghi_chu || '',
@@ -300,15 +322,13 @@ const categories = useMemo(() => {
     let finalCapacity = 1.00;
     if (crudData.danh_muc === 'Nguyên liệu pha chế') {
       finalCapacity = crudData.don_vi_nhap === 'kg' ? 1000 : (parseFloat(crudData.dung_tich_san_pham) || 0);
-    } else if (crudData.danh_muc === 'Nguyên liệu hết trong ngày') {
-      finalCapacity = 1000.00;
     } else if (crudData.danh_muc === 'Nước uống đóng chai') {
       finalCapacity = parseFloat(crudData.dung_tich_san_pham) || 1;
     }
 
     if (finalCapacity <= 0) return toast('Dung tích sản phẩm quy đổi phải lớn hơn 0.', 'error');
 
-    const isVolumeSystem = crudData.danh_muc === 'Nguyên liệu pha chế' || crudData.danh_muc === 'Nguyên liệu hết trong ngày';
+    const isVolumeSystem = crudData.danh_muc === 'Nguyên liệu pha chế';
     const isBottledDrink = crudData.danh_muc === 'Nước uống đóng chai';
 
     try {
@@ -317,7 +337,6 @@ const categories = useMemo(() => {
         danh_muc: crudData.danh_muc,
         don_vi_tinh: isVolumeSystem ? (crudData.don_vi_nhap === 'kg' ? 'g' : crudData.don_vi_tinh) : (isBottledDrink ? crudData.don_vi_tinh : crudData.don_vi_nhap),
         don_vi_nhap: crudData.don_vi_nhap,
-        don_vi_dong_goi: crudData.don_vi_dong_goi?.trim() || null,
         dung_tich_san_pham: finalCapacity,
         nguong_canh_bao: parseFloat(crudData.nguong_canh_bao) || 0,
         ghi_chu: crudData.ghi_chu?.trim() || null,
@@ -344,7 +363,12 @@ const categories = useMemo(() => {
     if (Number(importData.gia_nhap) < 0) return toast('Giá nhập phải >= 0.', 'error');
     try {
       await nlService.importStock({
-        items: [{ ma_nguyen_lieu: parseInt(importData.ma_nguyen_lieu, 10), so_luong: parseFloat(importData.so_luong), gia_nhap: parseFloat(importData.gia_nhap) }],
+        items: [{ 
+          ma_nguyen_lieu: parseInt(importData.ma_nguyen_lieu, 10), 
+          so_luong: parseFloat(importData.so_luong), 
+          gia_nhap: parseFloat(importData.gia_nhap),
+          han_su_dung: importData.han_su_dung || null,
+        }],
         nha_cung_cap: importData.nha_cung_cap?.trim() || 'Đại lý tự do',
         ngay_nhap: importData.ngay_nhap,
         ghi_chu: importData.ghi_chu?.trim() || 'Nhập kho hệ thống',
@@ -370,6 +394,20 @@ const categories = useMemo(() => {
     }
   };
 
+  const handleOpenExpiredHistory = async () => {
+    setExpiredLoading(true);
+    setShowExpiredHistory(true);
+    try {
+      const data = await nlService.getExpiredHistory();
+      setExpiredHistory(data || []);
+    } catch (err) {
+      toast(err.response?.data?.message || 'Không tải được lịch sử hết hạn.', 'error');
+      setExpiredHistory([]);
+    } finally {
+      setExpiredLoading(false);
+    }
+  };
+
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Xóa vĩnh viễn nguyên liệu "${name}"?`)) return;
     try {
@@ -389,37 +427,53 @@ const categories = useMemo(() => {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary tracking-tight">Quản lý nguyên liệu</h1>
-          <p className="text-muted text-sm mt-1">Khai báo nguyên liệu, theo dõi tồn kho và nhập hàng — tách biệt với món bán trên thực đơn.</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
+            <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>inventory_2</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Quản lý nguyên liệu</h2>
+            <p className="text-xs text-muted">Khai báo nguyên liệu, theo dõi tồn kho và nhập hàng</p>
+          </div>
         </div>
-        <button type="button" onClick={openCreateModal} className="btn-primary !py-2.5 !px-4 !text-sm shrink-0 self-start"><span className="material-symbols-outlined text-lg">add</span>Thêm nguyên liệu</button>
+        <div className="flex gap-2 shrink-0 self-start">
+          <button type="button" onClick={handleOpenExpiredHistory} className="btn-outline !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">history</span>Lịch sử hết hạn</button>
+          <button type="button" onClick={openCreateModal} className="btn-primary !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">add</span>Thêm nguyên liệu</button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
         <StatCard label="Tổng nguyên liệu" value={statsSummary.total} icon="inventory_2" />
         <StatCard label="Sắp hết" value={statsSummary.sapHet} icon="warning" accent="bg-warning-bg text-warning" />
         <StatCard label="Hết hàng" value={statsSummary.hetHang} icon="error" accent="bg-error-container text-error" />
+        <StatCard label="Sắp hết hạn" value={statsSummary.sapHetHan} icon="hourglass_top" accent="bg-warning-bg text-warning" />
+        <StatCard label="Hết hạn" value={statsSummary.hetHan} icon="event_busy" accent="bg-error-container text-error" />
       </div>
 
       {/* Toolbar */}
-      <div className="card p-4 md:p-5 border-none space-y-4">
-        <div className="flex flex-col lg:flex-row gap-3">
-          <div className="relative flex-1">
-            <input type="text" placeholder="Tìm kiếm..." className="peer input-field !pr-10 !py-2.5" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xl pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">search</span>
+      <div className="card p-4 md:p-5 border-none space-y-4">          <div className="flex flex-col lg:flex-row gap-3">
+            <div className="relative flex-1">
+              <input type="text" placeholder="Tìm kiếm..." className="peer input-field !pr-10 !py-2.5" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xl pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">search</span>
+            </div>
+            <select className="input-field !w-auto lg:min-w-[140px] !py-2.5" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">Tất cả tồn kho</option>
+              <option value="con_hang">Còn hàng</option>
+              <option value="sap_het">Sắp hết</option>
+              <option value="het_hang">Hết hàng</option>
+            </select>
+            <select className="input-field !w-auto lg:min-w-[160px] !py-2.5" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+              {categories.map((c) => (<option key={c} value={c}>{c === 'all' ? 'Tất cả danh mục' : c}</option>))}
+            </select>
+            <select className="input-field !w-auto lg:min-w-[140px] !py-2.5" value={expiryFilter} onChange={(e) => setExpiryFilter(e.target.value)}>
+              <option value="all">Tất cả hạn</option>
+              <option value="con_han">Còn hạn</option>
+              <option value="sap_het_han">Sắp hết hạn</option>
+              <option value="het_han">Hết hạn</option>
+              <option value="khong_co_han">Không có hạn</option>
+            </select>
           </div>
-          <select className="input-field !w-auto lg:min-w-[140px] !py-2.5" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">Tất cả trạng thái</option>
-            <option value="con_hang">Còn hàng</option>
-            <option value="sap_het">Sắp hết</option>
-            <option value="het_hang">Hết hàng</option>
-          </select>
-          <select className="input-field !w-auto lg:min-w-[160px] !py-2.5" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-            {categories.map((c) => (<option key={c} value={c}>{c === 'all' ? 'Tất cả danh mục' : c}</option>))}
-          </select>
-        </div>
         
       </div>
 
@@ -435,13 +489,13 @@ const categories = useMemo(() => {
                 <th className="px-4 py-3">Danh mục</th>
                 <th className="px-4 py-3">Đơn vị tính</th>
                 <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('so_luong_ton')}>
-                  <span className="inline-flex items-center gap-1">Tồn kho hiện tại<span className="material-symbols-outlined text-base">{getSortIcon('so_luong_ton')}</span></span>
+                  <span className="inline-flex items-center gap-1">Tồn kho<span className="material-symbols-outlined text-base">{getSortIcon('so_luong_ton')}</span></span>
                 </th>
                 <th className="px-4 py-3 cursor-pointer" onClick={() => requestSort('nguong_canh_bao')}>
                   <span className="inline-flex items-center gap-1">Ngưỡng cảnh báo<span className="material-symbols-outlined text-base">{getSortIcon('nguong_canh_bao')}</span></span>
                 </th>
                 <th className="px-4 py-3">Đơn vị nhập</th>
-                <th className="px-4 py-3">Trạng thái</th>
+                <th className="px-4 py-3">Trạng thái Và Hạn sử dụng</th>
                 <th className="px-4 py-3 ">Thao tác</th>
               </tr>
             </thead>
@@ -450,18 +504,40 @@ const categories = useMemo(() => {
                 <tr><td colSpan={8} className="px-4 py-12 text-center text-muted">Không có nguyên liệu phù hợp bộ lọc.</td></tr>
               ) : (
                 paginatedList.map((item) => (
-                  <tr key={item.ma_nguyen_lieu} className={`hover:bg-primary/5 transition-colors ${Number(item.trang_thai) === 0 ? 'opacity-50' : ''}`}>
+                  <tr key={item.ma_nguyen_lieu} className={`hover:bg-primary/5 transition-colors ${Number(item.trang_thai) === 0 ? 'opacity-50' : ''} ${item.trang_thai_han === 'het_han' ? 'bg-error-container/10' : item.trang_thai_han === 'sap_het_han' ? 'bg-warning-bg/10' : ''}`}>
                     <td className="px-4 py-3 font-semibold">{item.ten_nguyen_lieu}</td>
                     <td className="px-4 py-3 text-muted">{item.danh_muc || '—'}</td>
-                    <td className="px-4 py-3">{item.danh_muc === 'Nguyên liệu pha chế' || item.danh_muc === 'Nguyên liệu hết trong ngày' ? item.don_vi_tinh : item.don_vi_nhap}</td>
+                    <td className="px-4 py-3">
+                      {item.danh_muc === 'Nguyên liệu pha chế' ? item.don_vi_tinh : item.don_vi_nhap}
+                    </td>
                     <td className="px-4 py-3 font-medium">{formatTonKho(item)}</td>
                     <td className="px-4 py-3 text-muted">
-                      {Number(item.nguong_canh_bao).toLocaleString('vi-VN')} {item.danh_muc === 'Nguyên liệu pha chế' || item.danh_muc === 'Nguyên liệu hết trong ngày' ? item.don_vi_tinh : item.don_vi_nhap}
+                      {Number(item.nguong_canh_bao).toLocaleString('vi-VN')} {item.danh_muc === 'Nguyên liệu pha chế' ? item.don_vi_tinh : item.don_vi_nhap}
                     </td>
-                    <td className="px-4 py-3 text-muted text-xs max-w-[140px]">
-                      {item.danh_muc === 'Nguyên liệu pha chế' ? (item.don_vi_dong_goi || `${Number(item.dung_tich_san_pham).toLocaleString('vi-VN')} ${item.don_vi_tinh}/${item.don_vi_nhap}`) : 'Tính lẻ trực tiếp'}
+                    <td className="px-4 py-3 font-medium">
+                      {item.don_vi_nhap || '—'}
                     </td>
-                    <td className="px-4 py-3"><StockStatusBadge status={item.trang_thai_ton} />{Number(item.trang_thai) === 0 && (<span className="badge-warning ml-1">Ngưng dùng</span>)}</td>
+                    {/* Cột gộp: Ngày lên trên, 2 trạng thái ở dưới */}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1">
+                        {/* Dòng 1: Ngày hết hạn */}
+                        <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                          {item.han_su_dung ? (
+                            <span className={`font-medium ${item.trang_thai_han === 'het_han' ? 'text-error' : item.trang_thai_han === 'sap_het_han' ? 'text-warning' : 'text-on-surface'}`}>
+                              {new Date(item.han_su_dung).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            </span>
+                          ) : (
+                            <span className="text-muted">Chưa có hạn sử dụng</span>
+                          )}
+                        </div>
+                        {/* Dòng 2: Trạng thái tồn kho + Hạn sử dụng */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <StockStatusBadge status={item.trang_thai_ton} />
+                          {item.han_su_dung && <ExpiryStatusBadge status={item.trang_thai_han} daysLeft={item.so_ngay_con_lai} />}
+                          {Number(item.trang_thai) === 0 && <span className="badge-warning">Ngưng dùng</span>}
+                        </div>
+                      </div>
+                    </td>
                    <td className="px-4 py-3">
                   {/* Flex giữ các nút trên một dòng, dùng gap nhỏ hơn trên mobile */}
                   <div className="flex justify-end gap-0.5 sm:gap-1">
@@ -577,7 +653,7 @@ const categories = useMemo(() => {
           </div>
 
           {/* Phần nhập kho/quy đổi — hiển thị cho tất cả danh mục có quy đổi */}
-          {(crudData.danh_muc === 'Nguyên liệu pha chế' || crudData.danh_muc === 'Nguyên liệu hết trong ngày' || crudData.danh_muc === 'Nước uống đóng chai') && (
+          {(crudData.danh_muc === 'Nguyên liệu pha chế' || crudData.danh_muc === 'Nước uống đóng chai') && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-on-surface mb-1">Đơn vị nhập kho</label>
@@ -593,19 +669,14 @@ const categories = useMemo(() => {
             </div>
           )}
 
-          {crudData.danh_muc === 'Nguyên liệu pha chế' && (
-            <div>
-              <label className="block text-sm font-semibold text-on-surface mb-1">Đơn vị nhập (đóng gói)</label>
-              <input className="input-field" value={crudData.don_vi_dong_goi} onChange={(e) => setCrudData({ ...crudData, don_vi_dong_goi: e.target.value })} placeholder="" />
-            </div>
-          )}
+
 
           <div>
             <label className="block text-sm font-semibold text-on-surface mb-1">Ngưỡng cảnh báo</label>
             <input type="number" min="0" className="input-field" value={crudData.nguong_canh_bao} onChange={(e) => setCrudData({ ...crudData, nguong_canh_bao: e.target.value })} />
             <p className="text-xs text-muted mt-1">Tính theo đơn vị: {crudData.don_vi_tinh}</p>
           </div>
-          
+
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={() => setShowCrudModal(false)} className="btn-outline flex-1">Hủy</button>
             <button type="button" onClick={handleSaveIngredient} className="btn-primary flex-1">Lưu nguyên liệu</button>
@@ -615,6 +686,65 @@ const categories = useMemo(() => {
     </div>
   </ModalPortal>
 )}
+      {/* Modal: Lịch sử nguyên liệu hết hạn */}
+      {showExpiredHistory && (
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowExpiredHistory(false)}>
+            <div className="modal-panel max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-primary flex items-center gap-2"><span className="material-symbols-outlined">history</span>Lịch sử nguyên liệu hết hạn</h2>
+                <button type="button" onClick={() => setShowExpiredHistory(false)} className="btn-ghost !p-2" aria-label="Đóng"><span className="material-symbols-outlined">close</span></button>
+              </div>
+
+              {expiredLoading ? (
+                <div className="text-center py-12 text-muted animate-pulse">Đang tải dữ liệu...</div>
+              ) : expiredHistory.length === 0 ? (
+                <div className="text-center py-12">
+                  <span className="material-symbols-outlined text-5xl text-muted/40 block mb-3">check_circle</span>
+                  <p className="text-muted font-medium">Không có nguyên liệu nào hết hạn.</p>
+                  <p className="text-xs text-muted/60 mt-1">Hệ thống sẽ tự động ghi nhận khi nguyên liệu hết hạn.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-left text-sm">
+                    <thead className="table-head">
+                      <tr>
+                        <th className="px-3 py-2.5">Nguyên liệu</th>
+                        <th className="px-3 py-2.5">Hạn SD</th>
+                        <th className="px-3 py-2.5">Tồn kho hủy</th>
+                        <th className="px-3 py-2.5">Ngày xử lý</th>
+                        <th className="px-3 py-2.5">Ghi chú</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline">
+                      {expiredHistory.map((item) => (
+                        <tr key={item.id} className="hover:bg-primary/5 transition-colors">
+                          <td className="px-3 py-2.5 font-medium">{item.ten_nguyen_lieu}</td>
+                          <td className="px-3 py-2.5 text-error text-xs">
+                            {item.han_su_dung ? new Date(item.han_su_dung).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                          </td>
+                          <td className="px-3 py-2.5 font-medium text-error">
+                            {Number(item.ton_kho_con_lai).toLocaleString('vi-VN')} {item.don_vi || ''}
+                          </td>
+                          <td className="px-3 py-2.5 text-xs text-muted">
+                            {item.ngay_xu_ly ? new Date(item.ngay_xu_ly).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                          </td>
+                          <td className="px-3 py-2.5 text-xs text-muted max-w-[200px] truncate" title={item.ghi_chu}>{item.ghi_chu || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4">
+                <button type="button" onClick={() => setShowExpiredHistory(false)} className="btn-outline">Đóng</button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
       {/* Modal: Nhập kho */}
       {showImportDrawer && (
         <ModalPortal>
@@ -654,14 +784,23 @@ const categories = useMemo(() => {
                   </div>
                 </div>
 
+                {/* Hạn sử dụng */}
+                {selectedImportItemDetails && (
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Hạn sử dụng</label>
+                    <input type="date" className="input-field" value={importData.han_su_dung} onChange={(e) => setImportData({ ...importData, han_su_dung: e.target.value })} />
+                    <p className="text-xs text-muted mt-1">Nếu không nhập, hạn sử dụng cũ của nguyên liệu sẽ được giữ nguyên.</p>
+                  </div>
+                )}
+
                 {/* Thông số định mức quy đổi */}
                 {selectedImportItemDetails && (
                   <div className="p-3.5 rounded-xl bg-primary-container border border-primary/20 text-xs text-primary space-y-1">
                     <p className="font-medium">
-                      Tỷ lệ nhập: 1 {selectedImportItemDetails.don_vi_nhap} = {Number(selectedImportItemDetails.dung_tich_san_pham).toLocaleString('vi-VN')} {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' || selectedImportItemDetails.danh_muc === 'Nguyên liệu hết trong ngày' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap}
+                      Tỷ lệ nhập: 1 {selectedImportItemDetails.don_vi_nhap} = {Number(selectedImportItemDetails.dung_tich_san_pham).toLocaleString('vi-VN')} {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap}
                     </p>
                     <p className="font-bold text-sm mt-1">
-                      Tổng cộng thêm: <span className="underline font-black text-base">{actualVolumeToImport.toLocaleString('vi-VN')}</span> {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' || selectedImportItemDetails.danh_muc === 'Nguyên liệu hết trong ngày' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap} vào tổng tồn kho gốc.
+                      Tổng cộng thêm: <span className="underline font-black text-base">{actualVolumeToImport.toLocaleString('vi-VN')}</span> {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap} vào tổng tồn kho gốc.
                     </p>
                   </div>
                 )}

@@ -1,4 +1,4 @@
-/* ===== 🪑 BÁN HÀNG - BÀN - CONTROLLER =====
+/* =====  BÀN  =====
  * Tiếp nhận request HTTP cho module Quản lý Bàn + POS
  * ========================================== */
 const banService = require("../services/banService");

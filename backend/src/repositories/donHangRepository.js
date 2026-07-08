@@ -1,4 +1,4 @@
-/* ===== 🧾 BÁN HÀNG - ĐƠN HÀNG - REPOSITORY =====
+/* ===== BÁN HÀNG - ĐƠN HÀNG =====
  * Thao tác SQL với bảng donhang, chitiethoadon, ban, mon
  * ================================================ */
 const db = require("../config/database");
@@ -283,35 +283,41 @@ const DonHangRepository = {
   /** Báo cáo doanh thu với bộ lọc + phân trang */
   getRevenueReport: async ({ period, date, from_date, to_date, loai_don, hinh_thuc_thanh_toan, limit = 20, offset = 0 }) => {
     let dateFilter;
+    let dateParams = [];
     const fmtLocal = DonHangRepository.fmtLocalDate;
 
     if (from_date && to_date) {
-      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${from_date} 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${to_date}' + INTERVAL 1 DAY`;
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= ? AND dh.ngay_tao + INTERVAL 7 HOUR < ? + INTERVAL 1 DAY`;
+      dateParams = [`${from_date} 00:00:00`, to_date];
     } else {
       const refDate = date ? new Date(date) : new Date();
       if (period === 'day') {
       const d = fmtLocal(refDate);
-      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${d} 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${d}' + INTERVAL 1 DAY`;
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= ? AND dh.ngay_tao + INTERVAL 7 HOUR < ? + INTERVAL 1 DAY`;
+      dateParams = [`${d} 00:00:00`, d];
     } else if (period === 'week') {
       const dayOfWeek = refDate.getDay();
       const monday = new Date(refDate);
       monday.setDate(refDate.getDate() - ((dayOfWeek + 6) % 7));
       const mondayStr = fmtLocal(monday);
-      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${mondayStr} 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${mondayStr}' + INTERVAL 7 DAY`;
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= ? AND dh.ngay_tao + INTERVAL 7 HOUR < ? + INTERVAL 7 DAY`;
+      dateParams = [`${mondayStr} 00:00:00`, mondayStr];
     } else if (period === 'month') {
       const y = refDate.getFullYear();
       const m = String(refDate.getMonth() + 1).padStart(2, '0');
-      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${y}-${m}-01 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${y}-${m}-01' + INTERVAL 1 MONTH`;
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= ? AND dh.ngay_tao + INTERVAL 7 HOUR < ? + INTERVAL 1 MONTH`;
+      dateParams = [`${y}-${m}-01 00:00:00`, `${y}-${m}-01`];
     } else if (period === 'year') {
       const y = refDate.getFullYear();
-      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= '${y}-01-01 00:00:00' AND dh.ngay_tao + INTERVAL 7 HOUR < '${y + 1}-01-01 00:00:00'`;
+      dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= ? AND dh.ngay_tao + INTERVAL 7 HOUR < ?`;
+      dateParams = [`${y}-01-01 00:00:00`, `${y + 1}-01-01 00:00:00`];
     } else {
       dateFilter = '1=1';
     }
     }
 
     const whereParts = [`dh.trang_thai_thanh_toan = 'Da thanh toan'`, dateFilter];
-    const params = [];
+    const params = [...dateParams];
     if (loai_don) { whereParts.push('dh.loai_don = ?'); params.push(loai_don); }
     if (hinh_thuc_thanh_toan) { whereParts.push('dh.hinh_thuc_thanh_toan = ?'); params.push(hinh_thuc_thanh_toan); }
     const where = whereParts.join(' AND ');
@@ -364,14 +370,19 @@ const DonHangRepository = {
 
     // Lấy items cho các đơn ở trang hiện tại
     const ids = orders.map(o => o.ma_don_hang);
-    const [items] = await db.execute(
-      `SELECT ct.*, m.ten_mon, dm.ten_danh_muc
-       FROM chitiethoadon ct
-       JOIN mon m ON ct.ma_mon = m.ma_mon
-       LEFT JOIN danhmucmon dm ON m.ma_danh_muc = dm.ma_danh_muc
-       WHERE ct.ma_don_hang IN (${ids.join(',')})
-       ORDER BY ct.ma_don_hang, ct.ma_mon`
-    );
+    let items = [];
+    if (ids.length > 0) {
+      const placeholders = ids.map(() => '?').join(',');
+      [items] = await db.execute(
+        `SELECT ct.*, m.ten_mon, dm.ten_danh_muc
+         FROM chitiethoadon ct
+         JOIN mon m ON ct.ma_mon = m.ma_mon
+         LEFT JOIN danhmucmon dm ON m.ma_danh_muc = dm.ma_danh_muc
+         WHERE ct.ma_don_hang IN (${placeholders})
+         ORDER BY ct.ma_don_hang, ct.ma_mon`,
+        ids
+      );
+    }
 
     // Gộp items vào orders
     const itemMap = {};

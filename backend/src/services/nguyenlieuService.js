@@ -1,4 +1,4 @@
-/* ===== 🥬 NGUYÊN LIỆU - SERVICE =====
+/* =====  NGUYÊN LIỆU  =====
  * Xử lý nghiệp vụ: nhập kho, danh sách, thêm/sửa/xóa nguyên liệu
  * Liên kết: nguyenlieuController → nguyenlieuService → nguyenlieuRepository
  * ====================================== */
@@ -11,10 +11,34 @@ function enrichNguyenLieu(row) {
   if (ton <= 0) trang_thai_ton = "het_hang";
   else if (ton <= nguong) trang_thai_ton = "sap_het";
 
+  // Tính trạng thái hạn sử dụng
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let trang_thai_han = "khong_co_han";
+  let so_ngay_con_lai = null;
+
+  if (row.han_su_dung) {
+    const hanDate = new Date(row.han_su_dung);
+    hanDate.setHours(0, 0, 0, 0);
+    const diffTime = hanDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    so_ngay_con_lai = diffDays;
+
+    if (diffDays < 0) {
+      trang_thai_han = "het_han";
+    } else if (diffDays <= 7) {
+      trang_thai_han = "sap_het_han";
+    } else {
+      trang_thai_han = "con_han";
+    }
+  }
+
   return {
     ...row,
     so_luong_ton: ton,
     trang_thai_ton,
+    trang_thai_han,
+    so_ngay_con_lai,
   };
 }
 
@@ -63,6 +87,11 @@ const NguyenLieuService = {
     NguyenLieuRepository.setStatus(id, trang_thai),
 
   xoa: async (id) => NguyenLieuRepository.delete(id),
+
+  //  LỊCH SỬ NGUYÊN LIỆU HẾT HẠN
+  getLichSuHetHan: async () => {
+    return await NguyenLieuRepository.getExpiredHistory();
+  },
 };
 
 module.exports = NguyenLieuService;

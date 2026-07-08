@@ -1,4 +1,4 @@
-/* ===== 🍽️ MÓN & CÔNG THỨC - SERVICE =====
+/* ===== MÓN CÔNG THỨC  =====
  * Xử lý nghiệp vụ: thêm/sửa/xóa món, POS menu, công thức, trừ kho
  * Liên kết: monController → monService → monRepository
  * ========================================== */
@@ -8,14 +8,14 @@ const MonService = {
   getDanhSachMon: async () => MonRepository.getAllWithEstimation(),
 
   themMonMoi: async (data) => {
-    if (!data.ten_mon || data.gia_ban < 0) {
+    if (!data.ten_mon || data.gia_ban == null || data.gia_ban < 0) {
       throw new Error("Thông tin tên món và giá bán không hợp lệ!");
     }
     return await MonRepository.create(data);
   },
 
   capNhatMon: async (id, data) => {
-    if (!id || !data.ten_mon || data.gia_ban < 0) {
+    if (!id || !data.ten_mon || data.gia_ban == null || data.gia_ban < 0) {
       throw new Error("Dữ liệu cập nhật món nước không hợp lệ!");
     }
     return await MonRepository.update(id, data);

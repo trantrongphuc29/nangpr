@@ -1,4 +1,4 @@
-/* ===== 🧾 BÁN HÀNG (POS) - TRANG CHÍNH =====
+/* =====  BÁN HÀNG (POS) - TRANG CHÍNH =====
  * Giao diện bán hàng POS: sơ đồ bàn, thực đơn, giỏ hàng, thanh toán
  * Components: BanHangCart, BanHangTables, BanHang (chính)
  * Hook: useBanHang
@@ -23,8 +23,22 @@ function baseHTML(body) {
 <title>In</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Courier New',monospace;color:#000;background:#fff}
+  body{font-family:'Courier New',monospace;color:#000;background:#fff;font-size:13px;line-height:1.4}
   @media print{body{background:#fff}}
+  table{width:100%;border-collapse:collapse}
+  td,th{padding:4px 6px;font-size:13px}
+  .line{border-top:1px solid #000;margin:8px 0}
+  .line-dashed{border-top:1px dashed #000;margin:6px 0}
+  .center{text-align:center}
+  .right{text-align:right}
+  .bold{font-weight:700}
+  .small{font-size:11px}
+  .xsmall{font-size:10px}
+  .mt8{margin-top:8px}
+  .mt4{margin-top:4px}
+  .mb8{margin-bottom:8px}
+  .mb4{margin-bottom:4px}
+  .pb4{padding-bottom:4px}
 </style>
 </head>
 <body>${body}</body>
@@ -34,9 +48,10 @@ function baseHTML(body) {
 function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGiao, diaChiGiao, phiGiaoHang }) {
   const now = new Date().toLocaleString("vi-VN");
   const items = order?.items || [];
-  const tenBan = table?.ten_ban || (order?.loai_don === "mang_ve" ? "🥡 Mang về" : order?.loai_don === "giao_hang" ? "🚚 Giao hàng" : "—");
+  const loaiDon = order?.loai_don;
+  const tenBan = table?.ten_ban || (loaiDon === "mang_ve" ? "Mang về" : loaiDon === "giao_hang" ? "Giao hàng" : "—");
   const maDon = order?.ma_don_hang || "";
-  const deliveryOrder = order?.loai_don === "giao_hang";
+  const deliveryOrder = loaiDon === "giao_hang";
 
   if (mode === "mon") {
     const monItems =
@@ -46,38 +61,38 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
 
     const rows = monItems
       .map(
-        (i, idx) => `
-        <tr${idx % 2 === 1 ? ' style="background:#f5f5f5"' : ""}>
-          <td style="padding:10px 8px;font-weight:700;font-size:15px">
+        (i) => `
+        <tr>
+          <td style="padding:6px 6px;font-weight:700">
             ${i.ten_mon}
-            ${i.ghi_chu_mon ? `<br><span style="font-size:11px;font-weight:400;color:#888;font-style:italic">📝 ${i.ghi_chu_mon}</span>` : ''}
+            ${i.ghi_chu_mon ? `<br><span class="small">(Ghi chú: ${i.ghi_chu_mon})</span>` : ''}
           </td>
-          <td style="padding:10px 8px;text-align:center;font-weight:900;font-size:20px">${i.so_luong_cho_bar || i.so_luong}</td>
+          <td class="right" style="width:40px;font-weight:900;font-size:16px">${i.so_luong_cho_bar || i.so_luong}</td>
         </tr>`
       )
       .join("");
 
     return baseHTML(`
-      <div style="padding:20px;font-family:'Courier New',monospace;max-width:320px;margin:0 auto;color:#000">
-        <div style="text-align:center;margin-bottom:12px">
-          <div style="font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase">Nắng PR</div>
-          <div style="font-size:11px;color:#888;margin-top:2px">Phiếu chế biến</div>
+      <div style="padding:16px;max-width:320px;margin:0 auto">
+        <div class="center mb8">
+          <div style="font-size:20px;font-weight:900;letter-spacing:2px;text-transform:uppercase">NẮNG PR</div>
+          <div class="xsmall mt4">PHIẾU CHẾ BIẾN</div>
         </div>
-        <div style="border-top:2px solid #000;border-bottom:2px solid #000;padding:10px 0;margin-bottom:14px;text-align:center">
-          <div style="font-size:28px;font-weight:900">${tenBan}</div>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <div class="line"></div>
+        <div class="center bold" style="font-size:24px;padding:8px 0">${tenBan}</div>
+        <div class="line"></div>
+        <table>
           <thead>
-            <tr style="border-bottom:1px solid #999;font-size:10px;text-transform:uppercase">
-              <th style="padding:4px 8px;text-align:left;font-weight:700">Món</th>
-              <th style="padding:4px 8px;text-align:center;width:48px;font-weight:700">SL</th>
+            <tr style="border-bottom:1px solid #000">
+              <th style="padding:4px 6px;text-align:left;font-size:10px;text-transform:uppercase">Món</th>
+              <th style="padding:4px 6px;text-align:right;width:40px;font-size:10px;text-transform:uppercase">SL</th>
             </tr>
           </thead>
           <tbody>
-            ${rows || '<tr><td colspan="2" style="padding:20px;text-align:center;color:#999">Không có món</td></tr>'}
+            ${rows || '<tr><td colspan="2" class="center small" style="padding:20px 0">Không có món</td></tr>'}
           </tbody>
         </table>
-        <div style="margin-top:16px;text-align:center;font-size:10px;color:#aaa">${now}</div>
+        <div class="center xsmall mt8">${now}</div>
       </div>
     `);
   }
@@ -86,39 +101,38 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
     const cancelItems = newItems || [];
     const rows = cancelItems
       .map(
-        (i, idx) => `
-        <tr${idx % 2 === 1 ? ' style="background:#fff0f0"' : ""}>
-          <td style="padding:10px 8px;font-weight:700;font-size:15px">${i.ten_mon}</td>
-          <td style="padding:10px 8px;text-align:center;font-weight:900;font-size:20px;color:#dc2626">-${i.so_luong_huy}</td>
+        (i) => `
+        <tr>
+          <td style="padding:6px 6px;font-weight:700">${i.ten_mon}</td>
+          <td class="right" style="width:40px;font-weight:900;font-size:16px">-${i.so_luong_huy}</td>
         </tr>`
       )
       .join("");
 
     return baseHTML(`
-      <div style="padding:20px;font-family:'Courier New',monospace;max-width:320px;margin:0 auto;color:#000">
-        <div style="text-align:center;margin-bottom:12px">
-          <div style="font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#dc2626">Nắng PR</div>
-          <div style="font-size:11px;color:#dc2626;margin-top:2px;font-weight:700">✕ PHIẾU HUỶ MÓN</div>
+      <div style="padding:16px;max-width:320px;margin:0 auto">
+        <div class="center mb8">
+          <div style="font-size:20px;font-weight:900;letter-spacing:2px;text-transform:uppercase">NẮNG PR</div>
+          <div class="small mt4 bold">PHIẾU HỦY MÓN</div>
         </div>
-        <div style="border-top:3px solid #dc2626;border-bottom:3px solid #dc2626;padding:10px 0;margin-bottom:14px;text-align:center">
-          <div style="font-size:28px;font-weight:900">${tenBan}</div>
-          <div style="font-size:12px;color:#888">Đơn #${maDon}</div>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <div class="line"></div>
+        <div class="center bold" style="font-size:24px;padding:8px 0">${tenBan}</div>
+        <div class="center small">Đơn #${maDon}</div>
+        <div class="line"></div>
+        <table>
           <thead>
-            <tr style="border-bottom:2px solid #dc2626;font-size:10px;text-transform:uppercase">
-              <th style="padding:4px 8px;text-align:left;font-weight:700;color:#dc2626">Món huỷ</th>
-              <th style="padding:4px 8px;text-align:center;width:48px;font-weight:700;color:#dc2626">SL</th>
+            <tr style="border-bottom:1px solid #000">
+              <th style="padding:4px 6px;text-align:left;font-size:10px;text-transform:uppercase">Món hủy</th>
+              <th style="padding:4px 6px;text-align:right;width:40px;font-size:10px;text-transform:uppercase">SL</th>
             </tr>
           </thead>
           <tbody>
-            ${rows || '<tr><td colspan="2" style="padding:20px;text-align:center;color:#999">Không có món</td></tr>'}
+            ${rows || '<tr><td colspan="2" class="center small" style="padding:20px 0">Không có món</td></tr>'}
           </tbody>
         </table>
-        <div style="margin-top:16px;padding:8px;border:1px dashed #dc2626;text-align:center;font-size:11px;color:#dc2626;font-weight:700">
-          ⚠️ Vui lòng hủy các món trên
-        </div>
-        <div style="margin-top:12px;text-align:center;font-size:10px;color:#aaa">${now}</div>
+        <div class="line-dashed mt8"></div>
+        <div class="center small bold mt4">Vui lòng hủy các món trên</div>
+        <div class="center xsmall mt8">${now}</div>
       </div>
     `);
   }
@@ -126,14 +140,14 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
   // mode === "bill"
   const rows = items
     .map(
-      (i, idx) => `
-      <tr${idx % 2 === 1 ? ' style="background:#f5f5f5"' : ""}>
-        <td style="padding:8px 6px">
+      (i) => `
+      <tr>
+        <td style="padding:4px 6px">
           ${i.ten_mon}
-          ${i.ghi_chu_mon ? `<br><span style="font-size:10px;color:#888;font-style:italic">📝 ${i.ghi_chu_mon}</span>` : ''}
+          ${i.ghi_chu_mon ? `<br><span class="xsmall">(Ghi chú: ${i.ghi_chu_mon})</span>` : ''}
         </td>
-        <td style="padding:8px 6px;text-align:center;width:36px">${i.so_luong}</td>
-        <td style="padding:8px 6px;text-align:right;width:80px">${fmtMoney(i.so_luong * i.don_gia)}</td>
+        <td class="center" style="width:30px">${i.so_luong}</td>
+        <td class="right" style="width:70px">${fmtMoney(i.so_luong * i.don_gia)}</td>
       </tr>`
     )
     .join("");
@@ -143,58 +157,53 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
   const tongCong = tongTienMon + phiGiao;
 
   return baseHTML(`
-    <div style="padding:20px;font-family:'Courier New',monospace;max-width:360px;margin:0 auto;color:#000">
-      <div style="text-align:center;margin-bottom:12px">
-        <div style="font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase">Nắng PR</div>
-        <div style="font-size:11px;color:#888;margin-top:2px">Hoá đơn thanh toán</div>
+    <div style="padding:16px;max-width:360px;margin:0 auto">
+      <div class="center mb8">          <div style="font-size:20px;font-weight:900;letter-spacing:2px;text-transform:uppercase">NẮNG PR</div>
+          <div class="xsmall mt4">HÓA ĐƠN THANH TOÁN</div>
       </div>
-      <div style="border-top:1px solid #000;border-bottom:1px solid #000;padding:8px 0;margin-bottom:12px;text-align:center">
-        <div style="font-weight:700">${tenBan}</div>
-        <div style="font-size:10px;color:#888">Đơn #${maDon}</div>
-      </div>
+      <div class="line"></div>
+      <div class="center bold" style="padding:4px 0">${tenBan}</div>
+      ${maDon ? `<div class="center small mb4">Đơn #${maDon}</div>` : ''}
       ${deliveryOrder ? `
-      <div style="margin-bottom:12px;padding:8px 6px;border:1px solid #000;border-radius:2px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:6px">Thông tin giao hàng</div>
-        ${tenKhach ? `<div style="font-size:12px;margin-bottom:2px"><span style="font-weight:700">Tên KH:</span> ${tenKhach}</div>` : ''}
-        ${soDienThoaiGiao ? `<div style="font-size:12px;margin-bottom:2px"><span style="font-weight:700">SĐT:</span> ${soDienThoaiGiao}</div>` : ''}
-        ${diaChiGiao ? `<div style="font-size:12px"><span style="font-weight:700">Địa chỉ:</span> ${diaChiGiao}</div>` : ''}
-      </div>
+      <div class="line-dashed"></div>
+      <div class="small bold mb4">THÔNG TIN GIAO HÀNG</div>
+      ${tenKhach ? `<div class="small">Khách hàng: ${tenKhach}</div>` : ''}
+      ${soDienThoaiGiao ? `<div class="small">SĐT: ${soDienThoaiGiao}</div>` : ''}
+      ${diaChiGiao ? `<div class="small">Địa chỉ: ${diaChiGiao}</div>` : ''}
       ` : ''}
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <div class="line"></div>
+      <table>
         <thead>
-          <tr style="border-bottom:2px solid #000;font-size:9px;text-transform:uppercase">
-            <th style="padding:4px 6px;text-align:left;font-weight:700">Món</th>
-            <th style="padding:4px 6px;text-align:center;width:32px;font-weight:700">SL</th>
-            <th style="padding:4px 6px;text-align:right;width:72px;font-weight:700">Tiền</th>
+          <tr style="border-bottom:2px solid #000;font-size:10px;text-transform:uppercase">
+            <th style="padding:4px 6px;text-align:left">Món</th>
+            <th style="padding:4px 6px;text-align:center;width:28px">SL</th>
+            <th style="padding:4px 6px;text-align:right;width:68px">Tiền</th>
           </tr>
         </thead>
         <tbody>
-          ${rows || '<tr><td colspan="3" style="padding:20px;text-align:center;color:#999">Trống</td></tr>'}
+          ${rows || '<tr><td colspan="3" class="center small" style="padding:20px 0">Trống</td></tr>'}
         </tbody>
       </table>
+      <div class="line"></div>
       ${deliveryOrder ? `
-      <div style="border-top:2px solid #000;margin-top:10px;padding-top:6px">
-        <div style="display:flex;justify-content:space-between;font-size:14px;padding:2px 0">
-          <span>Tiền món:</span>
-          <span>${fmtMoney(tongTienMon)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0;color:#666">
-          <span>Phí giao hàng:</span>
-          <span>${fmtMoney(phiGiao)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900;border-top:1px dashed #000;padding-top:4px;margin-top:2px">
-          <span>Tổng cộng:</span>
-          <span>${fmtMoney(tongCong)}</span>
-        </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 6px">
+        <span>Tiền món:</span><span>${fmtMoney(tongTienMon)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 6px">
+        <span>Phí giao hàng:</span><span>${fmtMoney(phiGiao)}</span>
+      </div>
+      <div class="line-dashed"></div>
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900;padding:4px 6px">
+        <span>TỔNG CỘNG:</span><span>${fmtMoney(tongCong)}</span>
       </div>
       ` : `
-      <div style="border-top:2px solid #000;margin-top:8px;padding-top:6px;display:flex;justify-content:space-between;font-size:16px;font-weight:900">
-        <span>Tổng cộng:</span>
-        <span>${fmtMoney(order?.tong_tien || 0)}</span>
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900;padding:4px 6px">
+        <span>TỔNG CỘNG:</span><span>${fmtMoney(order?.tong_tien || 0)}</span>
       </div>
       `}
-      <div style="margin-top:16px;text-align:center;font-size:10px;color:#aaa">${now}</div>
-      <div style="margin-top:2px;text-align:center;font-size:10px;color:#aaa">Cảm ơn quý khách!</div>
+      <div class="line"></div>
+      <div class="center small mt8">${now}</div>
+      <div class="center small">Cảm ơn quý khách!</div>
     </div>
   `);
 }
@@ -434,7 +443,7 @@ function BanHangCart({
                 className="py-2.5 rounded-xl font-bold text-xs uppercase transition-all disabled:opacity-40"
                 style={{ backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }}
               >
-                🖨 In món
+                 In món
               </button>
               <button
                 type="button"
@@ -461,7 +470,6 @@ function BanHangCart({
             onClick={onPay}
             className="btn-primary w-full !py-4 !text-sm uppercase flex items-center justify-center gap-2"
           >
-            <span>🧾</span>
             <span>In bill & Thanh toán</span>
           </button>
         )}
@@ -526,7 +534,7 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
 
       {swapMode && (
         <div className="mb-3 px-3 py-2 rounded-lg text-[11px] font-semibold text-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)", color: "var(--color-primary)", border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)" }}>
-          👆 Chọn bàn muốn chuyển đến
+           Chọn bàn muốn chuyển đến
         </div>
       )}
 
@@ -567,7 +575,7 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all"
                 style={busyTable && !swapMode && !isMoving ? { backgroundColor: "color-mix(in srgb, var(--color-error) 20%, transparent)" } : { backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" }}
                 >
-                  {busyTable ? "🍽️" : "🪑"}
+                  {busyTable ? <span className="material-symbols-outlined text-lg">restaurant</span> : <span className="material-symbols-outlined text-lg">chair</span>}
                 </div>
                 <p className={`font-bold text-xs uppercase ${
                   busyTable && !swapMode && !isMoving ? "text-error" : "text-on-surface"
@@ -1004,12 +1012,12 @@ export default function BanHang() {
       if (!ok) return;
       const html = buildPrintHTML("mon", { table: bh.table, order: bh.order, newItems });
       openAndPrint(html);
-      const stay = window.confirm("✅ Đã in món! Bạn có muốn ở lại để thêm món tiếp không?");
+      const stay = window.confirm(" Đã in món! Bạn có muốn ở lại để thêm món tiếp không?");
       if (!stay) {
         bh.clearSelection();
       }
     } else {
-      // In bill → persist trước để có mã đơn (không gửi bar)
+      // In bill → persist trước để có mã đơn 
       if (!bh.order?.ma_don_hang) {
         try {
           await bh.persistOrder();
@@ -1071,7 +1079,7 @@ export default function BanHang() {
         await bh.sendBar();
       }
       const ok = await bh.pay(hinhThuc);
-      if (ok) bh.setError("✅ Đã thanh toán thành công!");
+      if (ok) bh.setError(" Đã thanh toán thành công!");
       return;
     }
 
@@ -1089,7 +1097,7 @@ export default function BanHang() {
     }
     const ok = await bh.pay(hinhThuc);
     if (ok) {
-      bh.setError("✅ Đã thanh toán thành công!");
+      bh.setError(" Đã thanh toán thành công!");
     }
   };
 
@@ -1138,9 +1146,9 @@ export default function BanHang() {
                     {bh.table ? (
                       <span>{bh.table.ten_ban}</span>
                     ) : bh.loaiDon === "mang_ve" ? (
-                      <span>🥡 Mang về</span>
+                      <span><span className="material-symbols-outlined text-lg">takeout_dining</span> Mang về</span>
                     ) : (
-                      <span>🚚 Giao hàng</span>
+                      <span><span className="material-symbols-outlined text-lg">local_shipping</span> Giao hàng</span>
                     )}
                   </h2>
                   {bh.order.ma_don_hang ? (
@@ -1165,7 +1173,7 @@ export default function BanHang() {
                   className="px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all text-white"
                   style={{ backgroundColor: "var(--color-primary)" }}
                 >
-                  ← Về sơ đồ
+                  ← Về sơ đồ bàn
                 </button>
               </div>
             </div>
@@ -1175,7 +1183,7 @@ export default function BanHang() {
               {/* Menu */}
               <section className="lg:col-span-7 card border-none shadow-lg p-4 flex flex-col min-h-0">
                 <div className="flex items-center gap-2 mb-3 shrink-0">
-                  <span className="text-lg">🍽️</span>
+                 
                   <h3 className="font-bold text-on-surface text-sm">Thực đơn</h3>
                 </div>
                 <PosMenu menu={bh.menu} busy={bh.busy} onAdd={bh.addMon} />
@@ -1185,7 +1193,7 @@ export default function BanHang() {
               <section className="hidden lg:flex lg:col-span-3 flex-col min-h-0 card border-none shadow-lg p-4">
                 <div className="flex items-center justify-between mb-3 shrink-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">🛒</span>
+                    <span className="material-symbols-outlined text-lg">shopping_cart</span>
                     <h3 className="font-bold text-on-surface text-sm">Giỏ hàng</h3>
                   </div>
                   {cartItemCount > 0 && (
@@ -1222,16 +1230,15 @@ export default function BanHang() {
           <div className="flex flex-col flex-1 min-h-0">
             {/* Header + Actions */}
             <div className="shrink-0 mb-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-                    🏠
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
+                      <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>storefront</span>
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-on-surface">Bán hàng</h2>
+                      <p className="text-xs text-muted">Chọn bàn để gọi món</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-on-surface">Bán hàng</h2>
-                    <p className="text-xs text-muted">Chọn bàn để gọi món</p>
-                  </div>
-                </div>
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold border" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-primary)" }}>
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} />
@@ -1254,7 +1261,7 @@ export default function BanHang() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: "var(--color-primary)" }}>
-                      🥡
+                      <span className="material-symbols-outlined text-lg">takeout_dining</span>
                     </div>
                     <div>
                       <p className="font-bold text-sm text-on-surface">Mang về</p>
@@ -1270,7 +1277,7 @@ export default function BanHang() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-secondary) 15%, transparent)", color: "var(--color-secondary)" }}>
-                      🚚
+                      <span className="material-symbols-outlined text-lg">local_shipping</span>
                     </div>
                     <div>
                       <p className="font-bold text-sm text-on-surface">Giao hàng</p>
@@ -1314,7 +1321,7 @@ export default function BanHang() {
           </button>
 
           {cartItemCount > 0 && (
-            <div className="lg:hidden fixed bottom-[5.5rem] right-7 z-30 bg-surface-lowest border border-outline rounded-xl px-3 py-2 shadow-lg text-right animate-fade-in">
+            <div className="lg:hidden fixed bottom-[5.5rem] right-7 z-30 bg-surface-container-lowest border border-outline rounded-xl px-3 py-2 shadow-lg text-right animate-fade-in">
               <p className="text-[10px] text-muted font-medium">Tổng cộng</p>
               <p className="text-xs font-bold text-primary">{fmtMoney(cartTotalAmount)}</p>
             </div>
@@ -1324,7 +1331,7 @@ export default function BanHang() {
 
       {/* Cart Drawer — mobile/tablet */}
       {showCartDrawer && (
-        <div className="lg:hidden fixed inset-0 z-50 flex flex-col animate-slide-up" style={{ backgroundColor: "var(--color-surface-lowest)" }}>
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col animate-slide-up bg-surface-container-lowest">
           <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 border-b" style={{ borderColor: "var(--color-border)" }}>
             <div className="flex items-center gap-2">
               <button
@@ -1335,7 +1342,7 @@ export default function BanHang() {
               >
                 <span className="material-symbols-outlined text-on-surface">arrow_back</span>
               </button>
-              <h2 className="font-bold text-on-surface text-sm">🛒 Giỏ hàng</h2>
+              <h2 className="font-bold text-on-surface text-sm"><span className="material-symbols-outlined">shopping_cart</span> Giỏ hàng</h2>
             </div>
             {cartItemCount > 0 && (
               <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)", color: "var(--color-primary)" }}>
@@ -1376,7 +1383,7 @@ export default function BanHang() {
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-on-surface flex items-center gap-2">
-                <span>💳</span> Xác nhận thanh toán
+                <span className="material-symbols-outlined">credit_card</span> Xác nhận thanh toán
               </h3>
               <button
                 type="button"
@@ -1401,7 +1408,7 @@ export default function BanHang() {
                   }`}
                   style={hinhThucThanhToan === "tien_mat" ? { borderColor: "var(--color-primary)", backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" } : { borderColor: "var(--color-border)" }}
                 >
-                  <span>💵</span> Tiền mặt
+                  <span className="material-symbols-outlined">payments</span> Tiền mặt
                 </button>
                 <button
                   type="button"
@@ -1413,7 +1420,7 @@ export default function BanHang() {
                   }`}
                   style={hinhThucThanhToan === "chuyen_khoan" ? { borderColor: "var(--color-primary)", backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" } : { borderColor: "var(--color-border)" }}
                 >
-                  <span>💳</span> Chuyển khoản
+                  <span className="material-symbols-outlined">account_balance</span> Chuyển khoản
                 </button>
               </div>
             </div>
@@ -1425,9 +1432,9 @@ export default function BanHang() {
               className="btn-primary w-full !py-3.5 !text-sm uppercase flex items-center justify-center gap-2"
             >
               {bh.loaiDon === "tai_cho" ? (
-                <><span>✅</span> Xác nhận thanh toán</>
+                <><span className="material-symbols-outlined">check_circle</span> Xác nhận thanh toán</>
               ) : (
-                <><span>🧾</span> In bill & Thanh toán</>
+                <><span className="material-symbols-outlined">receipt</span> In bill & Thanh toán</>
               )}
             </button>
             <button

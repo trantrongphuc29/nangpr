@@ -1,4 +1,4 @@
-/* ===== 💰 CÔNG NỢ - REPOSITORY =====
+/* =====  CÔNG NỢ =====
  * Thao tác SQL với bảng phieunhap để theo dõi công nợ nhà cung cấp
  * ================================== */
 const db = require("../config/database");
@@ -87,20 +87,21 @@ const CongNoRepository = {
     );
 
     // Đã thanh toán trong kỳ (theo from_date/to_date)
+    // Sử dụng bảng lich_su_thanh_toan để lấy đúng số tiền đã trả
     let daTraParams = [];
     let daTraWhere = '';
     if (from_date) {
-      daTraWhere += ' AND DATE(pn.ngay_thanh_toan + INTERVAL 7 HOUR) >= ?';
+      daTraWhere += ' AND DATE(ngay_thanh_toan + INTERVAL 7 HOUR) >= ?';
       daTraParams.push(from_date);
     }
     if (to_date) {
-      daTraWhere += ' AND DATE(pn.ngay_thanh_toan + INTERVAL 7 HOUR) <= ?';
+      daTraWhere += ' AND DATE(ngay_thanh_toan + INTERVAL 7 HOUR) <= ?';
       daTraParams.push(to_date);
     }
     const [daTraThang] = await db.execute(
-      `SELECT COALESCE(SUM(pn.tong_tien), 0) AS da_tra
-       FROM phieunhap pn
-       WHERE pn.da_thanh_toan = 1 ${daTraWhere}`,
+      `SELECT COALESCE(SUM(so_tien), 0) AS da_tra
+       FROM lich_su_thanh_toan
+       WHERE 1=1 ${daTraWhere}`,
       daTraParams
     );
 
@@ -155,13 +156,14 @@ const CongNoRepository = {
 
       // Lấy thông tin phiếu
       const [rows] = await conn.execute(
-        `SELECT tong_tien, so_tien_da_tra, da_thanh_toan FROM phieunhap WHERE ma_phieu = ?`,
+        `SELECT tong_tien, so_tien_da_tra, da_thanh_toan, nha_cung_cap FROM phieunhap WHERE ma_phieu = ?`,
         [ma_phieu]
       );
       if (!rows.length) throw new Error("Phiếu nhập không tồn tại");
 
       const tongTien = Number(rows[0].tong_tien);
       const soTienDaTra = Number(rows[0].so_tien_da_tra);
+      const nhaCungCap = rows[0].nha_cung_cap || "Đại lý tự do";
       const soTienMoi = soTienDaTra + Number(so_tien);
 
       if (soTienMoi > tongTien) {
@@ -169,15 +171,22 @@ const CongNoRepository = {
       }
 
       const daThanhToan = soTienMoi >= tongTien ? 1 : 0;
-      const ngayThanhToan = daThanhToan ? new Date() : null;
+      const ngayThanhToan = new Date();
+      const conNoSauKhiTra = tongTien - soTienMoi;
 
       await conn.execute(
         `UPDATE phieunhap SET so_tien_da_tra = ?, da_thanh_toan = ?, ngay_thanh_toan = ? WHERE ma_phieu = ?`,
         [soTienMoi, daThanhToan, ngayThanhToan, ma_phieu]
       );
 
+      // Ghi lịch sử thanh toán
+      await conn.execute(
+        `INSERT INTO lich_su_thanh_toan (ma_phieu, nha_cung_cap, so_tien, con_no_sau_khi_tra, ngay_thanh_toan, ghi_chu) VALUES (?, ?, ?, ?, ?, ?)`,
+        [ma_phieu, nhaCungCap, parseFloat(so_tien), conNoSauKhiTra, ngayThanhToan, daThanhToan ? 'Thanh toán hết' : 'Thanh toán một phần']
+      );
+
       await conn.commit();
-      return { ma_phieu, so_tien_da_tra: soTienMoi, da_thanh_toan: daThanhToan, con_no: tongTien - soTienMoi };
+      return { ma_phieu, so_tien_da_tra: soTienMoi, da_thanh_toan: daThanhToan, con_no: conNoSauKhiTra };
     } catch (error) {
       await conn.rollback();
       throw error;
@@ -194,7 +203,7 @@ const CongNoRepository = {
 
       // Lấy tất cả phiếu đang nợ
       const [rows] = await conn.execute(
-        `SELECT ma_phieu, tong_tien, so_tien_da_tra FROM phieunhap WHERE da_thanh_toan = 0 OR tong_tien > so_tien_da_tra`
+        `SELECT ma_phieu, tong_tien, so_tien_da_tra, nha_cung_cap FROM phieunhap WHERE da_thanh_toan = 0 OR tong_tien > so_tien_da_tra`
       );
 
       if (!rows.length) {
@@ -212,6 +221,13 @@ const CongNoRepository = {
           `UPDATE phieunhap SET so_tien_da_tra = ?, da_thanh_toan = 1, ngay_thanh_toan = NOW() WHERE ma_phieu = ?`,
           [soTienMoi, phieu.ma_phieu]
         );
+
+        // Ghi lịch sử thanh toán
+        await conn.execute(
+          `INSERT INTO lich_su_thanh_toan (ma_phieu, nha_cung_cap, so_tien, con_no_sau_khi_tra, ngay_thanh_toan, ghi_chu) VALUES (?, ?, ?, ?, NOW(), 'Thanh toán hết (all)')`,
+          [phieu.ma_phieu, phieu.nha_cung_cap || 'Đại lý tự do', conNo, 0]
+        );
+
         tongDaTra += conNo;
         soPhieu++;
       }
@@ -224,6 +240,52 @@ const CongNoRepository = {
     } finally {
       conn.release();
     }
+  },
+
+  /** Lấy lịch sử thanh toán công nợ */
+  getPayments: async ({ from_date, to_date, search, limit = 50, offset = 0 } = {}) => {
+    let whereParts = [];
+    const params = [];
+
+    if (from_date) {
+      whereParts.push('DATE(ngay_thanh_toan + INTERVAL 7 HOUR) >= ?');
+      params.push(from_date);
+    }
+    if (to_date) {
+      whereParts.push('DATE(ngay_thanh_toan + INTERVAL 7 HOUR) <= ?');
+      params.push(to_date);
+    }
+    if (search) {
+      whereParts.push('(nha_cung_cap LIKE ? OR CAST(ma_phieu AS CHAR) LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    const where = whereParts.length ? 'WHERE ' + whereParts.join(' AND ') : '';
+
+    // Đếm
+    const [countRows] = await db.execute(
+      `SELECT COUNT(*) AS cnt FROM lich_su_thanh_toan ${where}`,
+      params
+    );
+    const total = Number(countRows[0].cnt);
+
+    // Lấy danh sách
+    const [rows] = await db.execute(
+      `SELECT id, ma_phieu, nha_cung_cap, so_tien, con_no_sau_khi_tra, ngay_thanh_toan, ghi_chu
+       FROM lich_su_thanh_toan
+       ${where}
+       ORDER BY ngay_thanh_toan DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    // Thống kê
+    const [sumRows] = await db.execute(
+      `SELECT COALESCE(SUM(so_tien), 0) AS tong_da_tra, COUNT(*) AS so_lan_thanh_toan FROM lich_su_thanh_toan ${where}`,
+      params
+    );
+
+    return { rows, total, tong_da_tra: Number(sumRows[0].tong_da_tra), so_lan_thanh_toan: Number(sumRows[0].so_lan_thanh_toan) };
   },
 };
 

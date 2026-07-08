@@ -21,4 +21,4 @@ pool.on('connection', (conn) => {
 // Xuất ra dạng promise để các Repository dùng được await db.execute()
 module.exports = pool.promise();
 
-console.log("MySQL Pool initialized ✅");
+console.log("MySQL Pool initialized ");

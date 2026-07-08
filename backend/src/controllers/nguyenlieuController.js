@@ -1,4 +1,4 @@
-/* ===== 🥬 NGUYÊN LIỆU - CONTROLLER =====
+/* =====  NGUYÊN LIỆU =====
  * Tiếp nhận request HTTP, gọi Service, trả response
  * ========================================= */
 const NguyenLieuService = require('../services/nguyenlieuService');
@@ -69,6 +69,13 @@ const NguyenLieuController = {
       await NguyenLieuService.xoa(req.params.id);
       res.json({ message: "Đã xóa nguyên liệu!" });
     } catch (error) { res.status(400).json({ message: error.message }); }
+  },
+
+  getExpiredHistory: async (req, res) => {
+    try {
+      const data = await NguyenLieuService.getLichSuHetHan();
+      res.json(data);
+    } catch (error) { res.status(500).json({ message: error.message }); }
   },
 
   setStatus: async (req, res) => {

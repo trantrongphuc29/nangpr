@@ -17,10 +17,7 @@ async function ensureCaLamSchema() {
     await db.execute(
       `INSERT INTO calam (ma_ca, buoi, ngay) VALUES (1, 'Ca Sáng', NULL), (2, 'Ca Chiều', NULL), (3, 'Ca Tối', NULL)`
     );
-    console.log("✅ Đã thêm dữ liệu mặc định cho bảng calam");
   }
-
-  console.log("✅ Đã đảm bảo schema calam");
 }
 
 module.exports = { ensureCaLamSchema };

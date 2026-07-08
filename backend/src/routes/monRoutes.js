@@ -1,4 +1,4 @@
-/* ===== 🍽️ MÓN & CÔNG THỨC - ROUTES =====
+/* ===== MÓN  CÔNG THỨC  =====
  * Định nghĩa endpoint API cho Món, Công thức, POS Menu
  * Prefix: /api/mon
  * ======================================== */

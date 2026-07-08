@@ -8,6 +8,70 @@ import * as congNoService from "../services/congNoService";
 import { exportPhieuNhapExcel } from "../utils/bangLuongExport";
 import { ToastContainer, useToast } from "../components/Toast";
 
+/* ── In phiếu thanh toán công nợ (form giấy tờ) ── */
+function inPhieuThanhToan(thanhToan) {
+  const date = new Date(thanhToan.ngay_thanh_toan);
+  const formattedDate = date.toLocaleString("vi-VN", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  });
+
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Phieu Thanh Toan #${thanhToan.id}</title>
+        <style>
+          body { font-family: 'Times New Roman', serif; color: #000; padding: 40px; line-height: 1.6; font-size: 14px; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+          .title { font-size: 22px; font-weight: bold; text-transform: uppercase; margin: 0; }
+          .subtitle { font-size: 13px; margin-top: 6px; }
+          table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+          td { padding: 6px 0; font-size: 14px; }
+          .amount-box { text-align: center; padding: 25px; margin: 20px 0; border: 2px solid #000; }
+          .amount { font-size: 32px; font-weight: bold; letter-spacing: 1px; }
+          .amount-label { font-size: 13px; margin-bottom: 8px; }
+          .footer-sign { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; }
+          .sign-box { width: 45%; }
+          .sign-line { margin-top: 50px; border-top: 1px solid #000; padding-top: 6px; font-size: 13px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">NANG PR CAFE</div>
+          <div class="subtitle">PHIẾU THANH TOÁN CÔNG NỢ</div>
+        </div>
+        <table>
+          <tr><td style="width:200px"><strong>Mã phiếu thanh toán:</strong></td><td>#${thanhToan.id}</td></tr>
+          <tr><td><strong> Mã Phiếu nhập:</strong></td><td>#${thanhToan.ma_phieu}</td></tr>
+          <tr><td><strong>Nhà cung cấp:</strong></td><td>${thanhToan.nha_cung_cap || "Dai ly tu do"}</td></tr>
+          <tr><td><strong>Thời gian thanh toán:</strong></td><td>${formattedDate}</td></tr>
+          <tr><td><strong>Ghi chú:</strong></td><td>${thanhToan.ghi_chu || "—"}</td></tr>
+        </table>
+        <div class="amount-box">
+          <div class="amount-label">Số tiền đã thanh toán</div>
+          <div class="amount">${Number(thanhToan.so_tien).toLocaleString("vi-VN")} đồng</div>
+        </div>
+        <table>
+          <tr><td><strong>Số tiền còn nợ sau khi thanh toán:</strong> ${Number(thanhToan.con_no_sau_khi_tra).toLocaleString("vi-VN")} đồng</td></tr>
+        </table>
+        <div class="footer-sign">
+          <div class="sign-box">
+            <div class="sign-line">Người nộp tiền</div>
+            <div style="font-size:12px;margin-top:4px;color:#555">(Ký và ghi rõ họ tên)</div>
+          </div>
+          <div class="sign-box">
+            <div class="sign-line">Người nhận tiền</div>
+            <div style="font-size:12px;margin-top:4px;color:#555">(Ký và ghi rõ họ tên)</div>
+          </div>
+        </div>
+        <script>window.onload = function() { window.print(); window.close(); }</script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
 const dinhDangTien = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 const dinhDangNgay = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "—");
 
@@ -18,7 +82,7 @@ const boLocThoiGian = [
   { key: "year", label: "Năm" },
 ];
 
-/* ── In phiếu nhập ── */
+/* ── In phiếu nhập (form giấy tờ) ── */
 function inPhieuNhap(phieu) {
   const items = (() => {
     try {
@@ -30,7 +94,7 @@ function inPhieuNhap(phieu) {
     }
   })();
 
-  const targetNCC = phieu.nha_cung_cap || "Đại lý tự do";
+  const targetNCC = phieu.nha_cung_cap || "Dai ly tu do";
   const date = new Date(phieu.ngay_nhap);
   const formattedDate = date.toLocaleString("vi-VN", {
     day: "2-digit",
@@ -46,44 +110,44 @@ function inPhieuNhap(phieu) {
   printWindow.document.write(`
     <html>
       <head>
-        <title>Phiếu Nhập Kho #${phieu.ma_phieu}</title>
+        <title>Phieu Nhap Kho #${phieu.ma_phieu}</title>
         <style>
-          body { font-family: 'Arial', sans-serif; color: #222; padding: 30px; line-height: 1.5; }
-          .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #333; padding-bottom: 15px; }
-          .title { font-size: 24px; font-weight: bold; text-transform: uppercase; color: #064e3b; margin: 0; }
-          .subtitle { font-size: 14px; color: #666; margin-top: 5px; }
-          .info-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
-          .info-table td { padding: 5px 0; font-size: 14px; }
-          .main-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-          .main-table th { background-color: #f3f4f6; border: 1px solid #d1d5db; padding: 10px; font-size: 13px; text-transform: uppercase; }
-          .main-table td { border: 1px solid #d1d5db; padding: 10px; font-size: 13px; }
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-          .total-row { font-size: 16px; font-weight: bold; color: #064e3b; }
-          .footer-sign { margin-top: 50px; display: flex; justify-content: space-between; text-align: center; }
-          .sign-box { width: 45%; margin-top: 40px; font-size: 14px; }
+          body { font-family: 'Times New Roman', serif; color: #000; padding: 40px; line-height: 1.6; font-size: 14px; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+          .title { font-size: 22px; font-weight: bold; text-transform: uppercase; margin: 0; }
+          .subtitle { font-size: 13px; margin-top: 6px; }
+          table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+          td.info-label { width: 160px; font-weight: bold; }
+          td.info-value { }
+          .item-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          .item-table th { border: 1px solid #000; padding: 8px 6px; font-size: 12px; font-weight: bold; text-align: center; }
+          .item-table td { border: 1px solid #000; padding: 6px; font-size: 13px; }
+          .total-row td { font-weight: bold; padding: 8px; }
+          .footer-sign { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; }
+          .sign-box { width: 45%; }
+          .sign-line { margin-top: 50px; border-top: 1px solid #000; padding-top: 6px; font-size: 13px; }
         </style>
       </head>
       <body>
         <div class="header">
-          <div class="title">NẮNG PR CAFE</div>
-          <div class="subtitle">Phiếu Nhập Kho</div>
+          <div class="title">NANG PR CAFE</div>
+          <div class="subtitle">PHIẾU NHẬP KHO</div>
         </div>
-        <table class="info-table">
-          <tr><td><strong>Mã phiếu nhập:</strong> #${phieu.ma_phieu}</td></tr>
-          <tr><td><strong>Thời gian:</strong> ${formattedDate}</td></tr>
-          <tr><td><strong>Nhà cung cấp:</strong> ${targetNCC}</td></tr>
-          <tr><td><strong>Ghi chú:</strong> ${phieu.ghi_chu || "Nhập kho hệ thống"}</td></tr>
+        <table>
+          <tr><td class="info-label">Mã phiếu nhập:</td><td class="info-value">#${phieu.ma_phieu}</td></tr>
+          <tr><td class="info-label">Thời gian:</td><td class="info-value">${formattedDate}</td></tr>
+          <tr><td class="info-label">Nhà cung cấp:</td><td class="info-value">${targetNCC}</td></tr>
+          <tr><td class="info-label">Ghi chu:</td><td class="info-value">${phieu.ghi_chu || "Nhập kho hệ thống"}</td></tr>
         </table>
-        <table class="main-table">
+        <table class="item-table">
           <thead>
             <tr>
-              <th>STT</th>
-              <th style="text-align: left;">Nguyên liệu</th>
-              <th>Số lượng</th>
-              <th>Đơn vị</th>
-              <th style="text-align: right;">Đơn giá</th>
-              <th style="text-align: right;">Thành tiền</th>
+              <th style="width:40px">STT</th>
+              <th style="text-align:left">Nguyên liệu</th>
+              <th style="width:60px">Số lượng</th>
+              <th style="width:60px">Đơn vị</th>
+              <th style="width:100px">Đơn giá</th>
+              <th style="width:110px">Thành tiền</th>
             </tr>
           </thead>
           <tbody>
@@ -91,25 +155,31 @@ function inPhieuNhap(phieu) {
               .map(
                 (item, i) => `
               <tr>
-                <td class="text-center">${i + 1}</td>
-                <td><strong>${item.ten_nguyen_lieu}</strong></td>
-                <td class="text-center">${item.so_luong}</td>
-                <td class="text-center" style="text-transform: uppercase;">${item.don_vi_nhap || "Đơn vị"}</td>
-                <td class="text-right">${Number(item.gia_nhap).toLocaleString("vi-VN")}đ</td>
-                <td class="text-right" style="font-weight: 600;">${(Number(item.so_luong) * Number(item.gia_nhap)).toLocaleString("vi-VN")}đ</td>
+                <td style="text-align:center">${i + 1}</td>
+                <td>${item.ten_nguyen_lieu}</td>
+                <td style="text-align:center">${item.so_luong}</td>
+                <td style="text-align:center;text-transform:uppercase">${item.don_vi_nhap || "—"}</td>
+                <td style="text-align:right">${Number(item.gia_nhap).toLocaleString("vi-VN")} đ</td>
+                <td style="text-align:right">${(Number(item.so_luong) * Number(item.gia_nhap)).toLocaleString("vi-VN")} đ</td>
               </tr>
             `
               )
               .join("")}
             <tr class="total-row">
-              <td colspan="5" class="text-right" style="padding: 12px;">Tổng thanh toán:</td>
-              <td class="text-right" style="padding: 12px;">${Number(phieu.tong_tien).toLocaleString("vi-VN")}đ</td>
+              <td colspan="5" style="text-align:right;padding:8px;border:1px solid #000;border-top:2px solid #000">Tổng thanh toán:</td>
+              <td style="text-align:right;padding:8px;border:1px solid #000;border-top:2px solid #000">${Number(phieu.tong_tien).toLocaleString("vi-VN")} đ</td>
             </tr>
           </tbody>
         </table>
         <div class="footer-sign">
-          <div class="sign-box">Người lập phiếu<br><br><br><br><i>(Ký và ghi rõ họ tên)</i></div>
-          <div class="sign-box">Đại diện giao hàng<br><br><br><br><i>(Ký và ghi rõ họ tên)</i></div>
+          <div class="sign-box">
+            <div class="sign-line">Người lập phiếu</div>
+            <div style="font-size:12px;margin-top:4px;color:#555">(Ký và ghi rõ họ tên)</div>
+          </div>
+          <div class="sign-box">
+            <div class="sign-line">Đại diện giao hàng</div>
+            <div style="font-size:12px;margin-top:4px;color:#555">(Ký và ghi rõ họ tên)</div>
+          </div>
         </div>
         <script>window.onload = function() { window.print(); window.close(); }</script>
       </body>
@@ -260,7 +330,7 @@ function ModalChiTiet({ phieu, onDong }) {
                 className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all"
                 title="In phiếu nhập"
               >
-                🖨️ In
+                <span className="material-symbols-outlined text-sm">print</span> In
               </button>
               <button
                 onClick={onDong}
@@ -344,6 +414,9 @@ function ModalChiTiet({ phieu, onDong }) {
 /* ── Trang chính ── */
 export default function CongNo() {
   const { toasts, show: toast, dismiss } = useToast();
+  const [tab, setTab] = useState('import'); // 'import' | 'payment'
+
+  // Tab: Phiếu nhập
   const [danhSach, setDanhSach] = useState([]);
   const [tongSo, setTongSo] = useState(0);
   const [thongKe, setThongKe] = useState({
@@ -356,7 +429,13 @@ export default function CongNo() {
   });
   const [dangTai, setDangTai] = useState(true);
 
-  // Bộ lọc
+  // Tab: Lịch sử thanh toán
+  const [payments, setPayments] = useState([]);
+  const [paymentsTotal, setPaymentsTotal] = useState(0);
+  const [paymentsSummary, setPaymentsSummary] = useState({ tong_da_tra: 0, so_lan_thanh_toan: 0 });
+  const [dangTaiPayments, setDangTaiPayments] = useState(false);
+
+  // Bộ lọc chung
   const [khoangThoiGian, setKhoangThoiGian] = useState("month");
   const [tuNgay, setTuNgay] = useState("");
   const [denNgay, setDenNgay] = useState("");
@@ -436,13 +515,39 @@ export default function CongNo() {
     }
   }, [tinhKhoangNgay, boLocTrangThai, tuKhoaTimKiem, trang, toast]);
 
+  const taiPayments = useCallback(async () => {
+    setDangTaiPayments(true);
+    try {
+      const khoang = tinhKhoangNgay();
+      const offset = (trang - 1) * KICH_THUOC_TRANG;
+      const data = await congNoService.getPaymentHistory({
+        from_date: khoang.from_date,
+        to_date: khoang.to_date,
+        search: tuKhoaTimKiem || undefined,
+        limit: KICH_THUOC_TRANG,
+        offset,
+      });
+      setPayments(data.rows || []);
+      setPaymentsTotal(data.total || 0);
+      setPaymentsSummary({ tong_da_tra: data.tong_da_tra || 0, so_lan_thanh_toan: data.so_lan_thanh_toan || 0 });
+    } catch (err) {
+      toast("Không tải được lịch sử thanh toán", "error");
+    } finally {
+      setDangTaiPayments(false);
+    }
+  }, [tinhKhoangNgay, tuKhoaTimKiem, trang, toast]);
+
   useEffect(() => {
-    taiDuLieu();
-  }, [taiDuLieu]);
+    if (tab === 'import') {
+      taiDuLieu();
+    } else {
+      taiPayments();
+    }
+  }, [tab, taiDuLieu, taiPayments]);
 
   useEffect(() => {
     setTrang(1);
-  }, [khoangThoiGian, tuNgay, denNgay, boLocTrangThai, tuKhoaTimKiem]);
+  }, [khoangThoiGian, tuNgay, denNgay, boLocTrangThai, tuKhoaTimKiem, tab]);
 
   const tongTrang = Math.ceil(tongSo / KICH_THUOC_TRANG);
 
@@ -471,7 +576,7 @@ export default function CongNo() {
                   setKhoangThoiGian(k.key);
                   setTuNgay(""); setDenNgay("");
                 }}
-                className={`flex-1 px-2 py-4 text-xs font-bold rounded-md transition-all duration-200 text-center ${
+                className={`flex-1 px-2 py-2.5 md:py-4 text-xs font-bold rounded-md transition-all duration-200 text-center ${
                   khoangThoiGian === k.key && !tuNgay
                     ? "bg-primary text-white shadow-sm"
                     : "text-on-surface-variant hover:text-on-surface hover:bg-primary/5"
@@ -492,7 +597,7 @@ export default function CongNo() {
               className="flex-1 min-w-0 border-none rounded-md px-1.5 py-1 text-xs font-bold focus:ring-1 transition-all"
               style={{ backgroundColor: "var(--color-surface-lowest)", color: "var(--color-on-surface-variant)" }} />
             {(tuNgay || denNgay) && (
-              <button onClick={() => { setTuNgay(""); setDenNgay(""); }}
+              <button onClick={() => { setTuNgay(""); setDenNgay(""); setKhoangThoiGian("month"); }}
                 className="w-5 h-5 flex items-center justify-center rounded text-xs text-muted hover:bg-surface-container-high hover:text-error transition-all shrink-0" title="Xóa">✕</button>
             )}
           </div>
@@ -534,8 +639,8 @@ export default function CongNo() {
         />
       </div>
 
-      {/* ── ROW 2: Search (30%) + Filter (30%) + Phiếu chưa TT (20%) + NCC nợ (20%) ── */}
-      <div className="grid grid-cols-10 gap-2">
+      {/* ── ROW 2: Search (30%) + Filter (30%) + Thống kê nhanh ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-10 gap-2">
         {/* Search: 30% - cột 1-3 */}
         <div className="col-span-3 relative">
           <input type="text" placeholder="Tìm kiếm..." value={tuKhoaTimKiem}
@@ -551,60 +656,118 @@ export default function CongNo() {
 
         {/* Filter: 30% - cột 4-6 */}
         <div className="col-span-3 flex items-center">
-          <div className="flex items-center gap-1 bg-surface-container-high p-0.5 rounded-lg w-full">
-            {[
-              { key: "no", label: "Đang nợ" },
-              { key: "da_tra", label: "Đã thanh toán" },
-              { key: "all", label: "Tất cả" },
-            ].map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setBoLocTrangThai(opt.key)}
-                className={`flex-1 px-2 py-4 text-xs font-bold rounded-md transition-all duration-200 text-center ${
-                  boLocTrangThai === opt.key
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-on-surface-variant hover:text-on-surface hover:bg-primary/5"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          {tab === 'import' ? (
+            <div className="flex items-center gap-1 bg-surface-container-high p-0.5 rounded-lg w-full">
+              {[
+                { key: "no", label: "Đang nợ" },
+                { key: "da_tra", label: "Đã thanh toán" },
+                { key: "all", label: "Tất cả" },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setBoLocTrangThai(opt.key)}
+                  className={`flex-1 px-2 py-2.5 md:py-4 text-xs font-bold rounded-md transition-all duration-200 text-center ${
+                    boLocTrangThai === opt.key
+                      ? "bg-primary text-white shadow-sm"
+                      : "text-on-surface-variant hover:text-on-surface hover:bg-primary/5"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-success) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-success) 20%, transparent)" }}>
+              <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-success)" }}>payments</span>
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold uppercase text-muted tracking-wider">Đã thanh toán</p>
+                <p className="text-sm font-black" style={{ color: "var(--color-success)" }}>{dinhDangTien(paymentsSummary.tong_da_tra)}</p>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Phiếu chưa thanh toán: 20% - cột 7-8 */}
-        <div className="col-span-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-amber) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-amber) 20%, transparent)" }}>
-            <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-amber)" }}>receipt_long</span>
-            <div className="min-w-0">
-              <p className="text-[9px] font-bold uppercase text-muted tracking-wider truncate">Phiếu chưa thanh toán</p>
-              <p className="text-base font-black" style={{ color: "var(--color-amber)" }}>{thongKe.so_phieu_no}</p>
+        {/* Thống kê nhanh: 40% - cột 7-10 */}
+        {tab === 'import' ? (
+          <>
+            <div className="col-span-2">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-amber) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-amber) 20%, transparent)" }}>
+                <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-amber)" }}>receipt_long</span>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold uppercase text-muted tracking-wider truncate">Phiếu chưa thanh toán</p>
+                  <p className="text-base font-black" style={{ color: "var(--color-amber)" }}>{thongKe.so_phieu_no}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Nhà cung cấp đang nợ: 20% - cột 9-10 */}
-        <div className="col-span-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-purple) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-purple) 20%, transparent)" }}>
-            <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-purple)" }}>people</span>
-            <div className="min-w-0">
-              <p className="text-[9px] font-bold uppercase text-muted tracking-wider truncate">Nhà cung cấp đang nợ</p>
-              <p className="text-base font-black" style={{ color: "var(--color-purple)" }}>{thongKe.so_ncc_dang_no}</p>
+            <div className="col-span-2">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-purple) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-purple) 20%, transparent)" }}>
+                <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-purple)" }}>people</span>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold uppercase text-muted tracking-wider truncate">Nhà cung cấp đang nợ</p>
+                  <p className="text-base font-black" style={{ color: "var(--color-purple)" }}>{thongKe.so_ncc_dang_no}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        ) : (
+          <>
+            <div className="col-span-2">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-info) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-info) 20%, transparent)" }}>
+                <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-info)" }}>receipt_long</span>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold uppercase text-muted tracking-wider truncate">Số lần thanh toán</p>
+                  <p className="text-base font-black" style={{ color: "var(--color-info)" }}>{paymentsSummary.so_lan_thanh_toan}</p>
+                </div>
+              </div>
+            </div>
+            <div className="col-span-2">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-success) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-success) 20%, transparent)" }}>
+                <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-success)" }}>payments</span>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold uppercase text-muted tracking-wider truncate">Tổng đã thanh toán</p>
+                  <p className="text-base font-black" style={{ color: "var(--color-success)" }}>{dinhDangTien(paymentsSummary.tong_da_tra)}</p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* ── Main Table (giống DoanhThu) ── */}
+      {/* ── Card chứa Tabs + Nội dung ── */}
       <div className="card border-none shadow-lg rounded-2xl overflow-hidden">
-        {/* Table header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "var(--color-border)", backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 20%, transparent)" }}>
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-sm" style={{ color: "var(--color-primary)" }}>receipt_long</span>
-            <span className="text-xs font-bold text-on-surface">Danh sách phiếu nhập</span>
+        {/* Header card: Tabs Phiếu nhập | Phiếu thanh toán */}
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--color-border)", backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 20%, transparent)" }}>
+          <div className="flex gap-1 bg-surface-container-high p-0.5 rounded-lg">
+            <button
+              onClick={() => setTab('import')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
+                tab === 'import'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-primary/5'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">receipt_long</span>
+              Phiếu nhập
+              {tab === 'import' && <span className="text-[10px] opacity-70 ml-1">({tongSo})</span>}
+            </button>
+            <button
+              onClick={() => setTab('payment')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
+                tab === 'payment'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-primary/5'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">payments</span>
+              Phiếu thanh toán
+              {tab === 'payment' && paymentsSummary.so_lan_thanh_toan > 0 && (
+                <span className="text-[10px] opacity-70 ml-1">({paymentsTotal})</span>
+              )}
+            </button>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] text-muted font-medium">{tongSo} phiếu</span>
+
+          {/* Nút xuất Excel (chỉ hiện khi tab import) */}
+          {tab === 'import' && danhSach.length > 0 && (
             <button
               onClick={() => {
                 try {
@@ -617,131 +780,210 @@ export default function CongNo() {
                   toast(err.message || "Không thể xuất Excel", "error");
                 }
               }}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:bg-primary/10"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all hover:bg-primary/10"
               style={{ color: "var(--color-primary)", backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" }}
-              disabled={danhSach.length === 0}
             >
               <span className="material-symbols-outlined text-xs">table_chart</span>
               Xuất Excel
             </button>
-            {boLocTrangThai === "no" && (
-              <span className="text-[10px] font-bold text-error">{dinhDangTien(thongKe.tong_con_no)} còn nợ</span>
-            )}
-          </div>
+          )}
         </div>
 
-        {dangTai ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="animate-spin w-8 h-8 border-[3px] rounded-full"
-              style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent", borderRightColor: "transparent" }} />
-          </div>
-        ) : danhSach.length === 0 ? (
-          <div className="flex flex-col items-center py-16 text-muted">
-            <span className="material-symbols-outlined text-4xl mb-2">account_balance</span>
-            <p className="font-medium">
-              {boLocTrangThai === "no"
-                ? "🎉 Không có công nợ nào!"
-                : "Không có phiếu nhập nào"}
-            </p>
-            <p className="text-xs mt-1">
-              {boLocTrangThai === "no"
-                ? "Tất cả các phiếu nhập đã được thanh toán đầy đủ."
-                : "Chưa có phiếu nhập kho nào trong khoảng thời gian này."}
-            </p>
-          </div>
+        {/* Nội dung tab */}
+        {tab === 'import' ? (
+          <>
+            {dangTai ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin w-8 h-8 border-[3px] rounded-full"
+                  style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent", borderRightColor: "transparent" }} />
+              </div>
+            ) : danhSach.length === 0 ? (
+              <div className="flex flex-col items-center py-16 text-muted">
+                <span className="material-symbols-outlined text-4xl mb-2">account_balance</span>
+                <p className="font-medium">
+                  {boLocTrangThai === "no"
+                    ? <><span className="material-symbols-outlined text-lg">celebration</span> Không có công nợ nào!</>
+                    : "Không có phiếu nhập nào"}
+                </p>
+                <p className="text-xs mt-1">
+                  {boLocTrangThai === "no"
+                    ? "Tất cả các phiếu nhập đã được thanh toán đầy đủ."
+                    : "Chưa có phiếu nhập kho nào trong khoảng thời gian này."}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "750px" }}>
+                  <thead>
+                    <tr className="text-[10px] font-bold text-muted uppercase tracking-wider" style={{ backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
+                    <th className="px-4 py-3.5 w-[10%]">Mã phiếu</th>
+                    <th className="px-4 py-3.5 w-[15%]">Ngày nhập</th>
+                    <th className="px-4 py-3.5 w-[17%]">Nhà cung cấp</th>
+                    <th className="px-4 py-3.5 text-right w-[13%]">Tổng tiền</th>
+                    <th className="px-4 py-3.5 text-right w-[13%]">Đã thanh toán</th>
+                    <th className="px-4 py-3.5 text-right w-[13%]">Còn nợ</th>
+                    <th className="px-4 py-3.5 text-center w-[11%]">Trạng thái</th>
+                    <th className="px-4 py-3.5 text-center w-[8%]">Tác vụ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                    {danhSach.map((phieu) => {
+                      const conNo = Number(phieu.con_no || 0);
+                      const isPaid = conNo <= 0;
+                      return (
+                        <tr key={phieu.ma_phieu} className={`hover:bg-surface-container-low/40 transition-colors ${isPaid ? "opacity-60" : ""}`}>
+                          <td className="px-4 py-3.5 w-[10%]">
+                            <span className="font-bold text-xs" style={{ color: "var(--color-primary)" }}>#{phieu.ma_phieu}</span>
+                          </td>
+                          <td className="px-4 py-3.5 text-xs text-on-surface-variant whitespace-nowrap w-[15%]">
+                            {new Date(phieu.ngay_nhap).toLocaleDateString("vi-VN")}
+                          </td>
+                          <td className="px-4 py-3.5 text-xs font-medium text-on-surface w-[17%]">{phieu.nha_cung_cap}</td>
+                          <td className="px-4 py-3.5 text-right font-bold text-xs w-[13%]">{dinhDangTien(phieu.tong_tien)}</td>
+                          <td className="px-4 py-3.5 text-right text-xs font-medium w-[13%]" style={{ color: "var(--color-success)" }}>{dinhDangTien(phieu.so_tien_da_tra)}</td>
+                          <td className={`px-4 py-3.5 text-right font-bold text-xs w-[13%] ${isPaid ? "text-success" : ""}`} style={{ color: isPaid ? "var(--color-success)" : "var(--color-error)" }}>
+                            {dinhDangTien(conNo)}
+                          </td>
+                          <td className="px-4 py-3.5 text-center w-[11%]">
+                            {isPaid ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold" style={{ backgroundColor: "color-mix(in srgb, var(--color-success) 12%, transparent)", color: "var(--color-success)" }}>
+                                <span className="material-symbols-outlined text-[10px]">check_circle</span> Đã thanh toán
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold" style={{ backgroundColor: "color-mix(in srgb, var(--color-error) 12%, transparent)", color: "var(--color-error)" }}>
+                                <span className="material-symbols-outlined text-[10px]">hourglass_top</span> Chưa thanh toán
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 text-center w-[8%]">
+                            <div className="flex items-center justify-center gap-0.5">
+                              <button onClick={() => setModalChiTiet(phieu)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all hover:bg-primary/10"
+                                style={{ color: "var(--color-primary)" }} title="Chi tiết">
+                                <span className="material-symbols-outlined text-sm">visibility</span>
+                              </button>
+                              <button onClick={() => inPhieuNhap(phieu)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all hover:bg-primary/10"
+                                style={{ color: "var(--color-primary)" }} title="In phiếu">
+                                <span className="material-symbols-outlined text-sm">print</span>
+                              </button>
+                              {!isPaid && (
+                                <button onClick={() => setModalThanhToan(phieu)}
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all"
+                                  style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }} title="Thanh toán">
+                                  <span className="material-symbols-outlined text-sm">payments</span>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {tongTrang > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t" style={{ borderColor: "var(--color-border)", backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
+                <span className="text-xs text-muted font-medium">
+                  {tongSo} phiếu · Trang {trang}/{tongTrang}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setTrang((p) => Math.max(1, p - 1))} disabled={trang <= 1}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-surface-container-high"
+                    style={{ color: "var(--color-on-surface-variant)" }}>◀</button>
+                  {Array.from({ length: tongTrang }, (_, i) => i + 1).map((p) => (
+                    <button key={p} onClick={() => setTrang(p)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${p === trang ? "text-white shadow-sm" : "text-on-surface-variant hover:bg-surface-container-high"}`}
+                      style={p === trang ? { backgroundColor: "var(--color-primary)" } : {}}>{p}</button>
+                  ))}
+                  <button onClick={() => setTrang((p) => Math.min(tongTrang, p + 1))} disabled={trang >= tongTrang}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-surface-container-high"
+                    style={{ color: "var(--color-on-surface-variant)" }}>▶</button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left" style={{ tableLayout: "fixed" }}>
-              <thead>
-                <tr className="text-[10px] font-bold text-muted uppercase tracking-wider" style={{ backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
-                <th className="px-4 py-3.5 w-[10%]">Mã phiếu</th>
-                <th className="px-4 py-3.5 w-[15%]">Ngày nhập</th>
-                <th className="px-4 py-3.5 w-[17%]">Nhà cung cấp</th>
-                <th className="px-4 py-3.5 text-right w-[13%]">Tổng tiền</th>
-                <th className="px-4 py-3.5 text-right w-[13%]">Đã thanh toán</th>
-                <th className="px-4 py-3.5 text-right w-[13%]">Còn nợ</th>
-                <th className="px-4 py-3.5 text-center w-[11%]">Trạng thái</th>
-                <th className="px-4 py-3.5 text-center w-[8%]">Tác vụ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
-                {danhSach.map((phieu) => {
-                  const conNo = Number(phieu.con_no || 0);
-                  const isPaid = conNo <= 0;
-                  return (
-                    <tr key={phieu.ma_phieu} className={`hover:bg-surface-container-low/40 transition-colors ${isPaid ? "opacity-60" : ""}`}>
-                      <td className="px-4 py-3.5 w-[10%]">
-                        <span className="font-bold text-xs" style={{ color: "var(--color-primary)" }}>#{phieu.ma_phieu}</span>
-                      </td>
-                      <td className="px-4 py-3.5 text-xs text-on-surface-variant whitespace-nowrap w-[15%]">
-                        {new Date(phieu.ngay_nhap).toLocaleDateString("vi-VN")}
-                      </td>
-                      <td className="px-4 py-3.5 text-xs font-medium text-on-surface w-[17%]">{phieu.nha_cung_cap}</td>
-                      <td className="px-4 py-3.5 text-right font-bold text-xs w-[13%]">{dinhDangTien(phieu.tong_tien)}</td>
-                      <td className="px-4 py-3.5 text-right text-xs font-medium w-[13%]" style={{ color: "var(--color-success)" }}>{dinhDangTien(phieu.so_tien_da_tra)}</td>
-                      <td className={`px-4 py-3.5 text-right font-bold text-xs w-[13%] ${isPaid ? "text-success" : ""}`} style={{ color: isPaid ? "var(--color-success)" : "var(--color-error)" }}>
-                        {dinhDangTien(conNo)}
-                      </td>
-                      <td className="px-4 py-3.5 text-center w-[11%]">
-                        {isPaid ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold" style={{ backgroundColor: "color-mix(in srgb, var(--color-success) 12%, transparent)", color: "var(--color-success)" }}>
-                            ✅ Đã thanh toán
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold" style={{ backgroundColor: "color-mix(in srgb, var(--color-error) 12%, transparent)", color: "var(--color-error)" }}>
-                            ⏳ Chưa thanh toán
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3.5 text-center w-[8%]">
-                        <div className="flex items-center justify-center gap-0.5">
-                          <button onClick={() => setModalChiTiet(phieu)}
+          <>
+            {dangTaiPayments ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin w-8 h-8 border-[3px] rounded-full"
+                  style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent", borderRightColor: "transparent" }} />
+              </div>
+            ) : payments.length === 0 ? (
+              <div className="flex flex-col items-center py-16 text-muted">
+                <span className="material-symbols-outlined text-4xl mb-2">payments</span>
+                <p className="font-medium">Chưa có lịch sử thanh toán</p>
+                <p className="text-xs mt-1">Chưa có phiếu thanh toán nào trong khoảng thời gian này.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "750px" }}>
+                  <thead>
+                    <tr className="text-[10px] font-bold text-muted uppercase tracking-wider" style={{ backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
+                      <th className="px-4 py-3.5 w-[10%]">Mã TT</th>
+                      <th className="px-4 py-3.5 w-[12%]">Phiếu nhập</th>
+                      <th className="px-4 py-3.5 w-[16%]">Thời gian</th>
+                      <th className="px-4 py-3.5 w-[17%]">Nhà cung cấp</th>
+                      <th className="px-4 py-3.5 text-right w-[13%]">Số tiền</th>
+                      <th className="px-4 py-3.5 text-right w-[13%]">Còn nợ sau TT</th>
+                      <th className="px-4 py-3.5 w-[12%]">Ghi chú</th>
+                      <th className="px-4 py-3.5 text-center w-[7%]">In</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                    {payments.map((item) => (
+                      <tr key={item.id} className="hover:bg-surface-container-low/40 transition-colors">
+                        <td className="px-4 py-3.5">
+                          <span className="font-bold text-xs" style={{ color: "var(--color-primary)" }}>#{item.id}</span>
+                        </td>
+                        <td className="px-4 py-3.5 text-xs text-on-surface-variant">#{item.ma_phieu}</td>
+                        <td className="px-4 py-3.5 text-xs text-on-surface-variant whitespace-nowrap">
+                          {new Date(item.ngay_thanh_toan).toLocaleString("vi-VN")}
+                        </td>
+                        <td className="px-4 py-3.5 text-xs font-medium">{item.nha_cung_cap || '—'}</td>
+                        <td className="px-4 py-3.5 text-right font-bold text-xs" style={{ color: "var(--color-success)" }}>{dinhDangTien(item.so_tien)}</td>
+                        <td className={`px-4 py-3.5 text-right font-bold text-xs ${Number(item.con_no_sau_khi_tra) > 0 ? 'text-error' : 'text-success'}`}>
+                          {dinhDangTien(item.con_no_sau_khi_tra)}
+                        </td>
+                        <td className="px-4 py-3.5 text-xs text-muted">{item.ghi_chu || '—'}</td>
+                        <td className="px-4 py-3.5 text-center">
+                          <button onClick={() => inPhieuThanhToan(item)}
                             className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all hover:bg-primary/10"
-                            style={{ color: "var(--color-primary)" }} title="Chi tiết">
-                            <span className="material-symbols-outlined text-sm">visibility</span>
-                          </button>
-                          <button onClick={() => inPhieuNhap(phieu)}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all hover:bg-primary/10"
-                            style={{ color: "var(--color-primary)" }} title="In phiếu">
+                            style={{ color: "var(--color-primary)" }} title="In phiếu thanh toán">
                             <span className="material-symbols-outlined text-sm">print</span>
                           </button>
-                          {!isPaid && (
-                            <button onClick={() => setModalThanhToan(phieu)}
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all"
-                              style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }} title="Thanh toán">
-                              <span className="material-symbols-outlined text-sm">payments</span>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-        {/* Phân trang (giống DoanhThu) */}
-        {tongTrang > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t" style={{ borderColor: "var(--color-border)", backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
-            <span className="text-xs text-muted font-medium">
-              {tongSo} phiếu · Trang {trang}/{tongTrang}
-            </span>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setTrang((p) => Math.max(1, p - 1))} disabled={trang <= 1}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-surface-container-high"
-                style={{ color: "var(--color-on-surface-variant)" }}>◀</button>
-              {Array.from({ length: tongTrang }, (_, i) => i + 1).map((p) => (
-                <button key={p} onClick={() => setTrang(p)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${p === trang ? "text-white shadow-sm" : "text-on-surface-variant hover:bg-surface-container-high"}`}
-                  style={p === trang ? { backgroundColor: "var(--color-primary)" } : {}}>{p}</button>
-              ))}
-              <button onClick={() => setTrang((p) => Math.min(tongTrang, p + 1))} disabled={trang >= tongTrang}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-surface-container-high"
-                style={{ color: "var(--color-on-surface-variant)" }}>▶</button>
-            </div>
-          </div>
+            {Math.ceil(paymentsTotal / KICH_THUOC_TRANG) > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t" style={{ borderColor: "var(--color-border)", backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
+                <span className="text-xs text-muted font-medium">
+                  {paymentsTotal} phiếu · Trang {trang}/{Math.ceil(paymentsTotal / KICH_THUOC_TRANG)}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setTrang((p) => Math.max(1, p - 1))} disabled={trang <= 1}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-surface-container-high"
+                    style={{ color: "var(--color-on-surface-variant)" }}>◀</button>
+                  {Array.from({ length: Math.ceil(paymentsTotal / KICH_THUOC_TRANG) }, (_, i) => i + 1).map((p) => (
+                    <button key={p} onClick={() => setTrang(p)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${p === trang ? "text-white shadow-sm" : "text-on-surface-variant hover:bg-surface-container-high"}`}
+                      style={p === trang ? { backgroundColor: "var(--color-primary)" } : {}}>{p}</button>
+                  ))}
+                  <button onClick={() => setTrang((p) => Math.min(Math.ceil(paymentsTotal / KICH_THUOC_TRANG), p + 1))} disabled={trang >= Math.ceil(paymentsTotal / KICH_THUOC_TRANG)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:bg-surface-container-high"
+                    style={{ color: "var(--color-on-surface-variant)" }}>▶</button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

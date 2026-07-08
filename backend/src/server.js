@@ -1,51 +1,50 @@
 const app = require("./app");
 const { PORT } = require("./config/constants");
-const { ensureNguyenLieuSchema } = require("./config/ensureSchema");
+const { ensureNguyenLieuSchema, ensureLichSuHetHanTable } = require("./config/ensureSchema");
 const { ensurePayrollSchema } = require("./config/ensurePayrollSchema");
 const { ensureNhanVienSchema } = require("./config/ensureNhanVienSchema");
 const { ensurePOSSchema } = require("./config/ensurePOSSchema");
 const { ensureCongNoSchema } = require("./config/ensureCongNoSchema");
 const { ensureCaLamSchema } = require("./config/ensureCaLamSchema");
 
+const MODULES = [
+  { name: "Nguyên liệu và Hạn sử dụng", fn: async () => { await ensureNguyenLieuSchema(); await ensureLichSuHetHanTable(); } },
+  { name: "Nhân viên",                fn: ensureNhanVienSchema },
+  { name: "Lương/Ca",       fn: ensurePayrollSchema },
+  { name: "Bán hàng",           fn: ensurePOSSchema },
+  { name: "Công nợ",                  fn: ensureCongNoSchema },
+  { name: "Ca làm",                   fn: ensureCaLamSchema },
+];
+
 async function start() {
-  try {
-    await ensureNguyenLieuSchema();
-  } catch (err) {
-    console.error("⚠️ Kiểm tra schema nguyenlieu:", err.message);
+  console.log("\n=== NANG PR COFFEE - KHOI DONG HE THONG ===");
+
+  const ok = [];
+  const fail = [];
+
+  for (const mod of MODULES) {
+    try {
+      await mod.fn();
+      ok.push(mod.name);
+    } catch (err) {
+      fail.push({ name: mod.name, error: err.message });
+    }
   }
 
-  try {
-    await ensureNhanVienSchema();
-  } catch (err) {
-    console.error("⚠️ Kiểm tra schema nhanvien:", err.message);
+  console.log("\nCac module OK:");
+  for (const name of ok) {
+    console.log(`  - ${name}`);
   }
 
-  try {
-    await ensurePayrollSchema();
-  } catch (err) {
-    console.error("⚠️ Kiểm tra schema payroll:", err.message);
-  }
-
-  try {
-    await ensurePOSSchema();
-  } catch (err) {
-    console.error("⚠️ Kiểm tra schema POS:", err.message);
-  }
-
-  try {
-    await ensureCongNoSchema();
-  } catch (err) {
-    console.error("⚠️ Kiểm tra schema công nợ:", err.message);
-  }
-
-  try {
-    await ensureCaLamSchema();
-  } catch (err) {
-    console.error("⚠️ Kiểm tra schema calam:", err.message);
+  if (fail.length > 0) {
+    console.log("\nModule loi:");
+    for (const { name, error } of fail) {
+      console.log(`  - ${name}: ${error}`);
+    }
   }
 
   app.listen(PORT, () => {
-    console.log(`🚀 http://localhost:${PORT}`);
+    console.log(`\nServer dang chay: http://localhost:${PORT}\n`);
   });
 }
 

@@ -718,14 +718,18 @@ export default function MonCongThuc() {
 
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full pb-6 border-b gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary tracking-tight">Quản lý món &amp; công thức</h1>
-          <p className="text-on-surface-variant text-sm font-medium">Quản lý danh sách món ăn và đồ uống của Atelier Nắng PR</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
+            <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>restaurant_menu</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Quản lý món &amp; công thức</h2>
+            <p className="text-xs text-muted">Quản lý danh sách món ăn và đồ uống của Nắng PR</p>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
-          <div className="relative flex-1 sm:flex-none group">
+        <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">            <div className="relative w-full sm:w-auto group">
             <input 
-              className="peer pl-4 pr-10 py-2.5 bg-surface-container-low border-none rounded-lg text-sm w-full sm:w-64 focus:ring-2 focus:ring-primary/40 transition-all" 
+              className="peer pl-4 pr-10 py-2.5 bg-surface-container-low border-none rounded-lg text-sm w-full focus:ring-2 focus:ring-primary/40 transition-all" 
               placeholder="Tìm kiếm..." 
               type="text"
               value={searchTerm}
@@ -782,7 +786,7 @@ export default function MonCongThuc() {
                     />
                   ) : null}
                   <span className={`${mon.hinh_anh ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
-                    {mon.ten_danh_muc?.includes('Café') ? '☕' : mon.ten_danh_muc?.includes('Soda') ? '🍹' : '🥤'}
+                    {mon.ten_danh_muc?.includes('Café') ? <span className="material-symbols-outlined">coffee</span> : mon.ten_danh_muc?.includes('Soda') ? <span className="material-symbols-outlined">local_bar</span> : <span className="material-symbols-outlined">local_cafe</span>}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">

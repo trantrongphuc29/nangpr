@@ -132,7 +132,6 @@ async function ensurePayrollSchema() {
     );
   }
 
-  console.log("✅ Đã đảm bảo schema payroll");
 }
 
 module.exports = { ensurePayrollSchema };

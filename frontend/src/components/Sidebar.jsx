@@ -8,7 +8,7 @@ export default function Sidebar({ open, setOpen }) {
     { name: "Bán hàng", path: "/pos", icon: "point_of_sale" },
     { name: "Doanh thu", path: "/doanhthu", icon: "payments" },
     { name: "Công nợ", path: "/congno", icon: "account_balance" },
-    { name: "Món & Công thức", path: "/menu", icon: "restaurant_menu" }, //  Đã gộp chung chuẩn chỉnh
+    { name: "Món & Công thức", path: "/menu", icon: "restaurant_menu" }, 
     { name: "Nguyên liệu", path: "/nguyenlieu", icon: "inventory_2" },
     { name: "Nhân viên", path: "/nhanvien", icon: "badge" },
     { name: "Bảng công", path: "/bangcong", icon: "schedule" },

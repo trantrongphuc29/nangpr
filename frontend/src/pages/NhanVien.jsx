@@ -497,10 +497,14 @@ const NhanVien = () => {
       <div className="w-full min-w-0 flex flex-col gap-4 md:gap-5 min-h-[calc(100dvh-7.5rem)] print:min-h-0 print:block print:space-y-4">
         {/* Tiêu đề trang */}
         <div className="print:hidden shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-primary tracking-tight">
-              Quản lý nhân sự
-            </h1>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
+              <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>badge</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Quản lý nhân sự</h2>
+              <p className="text-xs text-muted">Quản lý thông tin nhân viên và lịch phân công ca</p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             <button type="button" onClick={() => setIsModalOpen(true)} className="btn-primary !py-2 !px-4 !text-sm">
