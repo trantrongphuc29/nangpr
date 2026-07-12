@@ -104,3 +104,168 @@ webpack compiled with [1m[31m2 errors[39m[22m
 Compiling...
 Compiled successfully!
 webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Failed to compile.
+
+Attempted import error: 'getExpiredHistory' is not exported from '../services/nguyenlieuService' (imported as 'nlService').
+[1m[31mERROR[39m[22m in [1m./src/pages/NguyenLieu.jsx[39m[22m [1m[32m515:25-52[39m[22m
+[1mexport 'getExpiredHistory' (imported as 'nlService') was [1m[31mnot found[39m[22m[1m in '../services/nguyenlieuService' (possible exports: [1m[32mcreateNguyenLieu, deleteNguyenLieu, discardStock, getCostStats, getDanhMucNguyenLieu, getDiscardHistory, getImportHistory, getNguyenLieu, importStock, setTrangThaiNguyenLieu, updateNguyenLieu[39m[22m[1m)[39m[22m
+
+[1m[31mERROR[39m[22m in [1m./src/pages/NguyenLieu.jsx[39m[22m [1m[32m2041:18-43[39m[22m
+[1mexport 'exportExpiredHistoryExcel' (imported as 'exportExpiredHistoryExcel') was [1m[31mnot found[39m[22m[1m in '../utils/bangLuongExport' (possible exports: [1m[32mexportBangLuongExcel, exportBangLuongPDF, exportDiscardHistoryExcel, exportDoanhThuExcel, exportPhieuNhapExcel[39m[22m[1m)[39m[22m
+
+webpack compiled with [1m[31m2 errors[39m[22m
+Compiling...
+Failed to compile.
+
+Attempted import error: 'getExpiredHistory' is not exported from '../services/nguyenlieuService' (imported as 'nlService').
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+src\pages\NguyenLieu.jsx
+  Line 9:10:  'exportDiscardHistoryExcel' is defined but never used  no-unused-vars
+
+[39m[22m
+
+[1m[31mERROR[39m[22m in [1m./src/pages/NguyenLieu.jsx[39m[22m [1m[32m515:25-52[39m[22m
+[1mexport 'getExpiredHistory' (imported as 'nlService') was [1m[31mnot found[39m[22m[1m in '../services/nguyenlieuService' (possible exports: [1m[32mcreateNguyenLieu, deleteNguyenLieu, discardStock, getCostStats, getDanhMucNguyenLieu, getDiscardHistory, getImportHistory, getNguyenLieu, importStock, setTrangThaiNguyenLieu, updateNguyenLieu[39m[22m[1m)[39m[22m
+
+[1m[31mERROR[39m[22m in [1m[eslint] 
+src\pages\NguyenLieu.jsx
+  Line 938:25:  'exportExpiredHistoryExcel' is not defined  no-undef
+
+Search for the keywords to learn more about each [1m[31merror[39m[22m[1m.[39m[22m
+
+webpack compiled with [1m[31m2 errors[39m[22m and [1m[33m1 warning[39m[22m
+Compiling...
+Failed to compile.
+
+[eslint] 
+src\pages\NguyenLieu.jsx
+  Line 792:26:    'expiredPaginatedList' is not defined       no-undef
+  Line 811:50:    'setExpiredDetail' is not defined           no-undef
+  Line 895:20:    'expiredTotalPages' is not defined          no-undef
+  Line 898:45:    'expiredPage' is not defined                no-undef
+  Line 898:64:    'EXPIRED_PER_PAGE' is not defined           no-undef
+  Line 898:106:   'expiredPage' is not defined                no-undef
+  Line 898:120:   'EXPIRED_PER_PAGE' is not defined           no-undef
+  Line 898:138:   'expiredHistory' is not defined             no-undef
+  Line 898:183:   'expiredHistory' is not defined             no-undef
+  Line 903:37:    'expiredPage' is not defined                no-undef
+  Line 904:42:    'setExpiredPage' is not defined             no-undef
+  Line 909:47:    'expiredTotalPages' is not defined          no-undef
+  Line 913:44:    'setExpiredPage' is not defined             no-undef
+  Line 914:95:    'expiredPage' is not defined                no-undef
+  Line 919:37:    'expiredPage' is not defined                no-undef
+  Line 919:53:    'expiredTotalPages' is not defined          no-undef
+  Line 920:42:    'setExpiredPage' is not defined             no-undef
+  Line 920:71:    'expiredTotalPages' is not defined          no-undef
+  Line 933:18:    'expiredHistory' is not defined             no-undef
+  Line 938:25:    'exportExpiredHistoryExcel' is not defined  no-undef
+  Line 938:59:    'expiredHistory' is not defined             no-undef
+  Line 949:56:    'setShowExpiredHistory' is not defined      no-undef
+  Line 949:86:    'setExpiredDetail' is not defined           no-undef
+  Line 959:8:     'expiredDetail' is not defined              no-undef
+  Line 961:57:    'setExpiredDetail' is not defined           no-undef
+  Line 968:54:    'setExpiredDetail' is not defined           no-undef
+  Line 975:72:    'expiredDetail' is not defined              no-undef
+  Line 980:22:    'expiredDetail' is not defined              no-undef
+  Line 980:59:    'expiredDetail' is not defined              no-undef
+  Line 986:29:    'expiredDetail' is not defined              no-undef
+  Line 986:86:    'expiredDetail' is not defined              no-undef
+  Line 992:22:    'expiredDetail' is not defined              no-undef
+  Line 992:58:    'expiredDetail' is not defined              no-undef
+  Line 997:71:    'expiredDetail' is not defined              no-undef
+  Line 1039:80:   'expiredDetail' is not defined              no-undef
+  Line 1040:72:   'expiredDetail' is not defined              no-undef
+  Line 1041:80:   'expiredDetail' is not defined              no-undef
+  Line 1041:138:  'expiredDetail' is not defined              no-undef
+  Line 1042:66:   'expiredDetail' is not defined              no-undef
+  Line 1043:71:   'expiredDetail' is not defined              no-undef
+  Line 1043:107:  'expiredDetail' is not defined              no-undef
+  Line 1044:72:   'expiredDetail' is not defined              no-undef
+  Line 1044:109:  'expiredDetail' is not defined              no-undef
+  Line 1065:54:   'setExpiredDetail' is not defined           no-undef
+
+Search for the keywords to learn more about each error.
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+src\pages\NguyenLieu.jsx
+  Line 9:10:    'exportDiscardHistoryExcel' is defined but never used      no-unused-vars
+  Line 116:9:   'discardTotalPages' is assigned a value but never used     no-unused-vars
+  Line 117:9:   'discardPaginatedList' is assigned a value but never used  no-unused-vars
+  Line 121:10:  'discardDetail' is assigned a value but never used         no-unused-vars
+
+[39m[22m
+
+[1m[31mERROR[39m[22m in [1m[eslint] 
+src\pages\NguyenLieu.jsx
+  Line 792:26:    'expiredPaginatedList' is not defined       no-undef
+  Line 811:50:    'setExpiredDetail' is not defined           no-undef
+  Line 895:20:    'expiredTotalPages' is not defined          no-undef
+  Line 898:45:    'expiredPage' is not defined                no-undef
+  Line 898:64:    'EXPIRED_PER_PAGE' is not defined           no-undef
+  Line 898:106:   'expiredPage' is not defined                no-undef
+  Line 898:120:   'EXPIRED_PER_PAGE' is not defined           no-undef
+  Line 898:138:   'expiredHistory' is not defined             no-undef
+  Line 898:183:   'expiredHistory' is not defined             no-undef
+  Line 903:37:    'expiredPage' is not defined                no-undef
+  Line 904:42:    'setExpiredPage' is not defined             no-undef
+  Line 909:47:    'expiredTotalPages' is not defined          no-undef
+  Line 913:44:    'setExpiredPage' is not defined             no-undef
+  Line 914:95:    'expiredPage' is not defined                no-undef
+  Line 919:37:    'expiredPage' is not defined                no-undef
+  Line 919:53:    'expiredTotalPages' is not defined          no-undef
+  Line 920:42:    'setExpiredPage' is not defined             no-undef
+  Line 920:71:    'expiredTotalPages' is not defined          no-undef
+  Line 933:18:    'expiredHistory' is not defined             no-undef
+  Line 938:25:    'exportExpiredHistoryExcel' is not defined  no-undef
+  Line 938:59:    'expiredHistory' is not defined             no-undef
+  Line 949:56:    'setShowExpiredHistory' is not defined      no-undef
+  Line 949:86:    'setExpiredDetail' is not defined           no-undef
+  Line 959:8:     'expiredDetail' is not defined              no-undef
+  Line 961:57:    'setExpiredDetail' is not defined           no-undef
+  Line 968:54:    'setExpiredDetail' is not defined           no-undef
+  Line 975:72:    'expiredDetail' is not defined              no-undef
+  Line 980:22:    'expiredDetail' is not defined              no-undef
+  Line 980:59:    'expiredDetail' is not defined              no-undef
+  Line 986:29:    'expiredDetail' is not defined              no-undef
+  Line 986:86:    'expiredDetail' is not defined              no-undef
+  Line 992:22:    'expiredDetail' is not defined              no-undef
+  Line 992:58:    'expiredDetail' is not defined              no-undef
+  Line 997:71:    'expiredDetail' is not defined              no-undef
+  Line 1039:80:   'expiredDetail' is not defined              no-undef
+  Line 1040:72:   'expiredDetail' is not defined              no-undef
+  Line 1041:80:   'expiredDetail' is not defined              no-undef
+  Line 1041:138:  'expiredDetail' is not defined              no-undef
+  Line 1042:66:   'expiredDetail' is not defined              no-undef
+  Line 1043:71:   'expiredDetail' is not defined              no-undef
+  Line 1043:107:  'expiredDetail' is not defined              no-undef
+  Line 1044:72:   'expiredDetail' is not defined              no-undef
+  Line 1044:109:  'expiredDetail' is not defined              no-undef
+  Line 1065:54:   'setExpiredDetail' is not defined           no-undef
+
+Search for the keywords to learn more about each [1m[31merror[39m[22m[1m.[39m[22m
+
+webpack compiled with [1m[31m1 error[39m[22m and [1m[33m1 warning[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
