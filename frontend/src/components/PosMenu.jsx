@@ -41,9 +41,7 @@ export default function PosMenu({ menu, busy, onAdd }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-muted transition-opacity text-xl pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0">
-          search
-        </span>
+       <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--color-primary)" }}>search</span>
       </div>
 
       {/* Category Pills */}
@@ -101,8 +99,8 @@ export default function PosMenu({ menu, busy, onAdd }) {
                     />
                     <div className="fallback-icon hidden absolute inset-0 flex items-center justify-center bg-gradient-to-br from-surface-container to-surface-container-high text-3xl text-muted">
                       {mon.ten_danh_muc?.includes("Café") || mon.ten_danh_muc?.includes("Cafe")
-                        ? "☕"
-                        : "🍹"}
+                        ? <span className="material-symbols-outlined text-3xl">coffee</span>
+                        : <span className="material-symbols-outlined text-3xl">local_bar</span>}
                     </div>
                     {locked && (
                       <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-[10px] font-black uppercase tracking-widest backdrop-blur-[2px]">
@@ -113,8 +111,8 @@ export default function PosMenu({ menu, busy, onAdd }) {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-container to-surface-container-high text-3xl text-muted">
                     {mon.ten_danh_muc?.includes("Café") || mon.ten_danh_muc?.includes("Cafe")
-                      ? "☕"
-                      : "🍹"}
+                      ? <span className="material-symbols-outlined text-3xl">coffee</span>
+                      : <span className="material-symbols-outlined text-3xl">local_bar</span>}
                   </div>
                 )}
               </div>

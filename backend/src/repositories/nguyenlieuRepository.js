@@ -4,7 +4,7 @@
 const db = require("../config/database");
 
 const NguyenLieuRepository = {
-  // 📥 Nhập hàng vào kho (Xử lý phiếu nhập + Tự động bóc tách quy đổi theo danh mục)
+  //  Nhập hàng vào kho 
   importGoods: async (data) => {
     const conn = await db.getConnection();
     try {
@@ -198,20 +198,21 @@ const NguyenLieuRepository = {
     return result.affectedRows > 0;
   },
 
-  //  LẤY LỊCH SỬ NGUYÊN LIỆU HẾT HẠN
-  getExpiredHistory: async () => {
+  //  LẤY LỊCH SỬ HỦY HÀNG
+  getDiscardHistory: async () => {
     const [rows] = await db.execute(
       `SELECT id, ma_nguyen_lieu, ten_nguyen_lieu, han_su_dung, 
               CAST(ton_kho_con_lai AS DECIMAL(10,2)) AS ton_kho_con_lai, don_vi,
               ngay_xu_ly, ghi_chu, created_at
-       FROM lich_su_nguyen_lieu_het_han 
+       FROM lich_su_huy_hang 
        ORDER BY ngay_xu_ly DESC, created_at DESC`
     );
     return rows;
   },
 };
 
-//  KIỂM TRA VÀ XỬ LÝ KHI LƯU NGUYÊN LIỆU CÓ HẠN SỬ DỤNG ĐÃ QUA
+//  KIỂM TRA VÀ GHI LOG KHI LƯU NGUYÊN LIỆU CÓ HẠN SỬ DỤNG ĐÃ QUA
+
 async function handleExpiredRow(ma_nguyen_lieu, ten_nguyen_lieu, danh_muc, don_vi_tinh, don_vi_nhap, han_su_dung) {
   const don_vi = danh_muc === 'Nguyên liệu pha chế' ? don_vi_tinh : don_vi_nhap;
 
@@ -233,9 +234,9 @@ async function handleExpiredRow(ma_nguyen_lieu, ten_nguyen_lieu, danh_muc, don_v
   );
   if (!Number(check[0].is_expired)) return;
 
-  // Ghi vào lịch sử
+  // Ghi vào lịch sử (CHỈ GHI LOG, KHÔNG RESET TỒN)
   await db.execute(
-    `INSERT INTO lich_su_nguyen_lieu_het_han 
+    `INSERT INTO lich_su_huy_hang 
      (ma_nguyen_lieu, ten_nguyen_lieu, han_su_dung, ton_kho_con_lai, don_vi, ngay_xu_ly, ghi_chu) 
      VALUES (?, ?, ?, ?, ?, CURDATE(), ?)`,
     [
@@ -244,15 +245,98 @@ async function handleExpiredRow(ma_nguyen_lieu, ten_nguyen_lieu, danh_muc, don_v
       han_su_dung,
       ton_kho,
       don_vi,
-      `Hủy ${ton_kho.toLocaleString('vi-VN')} ${don_vi} do hết hạn (xử lý khi nhập kho)`
+      `Phát hiện hết hạn (còn ${ton_kho.toLocaleString('vi-VN')} ${don_vi}). Chờ người dùng xoá thủ công.`
     ]
-  );
-
-  // Reset tồn kho về 0
-  await db.execute(
-    `UPDATE nguyenlieu SET ton_kho = 0.00 WHERE ma_nguyen_lieu = ?`,
-    [ma_nguyen_lieu]
   );
 }
 
+//  HỦY HÀNG  — tổng quát cho mọi nguyên liệu có tồn kho
+//  Cho phép huỷ một phần hoặc toàn bộ, không tự động ẩn nguyên liệu
+//  Bắt buộc phải có lý do huỷ
+async function discardStock(ma_nguyen_lieu, { so_luong = null, ly_do = "" }) {
+  const cleanId = parseInt(ma_nguyen_lieu, 10);
+  if (!Number.isFinite(cleanId)) {
+    throw new Error("Mã nguyên liệu không hợp lệ");
+  }
+
+  // Lấy thông tin nguyên liệu
+  const [rows] = await db.execute(
+    `SELECT ten_nguyen_lieu, danh_muc, don_vi_tinh, don_vi_nhap, 
+            CAST(ton_kho AS DECIMAL(10,2)) AS ton_kho, han_su_dung
+     FROM nguyenlieu WHERE ma_nguyen_lieu = ?`,
+    [cleanId]
+  );
+
+  if (rows.length === 0) {
+    throw new Error("Nguyên liệu không tồn tại");
+  }
+
+  const item = rows[0];
+  const ton_kho_hien_tai = Number(item.ton_kho || 0);
+
+  if (ton_kho_hien_tai <= 0) {
+    throw new Error("Nguyên liệu đã hết tồn kho.");
+  }
+
+  // Xác định số lượng huỷ (null = huỷ toàn bộ)
+  const so_luong_huy = so_luong !== null && so_luong !== undefined
+    ? Number(so_luong)
+    : ton_kho_hien_tai;
+
+  if (so_luong_huy <= 0) {
+    throw new Error("Số lượng huỷ phải lớn hơn 0.");
+  }
+
+  if (so_luong_huy > ton_kho_hien_tai) {
+    throw new Error(`Số lượng huỷ (${so_luong_huy}) vượt quá tồn kho (${ton_kho_hien_tai}).`);
+  }
+
+  // Kiểm tra lý do huỷ
+  if (!ly_do || !ly_do.trim()) {
+    throw new Error("Vui lòng nhập lý do huỷ hàng.");
+  }
+
+  const don_vi = item.danh_muc === 'Nguyên liệu pha chế' ? item.don_vi_tinh : item.don_vi_nhap;
+  const ton_kho_con_lai = ton_kho_hien_tai - so_luong_huy;
+
+  // Ghi log vào lịch sử
+  await db.execute(
+    `INSERT INTO lich_su_huy_hang 
+     (ma_nguyen_lieu, ten_nguyen_lieu, han_su_dung, ton_kho_con_lai, don_vi, ngay_xu_ly, ghi_chu) 
+     VALUES (?, ?, ?, ?, ?, CURDATE(), ?)`,
+    [
+      cleanId,
+      item.ten_nguyen_lieu,
+      item.han_su_dung,
+      so_luong_huy,
+      don_vi,
+      `${ly_do.trim()} (Huỷ ${so_luong_huy.toLocaleString('vi-VN')} ${don_vi}, còn ${ton_kho_con_lai.toLocaleString('vi-VN')} ${don_vi})`
+    ]
+  );
+
+  // Trừ tồn kho
+  await db.execute(
+    `UPDATE nguyenlieu SET ton_kho = ton_kho - ? WHERE ma_nguyen_lieu = ?`,
+    [so_luong_huy, cleanId]
+  );
+
+  // Nếu đã hết tồn kho thì tự động xoá hạn sử dụng 
+  if (ton_kho_con_lai <= 0) {
+    await db.execute(
+      `UPDATE nguyenlieu SET han_su_dung = NULL WHERE ma_nguyen_lieu = ?`,
+      [cleanId]
+    );
+  }
+
+  return {
+    ma_nguyen_lieu: cleanId,
+    so_luong_da_huy: so_luong_huy,
+    ton_kho_con_lai,
+    don_vi,
+  };
+}
+
 module.exports = NguyenLieuRepository;
+
+// Thêm discardStock vào object để service gọi được
+NguyenLieuRepository.discardStock = discardStock;

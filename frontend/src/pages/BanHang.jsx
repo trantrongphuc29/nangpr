@@ -9,9 +9,12 @@ import { getBanPosList } from "../services/banService";
 import { getMenuPos } from "../services/monService";
 import * as donHangApi from "../services/donHangService";
 import PosMenu from "../components/PosMenu";
+import PriceInput from "../components/PriceInput";
 
 /* ───── banhangUtils ───── */
 const fmtMoney = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
+
+/* ── In phiếu chế biến (Bar) / hủy món / hóa đơn ── */
 
 const isTableBusy = (ban) => Boolean(ban.co_khach);
 
@@ -97,6 +100,7 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
     `);
   }
 
+  /* ══ In phiếu hủy món (đã in Bar nhưng hủy) ══ */
   if (mode === "cancel") {
     const cancelItems = newItems || [];
     const rows = cancelItems
@@ -137,6 +141,7 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
     `);
   }
 
+  /* ══ In hóa đơn thanh toán ══ */
   // mode === "bill"
   const rows = items
     .map(
@@ -208,6 +213,7 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
   `);
 }
 
+/* ══ In gộp: phiếu chế biến + hóa đơn thanh toán (cho Mang về / Giao hàng) ══ */
 function buildCombinedPrintHTML({ table, order, tenKhach, soDienThoaiGiao, diaChiGiao, phiGiaoHang }) {
   const html1 = buildPrintHTML("mon", { table, order, newItems: null });
   const html2 = buildPrintHTML("bill", { table, order, tenKhach, soDienThoaiGiao, diaChiGiao, phiGiaoHang });
@@ -399,15 +405,12 @@ function BanHangCart({
               <span className="text-xs font-bold text-warning">Phí giao hàng</span>
             </div>
             <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min="0"
-                step="1000"
+              <PriceInput
                 className="w-24 text-right font-bold text-sm bg-surface-lowest border border-warning-border rounded-lg px-2 py-1.5 focus:ring-2"
                 style={{ borderColor: "color-mix(in srgb, var(--color-warning) 30%, transparent)" }}
                 placeholder="0"
                 value={phiGiaoHang || ""}
-                onChange={(e) => onUpdatePhiGiaoHang(e.target.value)}
+                onChange={(val) => onUpdatePhiGiaoHang(val)}
               />
               <span className="text-xs font-bold text-warning">đ</span>
             </div>
@@ -1038,6 +1041,7 @@ export default function BanHang() {
     }
   };
 
+  /* ── Mở popup và in (dùng chung cho in món, in bill, in hủy) ── */
   const openAndPrint = (html) => {
     const w = window.open("", "_blank", "width=400,height=600,menubar=no,toolbar=no,scrollbars=yes");
     if (!w) {

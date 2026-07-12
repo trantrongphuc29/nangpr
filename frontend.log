@@ -1,1 +1,106 @@
-Access is denied.
+(node:24716) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:24716) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:24716) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+
+Compiled successfully!
+
+You can now view frontend in the browser.
+
+  Local:            http://localhost:3000
+  On Your Network:  http://172.31.192.1:3000
+
+Note that the development build is not optimized.
+To create a production build, use npm run build.
+
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m
+Compiling...
+Failed to compile.
+
+[eslint] 
+src\pages\NguyenLieu.jsx
+Syntax error: Expected corresponding JSX closing tag for <form>. (1089:16) (1089:16)
+[1m[31mERROR[39m[22m in [1m./src/pages/NguyenLieu.jsx[39m[22m
+Module build failed (from ./node_modules/babel-loader/lib/index.js):
+SyntaxError: C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\src\pages\NguyenLieu.jsx: Expected corresponding JSX closing tag for <form>. (1089:16)
+
+[0m [90m 1087 |[39m                   [33m<[39m[33m/[39m[33mselect[39m[33m>[39m
+ [90m 1088 |[39m                   [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+[31m[1m>[22m[39m[90m 1089 |[39m                 [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m      |[39m                 [31m[1m^[22m[39m
+ [90m 1090 |[39m                 [33m<[39m[33mdiv[39m className[33m=[39m[32m"grid grid-cols-1 sm:grid-cols-2 gap-4"[39m[33m>[39m
+ [90m 1091 |[39m                   [33m<[39m[33mdiv[39m[33m>[39m
+ [90m 1092 |[39m                     [33m<[39m[33mlabel[39m className[33m=[39m[32m"block text-sm font-semibold mb-1"[39m[33m>[39m[33mNhà[39m cung cấp[33m<[39m[33m/[39m[33mlabel[39m[33m>[39m[0m
+    at constructor (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:365:19)
+    at FlowParserMixin.raise (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:6599:19)
+    at FlowParserMixin.jsxParseElementAt (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4727:16)
+    at FlowParserMixin.jsxParseElementAt (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4698:32)
+    at FlowParserMixin.jsxParseElementAt (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4698:32)
+    at FlowParserMixin.jsxParseElementAt (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4698:32)
+    at FlowParserMixin.jsxParseElement (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4749:17)
+    at FlowParserMixin.parseExprAtom (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4759:19)
+    at FlowParserMixin.parseExprSubscripts (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11081:23)
+    at FlowParserMixin.parseUpdate (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11066:21)
+    at FlowParserMixin.parseMaybeUnary (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11046:23)
+    at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10899:61)
+    at FlowParserMixin.parseExprOps (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10904:23)
+    at FlowParserMixin.parseMaybeConditional (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10881:23)
+    at FlowParserMixin.parseMaybeAssign (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+    at C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:3498:39
+    at FlowParserMixin.tryParse (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:6907:20)
+    at FlowParserMixin.parseMaybeAssign (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:3498:18)
+    at C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10800:39
+    at FlowParserMixin.allowInAnd (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:12426:12)
+    at FlowParserMixin.parseMaybeAssignAllowIn (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10800:17)
+    at FlowParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:12493:17)
+    at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11675:28)
+    at FlowParserMixin.parseParenAndDistinguishExpression (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:3591:18)
+    at FlowParserMixin.parseExprAtom (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11331:23)
+    at FlowParserMixin.parseExprAtom (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4764:20)
+    at FlowParserMixin.parseExprSubscripts (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11081:23)
+    at FlowParserMixin.parseUpdate (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11066:21)
+    at FlowParserMixin.parseMaybeUnary (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11046:23)
+    at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10899:61)
+    at FlowParserMixin.parseExprOpBaseRightExpr (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10986:34)
+    at FlowParserMixin.parseExprOpRightExpr (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10981:21)
+    at FlowParserMixin.parseExprOp (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10947:27)
+    at FlowParserMixin.parseExprOps (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10908:17)
+    at FlowParserMixin.parseMaybeConditional (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10881:23)
+    at FlowParserMixin.parseMaybeAssign (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10831:21)
+    at FlowParserMixin.parseMaybeAssign (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:3549:18)
+    at FlowParserMixin.parseExpressionBase (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10784:23)
+    at C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10780:39
+    at FlowParserMixin.allowInAnd (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:12426:12)
+    at FlowParserMixin.parseExpression (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10780:17)
+    at FlowParserMixin.jsxParseExpressionContainer (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4632:31)
+    at FlowParserMixin.jsxParseElementAt (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4711:36)
+    at FlowParserMixin.jsxParseElement (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4749:17)
+    at FlowParserMixin.parseExprAtom (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:4759:19)
+    at FlowParserMixin.parseExprSubscripts (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11081:23)
+    at FlowParserMixin.parseUpdate (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11066:21)
+    at FlowParserMixin.parseMaybeUnary (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:11046:23)
+    at FlowParserMixin.parseMaybeUnaryOrPrivate (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10899:61)
+    at FlowParserMixin.parseExprOps (C:\Users\Phuc\Desktop\DOAN\nangpr\frontend\node_modules\@babel\parser\lib\index.js:10904:23)
+
+[1m[31mERROR[39m[22m in [1m[eslint] 
+src\pages\NguyenLieu.jsx
+  Line 1089:16:  Parsing [1m[31merror[39m[22m[1m: Expected corresponding JSX closing tag for <form>. (1089:16)
+
+[39m[22m
+
+webpack compiled with [1m[31m2 errors[39m[22m
+Compiling...
+Compiled successfully!
+webpack compiled [1m[32msuccessfully[39m[22m

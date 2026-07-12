@@ -8,6 +8,7 @@ import * as nguyenlieuService from "../services/nguyenlieuService";
 import * as congThucService from "../services/congThucService";
 import { dishImage } from "../utils/shared";
 import { ToastContainer, useToast } from "../components/Toast";
+import PriceInput from "../components/PriceInput";
 
 const removeVietnameseTones = (str) => {
   if (!str) return '';
@@ -176,19 +177,17 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
               </div>
             </div>
 
-            <div className="col-span-2 md:col-span-1">
-              <label className="block font-label text-sm font-semibold text-on-surface-variant mb-2">
+            <div className="col-span-2 md:col-span-1">                    <label className="block font-label text-sm font-semibold text-on-surface-variant mb-2">
                 Giá bán
               </label>
 
               <div className="relative">
-                <input
-                  type="number"
+                <PriceInput
                   className="w-full input-field pr-16"
                   placeholder="0"
                   value={form.gia_ban}
-                  onChange={(e) =>
-                    setForm({ ...form, gia_ban: e.target.value })
+                  onChange={(val) =>
+                    setForm({ ...form, gia_ban: val })
                   }
                   required
                 />

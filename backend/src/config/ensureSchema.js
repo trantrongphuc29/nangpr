@@ -26,27 +26,36 @@ async function ensureNguyenLieuSchema() {
   }
 }
 
-async function ensureLichSuHetHanTable() {
+async function ensureDiscardTable() {
   const [rows] = await db.execute(
     `SELECT COUNT(*) AS cnt FROM information_schema.TABLES 
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lich_su_nguyen_lieu_het_han'`
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lich_su_huy_hang'`
   );
   if (Number(rows[0].cnt) === 0) {
-    await db.execute(`
-      CREATE TABLE lich_su_nguyen_lieu_het_han (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        ma_nguyen_lieu INT NOT NULL,
-        ten_nguyen_lieu VARCHAR(100),
-        han_su_dung DATE,
-        ton_kho_con_lai DECIMAL(10,2) DEFAULT 0.00,
-        don_vi VARCHAR(20),
-        ngay_xu_ly DATE,
-        ghi_chu TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        KEY fk_ls_nguyenlieu (ma_nguyen_lieu)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
+    // Kiểm tra bảng cũ, nếu có thì rename
+    const [oldRows] = await db.execute(
+      `SELECT COUNT(*) AS cnt FROM information_schema.TABLES 
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'lich_su_nguyen_lieu_het_han'`
+    );
+    if (Number(oldRows[0].cnt) > 0) {
+      await db.execute(`RENAME TABLE lich_su_nguyen_lieu_het_han TO lich_su_huy_hang`);
+    } else {
+      await db.execute(`
+        CREATE TABLE lich_su_huy_hang (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          ma_nguyen_lieu INT NOT NULL,
+          ten_nguyen_lieu VARCHAR(100),
+          han_su_dung DATE,
+          ton_kho_con_lai DECIMAL(10,2) DEFAULT 0.00,
+          don_vi VARCHAR(20),
+          ngay_xu_ly DATE,
+          ghi_chu TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          KEY fk_ls_nguyenlieu (ma_nguyen_lieu)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+    }
   }
 }
 
-module.exports = { ensureNguyenLieuSchema, ensureLichSuHetHanTable };
+module.exports = { ensureNguyenLieuSchema, ensureDiscardTable };

@@ -1,6 +1,6 @@
 const app = require("./app");
 const { PORT } = require("./config/constants");
-const { ensureNguyenLieuSchema, ensureLichSuHetHanTable } = require("./config/ensureSchema");
+const { ensureNguyenLieuSchema, ensureDiscardTable } = require("./config/ensureSchema");
 const { ensurePayrollSchema } = require("./config/ensurePayrollSchema");
 const { ensureNhanVienSchema } = require("./config/ensureNhanVienSchema");
 const { ensurePOSSchema } = require("./config/ensurePOSSchema");
@@ -8,7 +8,7 @@ const { ensureCongNoSchema } = require("./config/ensureCongNoSchema");
 const { ensureCaLamSchema } = require("./config/ensureCaLamSchema");
 
 const MODULES = [
-  { name: "Nguyên liệu và Hạn sử dụng", fn: async () => { await ensureNguyenLieuSchema(); await ensureLichSuHetHanTable(); } },
+  { name: "Nguyên liệu và Hạn sử dụng", fn: async () => { await ensureNguyenLieuSchema(); await ensureDiscardTable(); } },
   { name: "Nhân viên",                fn: ensureNhanVienSchema },
   { name: "Lương/Ca",       fn: ensurePayrollSchema },
   { name: "Bán hàng",           fn: ensurePOSSchema },

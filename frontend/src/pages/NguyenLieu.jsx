@@ -5,6 +5,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import * as nlService from '../services/nguyenlieuService';
 import { ToastContainer, useToast } from '../components/Toast';
 import ModalPortal from '../components/ModalPortal';
+import PriceInput from '../components/PriceInput';
+import { exportDiscardHistoryExcel } from '../utils/bangLuongExport';
 
 const removeVietnameseTones = (str) => {
   if (!str) return '';
@@ -37,10 +39,19 @@ const EMPTY_CRUD = {
   ghi_chu: '',
 };
 
+/* Lấy ngày hôm nay theo giờ Việt Nam (không dùng toISOString vì bị lệch UTC) */
+const getHomNay = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 const EMPTY_IMPORT = {
   ma_nguyen_lieu: '',
   nha_cung_cap: '',
-  ngay_nhap: new Date().toISOString().split('T')[0],
+  ngay_nhap: getHomNay(),
   so_luong: '',
   gia_nhap: '',
   han_su_dung: '',
@@ -97,9 +108,21 @@ export default function NguyenLieu() {
   const [crudData, setCrudData] = useState(EMPTY_CRUD);
   const [importData, setImportData] = useState(EMPTY_IMPORT);
   const [importPresetId, setImportPresetId] = useState(null);
-  const [showExpiredHistory, setShowExpiredHistory] = useState(false);
-  const [expiredHistory, setExpiredHistory] = useState([]);
-  const [expiredLoading, setExpiredLoading] = useState(false);
+  const [showDiscardHistory, setShowDiscardHistory] = useState(false);
+  const [discardHistory, setDiscardHistory] = useState([]);
+  const [discardLoading, setDiscardLoading] = useState(false);
+  const [discardPage, setDiscardPage] = useState(1);
+  const DISCARD_PER_PAGE = 10;
+  const discardTotalPages = useMemo(() => Math.ceil(discardHistory.length / DISCARD_PER_PAGE) || 1, [discardHistory]);
+  const discardPaginatedList = useMemo(() => {
+    const start = (discardPage - 1) * DISCARD_PER_PAGE;
+    return discardHistory.slice(start, start + DISCARD_PER_PAGE);
+  }, [discardHistory, discardPage]);
+  const [discardDetail, setDiscardDetail] = useState(null);
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [discardItem, setDiscardItem] = useState(null);
+  const [discardQty, setDiscardQty] = useState("");
+  const [discardReason, setDiscardReason] = useState("");
 
   const enrichItem = (item) => {
     const ton = Number(item.ton_kho ?? 0);
@@ -309,7 +332,7 @@ const categories = useMemo(() => {
   };
 
   const openImportDrawer = (presetId = null) => {
-    setImportData({ ...EMPTY_IMPORT, ma_nguyen_lieu: presetId ? String(presetId) : '', ngay_nhap: new Date().toISOString().split('T')[0] });
+    setImportData({ ...EMPTY_IMPORT, ma_nguyen_lieu: presetId ? String(presetId) : '', ngay_nhap: getHomNay() });
     setImportPresetId(presetId);
     setShowImportDrawer(true);
   };
@@ -394,17 +417,42 @@ const categories = useMemo(() => {
     }
   };
 
-  const handleOpenExpiredHistory = async () => {
-    setExpiredLoading(true);
-    setShowExpiredHistory(true);
+  const handleOpenDiscardHistory = async () => {
+    setDiscardLoading(true);
+    setDiscardPage(1);
+    setDiscardDetail(null);
+    setShowDiscardHistory(true);
     try {
-      const data = await nlService.getExpiredHistory();
-      setExpiredHistory(data || []);
+      const data = await nlService.getDiscardHistory();
+      setDiscardHistory(data || []);
     } catch (err) {
-      toast(err.response?.data?.message || 'Không tải được lịch sử hết hạn.', 'error');
-      setExpiredHistory([]);
+      toast(err.response?.data?.message || 'Không tải được lịch sử hủy hàng.', 'error');
+      setDiscardHistory([]);
     } finally {
-      setExpiredLoading(false);
+      setDiscardLoading(false);
+    }
+  };
+
+  const handleDiscard = async (e) => {
+    e.preventDefault();
+    if (!discardItem) return;
+    const qty = Number(discardQty);
+    if (qty <= 0) return toast("Số lượng huỷ phải lớn hơn 0.", "error");
+    if (qty > Number(discardItem.so_luong_ton)) return toast("Số lượng huỷ vượt quá tồn kho.", "error");
+    if (!discardReason.trim()) return toast("Vui lòng nhập lý do huỷ hàng.", "error");
+    try {
+      const result = await nlService.discardStock(discardItem.ma_nguyen_lieu, {
+        so_luong: qty,
+        ly_do: discardReason.trim(),
+      });
+      toast(result.message || "Đã huỷ hàng thành công.");
+      setShowDiscardModal(false);
+      setDiscardItem(null);
+      setDiscardQty("");
+      setDiscardReason("");
+      await loadData();
+    } catch (err) {
+      toast(err.response?.data?.message || "Không thể huỷ hàng.", "error");
     }
   };
 
@@ -437,7 +485,7 @@ const categories = useMemo(() => {
           </div>
         </div>
         <div className="flex gap-2 shrink-0 self-start">
-          <button type="button" onClick={handleOpenExpiredHistory} className="btn-outline !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">history</span>Lịch sử hết hạn</button>
+          <button type="button" onClick={handleOpenDiscardHistory} className="btn-outline !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">history</span>Lịch sử hủy hàng</button>
           <button type="button" onClick={openCreateModal} className="btn-primary !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">add</span>Thêm nguyên liệu</button>
         </div>
       </div>
@@ -537,8 +585,7 @@ const categories = useMemo(() => {
                           {Number(item.trang_thai) === 0 && <span className="badge-warning">Ngưng dùng</span>}
                         </div>
                       </div>
-                    </td>
-                   <td className="px-4 py-3">
+                    </td>                   <td className="px-4 py-3">
                   {/* Flex giữ các nút trên một dòng, dùng gap nhỏ hơn trên mobile */}
                   <div className="flex justify-end gap-0.5 sm:gap-1">
                     <button title="Nhập kho" onClick={() => openImportDrawer(item.ma_nguyen_lieu)} className="btn-icon-edit p-1.5">
@@ -547,6 +594,23 @@ const categories = useMemo(() => {
                     <button title="Sửa" onClick={() => openEditModal(item)} className="btn-icon-edit p-1.5">
                       <span className="material-symbols-outlined text-sm">edit</span>
                     </button>
+
+                    {/* Nút Hủy hàng — hiển thị trên mọi nguyên liệu có tồn kho > 0 */}
+                    {Number(item.so_luong_ton) > 0 && (
+                      <button
+                        title="Hủy hàng (hết hạn, hư hỏng...)"
+                        onClick={() => {
+                          setDiscardItem(item);
+                          setDiscardQty(String(item.so_luong_ton));
+                          setDiscardReason("");
+                          setShowDiscardModal(true);
+                        }}
+                        className="btn-icon-edit p-1.5 text-error hover:bg-error-container/20"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete_sweep</span>
+                      </button>
+                    )}
+
                     {/* Ẩn các nút ít dùng trên màn hình cực nhỏ (dưới 360px) nếu cần */}
                     <div className="hidden sm:flex gap-0.5">
                       <button title="Trạng thái" onClick={() => handleToggleStatus(item)} className="btn-ghost p-1.5">
@@ -686,59 +750,319 @@ const categories = useMemo(() => {
     </div>
   </ModalPortal>
 )}
-      {/* Modal: Lịch sử nguyên liệu hết hạn */}
-      {showExpiredHistory && (
+      {/* Modal: Lịch sử hủy hàng */}
+      {showDiscardHistory && (
         <ModalPortal>
-          <div className="modal-overlay" onClick={() => setShowExpiredHistory(false)}>
-            <div className="modal-panel max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-overlay" onClick={() => { setShowDiscardHistory(false); setDiscardDetail(null); }}>
+            <div className="modal-panel max-w-4xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+              {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-primary flex items-center gap-2"><span className="material-symbols-outlined">history</span>Lịch sử nguyên liệu hết hạn</h2>
-                <button type="button" onClick={() => setShowExpiredHistory(false)} className="btn-ghost !p-2" aria-label="Đóng"><span className="material-symbols-outlined">close</span></button>
+                <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+                  <span className="material-symbols-outlined">history</span>
+                  Lịch sử hủy hàng
+                </h2>
+                <button type="button" onClick={() => { setShowDiscardHistory(false); setDiscardDetail(null); }} className="btn-ghost !p-2" aria-label="Đóng">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
               </div>
 
-              {expiredLoading ? (
+              {discardLoading ? (
                 <div className="text-center py-12 text-muted animate-pulse">Đang tải dữ liệu...</div>
-              ) : expiredHistory.length === 0 ? (
+              ) : discardHistory.length === 0 ? (
                 <div className="text-center py-12">
                   <span className="material-symbols-outlined text-5xl text-muted/40 block mb-3">check_circle</span>
-                  <p className="text-muted font-medium">Không có nguyên liệu nào hết hạn.</p>
-                  <p className="text-xs text-muted/60 mt-1">Hệ thống sẽ tự động ghi nhận khi nguyên liệu hết hạn.</p>
+                  <p className="text-muted font-medium">Không có phiếu hủy hàng nào.</p>
+                  <p className="text-xs text-muted/60 mt-1">Các phiếu hủy nguyên liệu (hết hạn, hư hỏng...) sẽ xuất hiện tại đây.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto custom-scrollbar">
-                  <table className="w-full text-left text-sm">
-                    <thead className="table-head">
-                      <tr>
-                        <th className="px-3 py-2.5">Nguyên liệu</th>
-                        <th className="px-3 py-2.5">Hạn SD</th>
-                        <th className="px-3 py-2.5">Tồn kho hủy</th>
-                        <th className="px-3 py-2.5">Ngày xử lý</th>
-                        <th className="px-3 py-2.5">Ghi chú</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline">
-                      {expiredHistory.map((item) => (
-                        <tr key={item.id} className="hover:bg-primary/5 transition-colors">
-                          <td className="px-3 py-2.5 font-medium">{item.ten_nguyen_lieu}</td>
-                          <td className="px-3 py-2.5 text-error text-xs">
-                            {item.han_su_dung ? new Date(item.han_su_dung).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
-                          </td>
-                          <td className="px-3 py-2.5 font-medium text-error">
-                            {Number(item.ton_kho_con_lai).toLocaleString('vi-VN')} {item.don_vi || ''}
-                          </td>
-                          <td className="px-3 py-2.5 text-xs text-muted">
-                            {item.ngay_xu_ly ? new Date(item.ngay_xu_ly).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
-                          </td>
-                          <td className="px-3 py-2.5 text-xs text-muted max-w-[200px] truncate" title={item.ghi_chu}>{item.ghi_chu || '—'}</td>
+                <>
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left text-sm min-w-[700px]">
+                      <thead className="table-head">
+                        <tr>
+                          <th className="px-4 py-3">Nguyên liệu</th>
+                          <th className="px-4 py-3">Hạn SD</th>
+                          <th className="px-4 py-3 text-right">Tồn kho hủy</th>
+                          <th className="px-4 py-3">Ngày xử lý</th>
+                          <th className="px-4 py-3">Ghi chú</th>
+                          <th className="px-4 py-3 text-center">Thao tác</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-outline">
+                        {discardPaginatedList.map((item) => (
+                          <tr key={item.id} className="hover:bg-primary/5 transition-colors">
+                            <td className="px-4 py-3 font-semibold">{item.ten_nguyen_lieu}</td>
+                            <td className="px-4 py-3">
+                              <span className="text-error text-xs font-medium">
+                                {item.han_su_dung ? new Date(item.han_su_dung).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-bold text-error text-right">
+                              {Number(item.ton_kho_con_lai).toLocaleString('vi-VN')} {item.don_vi || ''}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-muted">
+                              {item.ngay_xu_ly ? new Date(item.ngay_xu_ly).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-muted max-w-[180px] truncate" title={item.ghi_chu}>{item.ghi_chu || '—'}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  title="Xem chi tiết"
+                                  onClick={() => setDiscardDetail(item)}
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all hover:bg-primary/10"
+                                  style={{ color: "var(--color-primary)" }}
+                                >
+                                  <span className="material-symbols-outlined text-sm">visibility</span>
+                                </button>
+                                {/* ── In phiếu hủy hàng (từ bảng danh sách) ── */}
+                                <button
+                                  title="In phiếu"
+                                  onClick={() => {
+                                    const w = window.open("", "_blank", "width=400,height=500");
+                                    if (!w) return;
+                                    w.document.write(`
+                                      <html><head><meta charset="utf-8"><title>Phiếu hủy hàng</title>
+                                      <style>
+                                        @page{margin:15mm 20mm}
+                                        *{margin:0;padding:0;box-sizing:border-box}
+                                        body{font-family:'Times New Roman',serif;color:#000;padding:0;font-size:13px;line-height:1.6}
+                                        .header{text-align:center;margin-bottom:20px}
+                                        .header h1{font-size:14px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+                                        .header h2{font-size:16px;font-weight:bold;text-transform:uppercase;margin:6px 0}
+                                        .header p{font-size:11px;color:#444;margin:2px 0}
+                                        .info-table{width:100%;margin:12px 0;font-size:12px}
+                                        .info-table td{padding:3px 6px;vertical-align:top;width:50%}
+                                        .info-table .left{text-align:left}
+                                        .info-table .right{text-align:right}
+                                        .divider{border-top:1px dashed #333;margin:10px 0}
+                                        .detail-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
+                                        .detail-table th{background:#eee;padding:6px 8px;text-align:center;border:1px double #000;font-size:11px}
+                                        .detail-table td{padding:5px 8px;border:1px solid #999}
+                                        .detail-table .b{font-weight:bold}
+                                        .detail-table .r{text-align:right}
+                                        .detail-table .c{text-align:center}
+                                        .signature{width:100%;margin-top:30px}
+                                        .signature td{width:33.33%;text-align:center;padding:8px;font-size:12px;vertical-align:bottom}
+                                        .signature .sig-line{border-top:1px solid #000;margin-top:50px;padding-top:4px;font-weight:bold;font-size:11px}
+                                        .signature .title{font-size:10px;color:#444;margin-bottom:4px}
+                                        .note{font-size:10px;color:#666;margin-top:16px;text-align:center;font-style:italic}
+                                      </style></head><body>
+                                      <div class="header">
+                                        <h1>NẮNG PR COFFEE</h1>
+                                        <div class="divider"></div>
+                                        <h2>PHIẾU HỦY NGUYÊN LIỆU</h2>
+                                        <p>Ngày lập: ${new Date().toLocaleDateString('vi-VN')}</p>
+                                      </div>
+                                      <div class="info" style="margin:14px 0;font-size:13px">
+                                        <div style="padding:4px 0"><b>Mã phiếu:</b> HUY-${String(item.id || '').padStart(4,'0')}</div>
+                                        <div style="padding:4px 0"><b>Nguyên liệu:</b> ${item.ten_nguyen_lieu || ''}</div>
+                                        <div style="padding:4px 0"><b>Số lượng hủy:</b> ${Number(item.ton_kho_con_lai).toLocaleString('vi-VN')} ${item.don_vi || ''}</div>
+                                        <div style="padding:4px 0"><b>Lý do:</b> ${item.ghi_chu || 'Hết hạn'}</div>
+                                        <div style="padding:4px 0"><b>Ngày xử lý:</b> ${item.ngay_xu_ly ? new Date(item.ngay_xu_ly).toLocaleDateString('vi-VN') : '—'}</div>
+                                        <div style="padding:4px 0"><b>Hạn sử dụng:</b> ${item.han_su_dung ? new Date(item.han_su_dung).toLocaleDateString('vi-VN') : '—'}</div>
+                                      </div>
+                                      <div style="border-top:1px dashed #333;margin:10px 0"></div>
+                                      <table class="signature">
+                                        <tr>
+                                          <td></td>
+                                          <td></td>
+                                          <td>
+                                            <div class="title">QUẢN LÝ</div>
+                                            <div class="sig-line">(Ký, ghi rõ họ tên)</div>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                      </body></html>
+                                    `);
+                                    w.document.close();
+                                    w.focus();
+                                    w.print();
+                                  }}
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all hover:bg-primary/10"
+                                  style={{ color: "var(--color-primary)" }}
+                                >
+                                  <span className="material-symbols-outlined text-sm">print</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Phân trang */}
+                  {discardTotalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-outline">
+                      <p className="text-xs text-muted">
+                        Đang hiển thị <b>{((discardPage - 1) * DISCARD_PER_PAGE) + 1}</b> - <b>{Math.min(discardPage * DISCARD_PER_PAGE, discardHistory.length)}</b> trên tổng số <b>{discardHistory.length}</b> phiếu hủy.
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={discardPage === 1}
+                          onClick={() => setDiscardPage(p => Math.max(1, p - 1))}
+                          className="w-8 h-8 rounded-lg border border-outline flex items-center justify-center text-muted hover:bg-primary/5 disabled:opacity-40 transition-all"
+                        >
+                          <span className="material-symbols-outlined text-base">chevron_left</span>
+                        </button>
+                        {Array.from({ length: discardTotalPages }, (_, i) => i + 1).map(p => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setDiscardPage(p)}
+                            className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${discardPage === p ? 'bg-primary text-white shadow-sm' : 'border border-outline text-on-surface hover:bg-primary/5'}`}
+                          >{p}</button>
+                        ))}
+                        <button
+                          type="button"
+                          disabled={discardPage === discardTotalPages}
+                          onClick={() => setDiscardPage(p => Math.min(discardTotalPages, p + 1))}
+                          className="w-8 h-8 rounded-lg border border-outline flex items-center justify-center text-muted hover:bg-primary/5 disabled:opacity-40 transition-all"
+                        >
+                          <span className="material-symbols-outlined text-base">chevron_right</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
-              <div className="flex justify-end pt-4">
-                <button type="button" onClick={() => setShowExpiredHistory(false)} className="btn-outline">Đóng</button>
+              {/* Footer buttons */}
+              <div className="flex justify-end gap-2 pt-4 border-t border-outline mt-4">
+                {discardHistory.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        exportDiscardHistoryExcel({ rows: discardHistory });
+                      } catch (err) {
+                        toast(err.message || "Không thể xuất Excel", "error");
+                      }
+                    }}
+                    className="btn-outline !text-sm flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-sm">table_chart</span>
+                    Xuất Excel
+                  </button>
+                )}
+                <button type="button" onClick={() => { setShowDiscardHistory(false); setDiscardDetail(null); }} className="btn-primary !text-sm">
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {/* Modal chi tiết phiếu hủy hàng */}
+      {discardDetail && (
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setDiscardDetail(null)}>
+            <div className="modal-panel max-w-md p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                  <span className="material-symbols-outlined">info</span>
+                  Chi tiết phiếu hủy
+                </h3>
+                <button type="button" onClick={() => setDiscardDetail(null)} className="btn-ghost !p-1">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 rounded-lg bg-primary/5">
+                  <span className="text-sm text-muted">Nguyên liệu</span>
+                  <span className="text-sm font-bold text-on-surface">{discardDetail.ten_nguyen_lieu}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 rounded-lg bg-error-container/10">
+                  <span className="text-sm text-muted">Hạn sử dụng</span>
+                  <span className="text-sm font-bold text-error">
+                    {discardDetail.han_su_dung ? new Date(discardDetail.han_su_dung).toLocaleDateString('vi-VN') : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-3 rounded-lg bg-error-container/10">
+                  <span className="text-sm text-muted">Tồn kho hủy</span>
+                  <span className="text-sm font-bold text-error">
+                    {Number(discardDetail.ton_kho_con_lai).toLocaleString('vi-VN')} {discardDetail.don_vi || ''}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-3 rounded-lg bg-primary/5">
+                  <span className="text-sm text-muted">Ngày xử lý</span>
+                  <span className="text-sm font-bold text-on-surface">
+                    {discardDetail.ngay_xu_ly ? new Date(discardDetail.ngay_xu_ly).toLocaleDateString('vi-VN') : '—'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-lg bg-primary/5">
+                  <p className="text-sm text-muted mb-1">Ghi chú</p>
+                  <p className="text-sm font-medium text-on-surface">{discardDetail.ghi_chu || '—'}</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-outline">
+                {/* ── In phiếu hủy hàng (từ modal chi tiết) ── */}
+                <button type="button" onClick={() => {
+                  const w = window.open("", "_blank", "width=400,height=500");
+                  if (!w) return;
+                  w.document.write(`
+                    <html><head><meta charset="utf-8"><title>Phiếu hủy hàng</title>
+                    <style>
+                      @page{margin:15mm 20mm}
+                      *{margin:0;padding:0;box-sizing:border-box}
+                      body{font-family:'Times New Roman',serif;color:#000;padding:0;font-size:13px;line-height:1.6}
+                      .header{text-align:center;margin-bottom:20px}
+                      .header h1{font-size:14px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+                      .header h2{font-size:16px;font-weight:bold;text-transform:uppercase;margin:6px 0}
+                      .header p{font-size:11px;color:#444;margin:2px 0}
+                      .info-table{width:100%;margin:12px 0;font-size:12px}
+                      .info-table td{padding:3px 6px;vertical-align:top;width:50%}
+                      .info-table .left{text-align:left}
+                      .info-table .right{text-align:right}
+                      .divider{border-top:1px dashed #333;margin:10px 0}
+                      .detail-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
+                      .detail-table th{background:#eee;padding:6px 8px;text-align:center;border:1px double #000;font-size:11px}
+                      .detail-table td{padding:5px 8px;border:1px solid #999}
+                      .detail-table .b{font-weight:bold}
+                      .detail-table .r{text-align:right}
+                      .detail-table .c{text-align:center}
+                      .signature{width:100%;margin-top:30px}
+                      .signature td{width:33.33%;text-align:center;padding:8px;font-size:12px;vertical-align:bottom}
+                      .signature .sig-line{border-top:1px solid #000;margin-top:50px;padding-top:4px;font-weight:bold;font-size:11px}
+                      .signature .title{font-size:10px;color:#444;margin-bottom:4px}
+                      .note{font-size:10px;color:#666;margin-top:16px;text-align:center;font-style:italic}
+                    </style></head><body>
+                    <div class="header">
+                      <h1>NẮNG PR COFFEE</h1>
+                      <div class="divider"></div>
+                      <h2>PHIẾU HỦY NGUYÊN LIỆU</h2>
+                      <p>Ngày lập: ${new Date().toLocaleDateString('vi-VN')}</p>
+                    </div>
+                    <div class="info" style="margin:14px 0;font-size:13px">
+                      <div style="padding:4px 0"><b>Mã phiếu:</b> HUY-${String(discardDetail.id || '').padStart(4,'0')}</div>
+                      <div style="padding:4px 0"><b>Nguyên liệu:</b> ${discardDetail.ten_nguyen_lieu || ''}</div>
+                      <div style="padding:4px 0"><b>Số lượng hủy:</b> ${Number(discardDetail.ton_kho_con_lai).toLocaleString('vi-VN')} ${discardDetail.don_vi || ''}</div>
+                      <div style="padding:4px 0"><b>Lý do:</b> ${discardDetail.ghi_chu || 'Hết hạn'}</div>
+                      <div style="padding:4px 0"><b>Ngày xử lý:</b> ${discardDetail.ngay_xu_ly ? new Date(discardDetail.ngay_xu_ly).toLocaleDateString('vi-VN') : '—'}</div>
+                      <div style="padding:4px 0"><b>Hạn sử dụng:</b> ${discardDetail.han_su_dung ? new Date(discardDetail.han_su_dung).toLocaleDateString('vi-VN') : '—'}</div>
+                    </div>
+                    <div style="border-top:1px dashed #333;margin:10px 0"></div>
+                    <table class="signature">
+                      <tr>
+                        <td></td>
+                        <td></td>
+                        <td>
+                          <div class="title">QUẢN LÝ</div>
+                          <div class="sig-line">(Ký, ghi rõ họ tên)</div>
+                        </td>
+                      </tr>
+                    </table>
+                    </body></html>
+                  `);
+                  w.document.close();
+                  w.focus();
+                  w.print();
+                }} className="btn-outline !text-sm flex items-center gap-1">
+                  <span className="material-symbols-outlined text-sm">print</span> In phiếu
+                </button>
+                <button type="button" onClick={() => setDiscardDetail(null)} className="btn-primary !text-sm">Đóng</button>
               </div>
             </div>
           </div>
@@ -757,7 +1081,7 @@ const categories = useMemo(() => {
               <form id="form-nhap-kho" onSubmit={handleImport} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold mb-1">Nguyên liệu *</label>
-                  <select className="input-field" value={importData.ma_nguyen_lieu} onChange={(e) => setImportData({ ...importData, ma_nguyen_lieu: e.target.value })} required disabled={!!importPresetId}>
+                  <select className="input-field appearance-none" value={importData.ma_nguyen_lieu} onChange={(e) => setImportData({ ...importData, ma_nguyen_lieu: e.target.value })} required disabled={!!importPresetId} style={{ backgroundImage: 'none' }}>
                     <option value="">— Chọn nguyên liệu —</option>
                     {list.filter((nl) => Number(nl.trang_thai) !== 0).map((nl) => (<option key={nl.ma_nguyen_lieu} value={nl.ma_nguyen_lieu}>{nl.ten_nguyen_lieu}</option>))}
                   </select>
@@ -780,7 +1104,7 @@ const categories = useMemo(() => {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-1">Giá nhập *</label>
-                    <input type="number" min="0" className="input-field" value={importData.gia_nhap} onChange={(e) => setImportData({ ...importData, gia_nhap: e.target.value })} placeholder="0" required />
+                    <PriceInput className="input-field" value={importData.gia_nhap} onChange={(val) => setImportData({ ...importData, gia_nhap: val })} placeholder="0" required />
                   </div>
                 </div>
 
@@ -816,6 +1140,85 @@ const categories = useMemo(() => {
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setShowImportDrawer(false)} className="btn-outline flex-1">Hủy</button>
                   <button type="submit" className="btn-primary flex-1">Xác nhận nhập kho</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {/* Modal: Hủy hàng */}
+      {showDiscardModal && discardItem && (
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowDiscardModal(false)}>
+            <div className="modal-panel max-w-md p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-error flex items-center gap-2">
+                  <span className="material-symbols-outlined">delete_sweep</span>
+                  Hủy hàng
+                </h2>
+                <button type="button" onClick={() => setShowDiscardModal(false)} className="btn-ghost !p-2" aria-label="Đóng">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleDiscard} className="space-y-4">
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted">Nguyên liệu</span>
+                    <span className="font-bold">{discardItem.ten_nguyen_lieu}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted">Tồn kho hiện tại</span>
+                    <span className="font-bold">
+                      {Number(discardItem.so_luong_ton).toLocaleString('vi-VN')} {discardItem.danh_muc === 'Nguyên liệu pha chế' ? discardItem.don_vi_tinh : discardItem.don_vi_nhap}
+                    </span>
+                  </div>
+                  {discardItem.trang_thai_han === 'het_han' && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted">Tình trạng</span>
+                      <span className="font-bold text-error">Hết hạn</span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1">
+                    Số lượng huỷ <span className="text-error">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    max={discardItem.so_luong_ton}
+                    className="input-field font-bold text-lg"
+                    value={discardQty}
+                    onChange={(e) => setDiscardQty(e.target.value)}
+                    placeholder="0"
+                    required
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted mt-1">Tối đa: {Number(discardItem.so_luong_ton).toLocaleString('vi-VN')} {discardItem.danh_muc === 'Nguyên liệu pha chế' ? discardItem.don_vi_tinh : discardItem.don_vi_nhap}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-1">
+                    Lý do huỷ <span className="text-error">*</span>
+                  </label>
+                  <textarea
+                    className="input-field min-h-[80px]"
+                    value={discardReason}
+                    onChange={(e) => setDiscardReason(e.target.value)}
+                    placeholder="Bắt buộc nhập lý do: hết hạn, hư hỏng, vỡ, sai quy cách..."
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setShowDiscardModal(false)} className="btn-outline flex-1">Hủy</button>
+                  <button type="submit" className="btn-primary flex-1" style={{ backgroundColor: "var(--color-error)" }}>
+                    Xác nhận huỷ hàng
+                  </button>
                 </div>
               </form>
             </div>

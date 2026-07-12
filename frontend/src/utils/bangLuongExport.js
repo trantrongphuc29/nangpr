@@ -216,6 +216,59 @@ export function exportDoanhThuExcel({ orders, tuNgay, denNgay }) {
   XLSX.writeFile(wb, `danh_sach_don_hang_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
+export function exportDiscardHistoryExcel({ rows }) {
+  if (!rows?.length) {
+    throw new Error("Không có dữ liệu để xuất");
+  }
+
+  const HEADERS = [
+    "Nguyên liệu",
+    "Hạn sử dụng",
+    "Tồn kho hủy",
+    "Đơn vị",
+    "Ngày xử lý",
+    "Ghi chú",
+  ];
+
+  function rowToCells(r) {
+    return [
+      r.ten_nguyen_lieu || "",
+      r.han_su_dung
+        ? new Date(r.han_su_dung).toLocaleDateString("vi-VN")
+        : "—",
+      Number(r.ton_kho_con_lai || 0),
+      r.don_vi || "",
+      r.ngay_xu_ly
+        ? new Date(r.ngay_xu_ly).toLocaleDateString("vi-VN")
+        : "—",
+      r.ghi_chu || "",
+    ];
+  }
+
+  const sheetData = [
+    ["LỊCH SỬ HỦY NGUYÊN LIỆU"],
+    [`Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`],
+    [`Số phiếu: ${rows.length}`],
+    [],
+    HEADERS,
+    ...rows.map(rowToCells),
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws["!cols"] = [
+    { wch: 28 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 12 },
+    { wch: 16 },
+    { wch: 40 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Lịch sử hủy hàng");
+  XLSX.writeFile(wb, `lich_su_huy_hang_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
 export async function exportBangLuongPDF({ rows, totals, thang, nam, kyLabel }) {
   if (!rows?.length) {
     throw new Error("Không có dữ liệu để xuất");

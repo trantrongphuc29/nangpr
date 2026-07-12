@@ -103,7 +103,7 @@ async function run() {
     ["donhang","Don hang"],["chitiethoadon","Chi tiet hoa don"],
     ["phieunhap","Phieu nhap"],["chitiet_phieunhap","Chi tiet phieu nhap"],
     ["huy_mon_log","Huy mon log"],["nhanvien","Nhan vien"],
-    ["lich_su_thanh_toan","Lich su thanh toan"],["lich_su_nguyen_lieu_het_han","Nguyen lieu het han"],
+    ["lich_su_thanh_toan","Lich su thanh toan"],["lich_su_huy_hang","Lich su huy hang"],
     ["calam","Ca lam"],["phancong","Phan cong"],["kyluong","Ky luong"],
     ["bangluong","Bang luong"],["bangcong","Bang cong"],["luongnhanvien","Luong nhan vien"],
   ];

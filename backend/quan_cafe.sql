@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Jul 08, 2026 at 05:40 PM
+-- Generation Time: Jul 12, 2026 at 06:22 PM
 -- Server version: 5.7.31
 -- PHP Version: 7.3.21
 
@@ -30,8 +30,8 @@ SET time_zone = "+00:00";
 DROP TABLE IF EXISTS `ban`;
 CREATE TABLE IF NOT EXISTS `ban` (
   `ma_ban` int(11) NOT NULL AUTO_INCREMENT,
-  `ten_ban` varchar(50) DEFAULT NULL,
-  `trang_thai` varchar(50) DEFAULT NULL,
+  `ten_ban` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `trang_thai` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`ma_ban`)
 ) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS `bang_cong_chi_tiet` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_bcc` (`ky_luong_id`,`ma_nhan_vien`,`ngay`,`ma_ca`),
   KEY `idx_bcc_nv` (`ma_nhan_vien`,`ky_luong_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4459 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=4480 DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `bang_cong_chi_tiet`
@@ -136,12 +136,12 @@ INSERT INTO `bang_cong_chi_tiet` (`id`, `ky_luong_id`, `ma_nhan_vien`, `ngay`, `
 (4254, 1, 7, '2026-06-05', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-06-29 23:58:56'),
 (4255, 1, 11, '2026-06-03', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-06-29 23:58:56'),
 (4256, 1, 16, '2026-06-04', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-06-29 23:58:56'),
-(4452, 405, 17, '2026-07-05', 1, 'Ca Sáng', '06:00-12:00', '6.00', '2026-07-08 17:32:38'),
-(4453, 405, 18, '2026-07-06', 1, 'Ca Sáng', '06:00-12:00', '6.00', '2026-07-08 17:32:38'),
-(4454, 405, 17, '2026-07-05', 2, 'Ca Chiều', '12:00-18:00', '6.00', '2026-07-08 17:32:38'),
-(4455, 405, 18, '2026-07-06', 2, 'Ca Chiều', '12:00-18:00', '6.00', '2026-07-08 17:32:38'),
-(4456, 405, 17, '2026-07-05', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-07-08 17:32:38'),
-(4457, 405, 18, '2026-07-06', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-07-08 17:32:38');
+(4473, 405, 17, '2026-07-05', 1, 'Ca Sáng', '06:00-12:00', '6.00', '2026-07-12 18:01:33'),
+(4474, 405, 18, '2026-07-06', 1, 'Ca Sáng', '06:00-12:00', '6.00', '2026-07-12 18:01:33'),
+(4475, 405, 17, '2026-07-05', 2, 'Ca Chiều', '12:00-18:00', '6.00', '2026-07-12 18:01:33'),
+(4476, 405, 18, '2026-07-06', 2, 'Ca Chiều', '12:00-18:00', '6.00', '2026-07-12 18:01:33'),
+(4477, 405, 17, '2026-07-05', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-07-12 18:01:33'),
+(4478, 405, 18, '2026-07-06', 3, 'Ca Tối', '18:00-23:00', '5.00', '2026-07-12 18:01:33');
 
 -- --------------------------------------------------------
 
@@ -184,8 +184,8 @@ INSERT INTO `bang_cong_thang` (`ky_luong_id`, `ma_nhan_vien`, `so_ca_sang`, `so_
 (146, 7, 1, 0, 0, 1, 1, '6.00', '2026-06-04 21:44:57'),
 (146, 12, 1, 0, 1, 1, 2, '11.00', '2026-06-04 21:44:57'),
 (146, 14, 1, 0, 0, 1, 1, '6.00', '2026-06-04 21:44:57'),
-(405, 17, 1, 1, 1, 1, 3, '17.00', '2026-07-08 17:32:38'),
-(405, 18, 1, 1, 1, 1, 3, '17.00', '2026-07-08 17:32:38');
+(405, 17, 1, 1, 1, 1, 3, '17.00', '2026-07-12 18:01:33'),
+(405, 18, 1, 1, 1, 1, 3, '17.00', '2026-07-12 18:01:33');
 
 -- --------------------------------------------------------
 
@@ -233,8 +233,8 @@ INSERT INTO `bang_luong_thang` (`ky_luong_id`, `ma_nhan_vien`, `tong_ca`, `tong_
 (146, 7, 1, '6.00', '36000.00', '216000.00', '350000.00', '0.00', '0.00', '0.00', '566000.00', '2026-07-07 08:38:35', '2026-06-04 21:44:57', '2026-07-07 08:38:35'),
 (146, 12, 2, '11.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-07-07 08:38:35', '2026-06-04 21:44:57', '2026-07-07 08:38:35'),
 (146, 14, 1, '6.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '0.00', '2026-07-07 08:38:35', '2026-06-04 21:44:57', '2026-07-07 08:38:35'),
-(405, 17, 3, '17.00', '40000.00', '680000.00', '500000.00', '0.00', '0.00', '0.00', '1180000.00', '2026-07-08 17:32:38', '2026-07-06 14:09:15', '2026-07-08 17:32:38'),
-(405, 18, 3, '17.00', '26000.00', '442000.00', '200000.00', '0.00', '0.00', '0.00', '642000.00', '2026-07-08 17:32:38', '2026-07-07 08:37:37', '2026-07-08 17:32:38');
+(405, 17, 3, '17.00', '40000.00', '680000.00', '500000.00', '0.00', '0.00', '0.00', '1180000.00', '2026-07-12 18:01:32', '2026-07-06 14:09:15', '2026-07-12 18:01:32'),
+(405, 18, 3, '17.00', '26000.00', '442000.00', '200000.00', '0.00', '0.00', '0.00', '642000.00', '2026-07-12 18:01:32', '2026-07-07 08:37:37', '2026-07-12 18:01:32');
 
 -- --------------------------------------------------------
 
@@ -272,7 +272,7 @@ CREATE TABLE IF NOT EXISTS `chitiethoadon` (
   `so_luong` int(11) NOT NULL,
   `so_luong_da_gui_bar` int(11) NOT NULL DEFAULT '0',
   `ghi_chu_mon` varchar(255) CHARACTER SET utf8mb4 DEFAULT NULL,
-  `trang_thai_mon` varchar(50) DEFAULT 'Dang cho',
+  `trang_thai_mon` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'Dang cho',
   `don_gia` decimal(10,2) NOT NULL,
   PRIMARY KEY (`ma_don_hang`,`ma_mon`),
   KEY `ma_mon` (`ma_mon`),
@@ -449,15 +449,15 @@ DROP TABLE IF EXISTS `donhang`;
 CREATE TABLE IF NOT EXISTS `donhang` (
   `ma_don_hang` int(11) NOT NULL AUTO_INCREMENT,
   `ma_ban` int(11) DEFAULT NULL,
-  `loai_don` varchar(20) NOT NULL DEFAULT 'tai_cho',
-  `ten_khach` varchar(100) DEFAULT NULL,
+  `loai_don` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'tai_cho',
+  `ten_khach` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `phi_giao_hang` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `hinh_thuc_thanh_toan` varchar(20) DEFAULT NULL,
-  `so_dien_thoai_giao` varchar(20) DEFAULT NULL,
-  `dia_chi_giao` varchar(500) DEFAULT NULL,
+  `hinh_thuc_thanh_toan` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `so_dien_thoai_giao` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `dia_chi_giao` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `ngay_tao` datetime DEFAULT CURRENT_TIMESTAMP,
-  `trang_thai_don` varchar(50) DEFAULT NULL,
-  `trang_thai_thanh_toan` varchar(50) DEFAULT NULL,
+  `trang_thai_don` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `trang_thai_thanh_toan` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`ma_don_hang`),
   KEY `ma_ban` (`ma_ban`)
 ) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -528,7 +528,7 @@ CREATE TABLE IF NOT EXISTS `ky_luong` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_thang_nam` (`thang`,`nam`),
   KEY `idx_ky_luong_trang_thai` (`trang_thai`)
-) ENGINE=InnoDB AUTO_INCREMENT=474 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=477 DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `ky_luong`
@@ -542,11 +542,11 @@ INSERT INTO `ky_luong` (`id`, `thang`, `nam`, `trang_thai`, `chot_luc`, `created
 -- --------------------------------------------------------
 
 --
--- Table structure for table `lich_su_nguyen_lieu_het_han`
+-- Table structure for table `lich_su_huy_hang`
 --
 
-DROP TABLE IF EXISTS `lich_su_nguyen_lieu_het_han`;
-CREATE TABLE IF NOT EXISTS `lich_su_nguyen_lieu_het_han` (
+DROP TABLE IF EXISTS `lich_su_huy_hang`;
+CREATE TABLE IF NOT EXISTS `lich_su_huy_hang` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ma_nguyen_lieu` int(11) NOT NULL,
   `ten_nguyen_lieu` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -558,7 +558,15 @@ CREATE TABLE IF NOT EXISTS `lich_su_nguyen_lieu_het_han` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_ls_nguyenlieu` (`ma_nguyen_lieu`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `lich_su_huy_hang`
+--
+
+INSERT INTO `lich_su_huy_hang` (`id`, `ma_nguyen_lieu`, `ten_nguyen_lieu`, `han_su_dung`, `ton_kho_con_lai`, `don_vi`, `ngay_xu_ly`, `ghi_chu`, `created_at`) VALUES
+(1, 19, 'Siro Đào', '2026-07-10', '500.00', 'ml', '2026-07-12', 'hết hạn (Huỷ 500 ml, còn 0 ml)', '2026-07-12 18:02:34'),
+(2, 18, 'Trà Cozy Đào', '2026-07-10', '290.00', 'g', '2026-07-12', 'hết hạn (Huỷ 290 g, còn 0 g)', '2026-07-12 18:21:35');
 
 -- --------------------------------------------------------
 
@@ -706,8 +714,8 @@ INSERT INTO `nguyenlieu` (`ma_nguyen_lieu`, `ten_nguyen_lieu`, `danh_muc`, `don_
 (15, 'Chanh', 'Nguyên liệu pha chế', 'g', 'kg', '1000.00', '0.00', '500.00', NULL, 1, NULL),
 (16, 'Mứt Dâu', 'Nguyên liệu pha chế', 'ml', 'chai', '500.00', '0.00', '100.00', NULL, 1, NULL),
 (17, 'Sữa chua không đường', 'Nguyên liệu pha chế', 'g', 'hộp', '100.00', '0.00', '10.00', NULL, 1, NULL),
-(18, 'Trà Cozy Đào', 'Nguyên liệu pha chế', 'g', 'hộp', '150.00', '290.00', '50.00', NULL, 1, '2026-07-10'),
-(19, 'Siro Đào', 'Nguyên liệu pha chế', 'ml', 'chai', '500.00', '500.00', '100.00', NULL, 1, '2026-07-10'),
+(18, 'Trà Cozy Đào', 'Nguyên liệu pha chế', 'g', 'hộp', '150.00', '0.00', '50.00', NULL, 1, NULL),
+(19, 'Siro Đào', 'Nguyên liệu pha chế', 'ml', 'chai', '500.00', '0.00', '100.00', NULL, 1, NULL),
 (20, 'Đào Ngâm', 'Nguyên liệu pha chế', 'g', 'kg', '1000.00', '950.00', '50.00', NULL, 1, '2026-07-10'),
 (21, 'Trà Thái Xanh', 'Nguyên liệu pha chế', 'g', 'hộp', '500.00', '0.00', '51.00', NULL, 1, NULL),
 (22, 'Tắc', 'Nguyên liệu pha chế', 'g', 'kg', '1000.00', '0.00', '100.00', NULL, 1, NULL);
@@ -816,6 +824,7 @@ INSERT INTO `phancong` (`ma_nhan_vien`, `ma_ca`, `ngay`) VALUES
 (3, 1, '2026-05-15'),
 (3, 1, '2026-06-01'),
 (3, 1, '2026-06-03'),
+(3, 1, '2026-07-13'),
 (4, 1, '2026-04-09'),
 (4, 1, '2026-04-10'),
 (4, 1, '2026-04-22'),
@@ -921,7 +930,9 @@ CREATE TABLE IF NOT EXISTS `phieunhap` (
   `da_thanh_toan` tinyint(1) NOT NULL DEFAULT '0',
   `ngay_thanh_toan` datetime DEFAULT NULL,
   `so_tien_da_tra` decimal(12,2) NOT NULL DEFAULT '0.00',
-  PRIMARY KEY (`ma_phieu`)
+  PRIMARY KEY (`ma_phieu`),
+  KEY `idx_pn_ngay_nhap` (`ngay_nhap`),
+  KEY `idx_pn_da_thanh_toan` (`da_thanh_toan`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -940,63 +951,8 @@ INSERT INTO `phieunhap` (`ma_phieu`, `ngay_nhap`, `nha_cung_cap`, `tong_tien`, `
 (9, '2026-07-08 17:00:00', 'Q', '50000.00', 'Nhập kho hệ thống', 1, '2026-07-08 17:10:03', '50000.00');
 
 --
--- Constraints for table `phancong`
---
-ALTER TABLE `phancong`
-  ADD CONSTRAINT `fk_pc_calam` FOREIGN KEY (`ma_ca`) REFERENCES `calam` (`ma_ca`) ON DELETE CASCADE;
-
---
--- Indexes for performance
---
-ALTER TABLE `donhang` ADD INDEX `idx_dh_ngay_tao` (`ngay_tao`);
-ALTER TABLE `donhang` ADD INDEX `idx_dh_trang_thai_thanh_toan` (`trang_thai_thanh_toan`);
-ALTER TABLE `phieunhap` ADD INDEX `idx_pn_ngay_nhap` (`ngay_nhap`);
-ALTER TABLE `phieunhap` ADD INDEX `idx_pn_da_thanh_toan` (`da_thanh_toan`);
-
---
 -- Constraints for dumped tables
 --
-
---
--- Constraints for table `bang_cong_chi_tiet`
---
-ALTER TABLE `bang_cong_chi_tiet`
-  ADD CONSTRAINT `fk_bcc_ky` FOREIGN KEY (`ky_luong_id`) REFERENCES `ky_luong` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_bcc_nv` FOREIGN KEY (`ma_nhan_vien`) REFERENCES `nhanvien` (`ma_nhan_vien`) ON DELETE CASCADE;
-
---
--- Constraints for table `bang_cong_thang`
---
-ALTER TABLE `bang_cong_thang`
-  ADD CONSTRAINT `fk_bc_ky` FOREIGN KEY (`ky_luong_id`) REFERENCES `ky_luong` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_bc_nv` FOREIGN KEY (`ma_nhan_vien`) REFERENCES `nhanvien` (`ma_nhan_vien`) ON DELETE CASCADE;
-
---
--- Constraints for table `bang_luong_thang`
---
-ALTER TABLE `bang_luong_thang`
-  ADD CONSTRAINT `fk_bl_ky` FOREIGN KEY (`ky_luong_id`) REFERENCES `ky_luong` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_bl_nv` FOREIGN KEY (`ma_nhan_vien`) REFERENCES `nhanvien` (`ma_nhan_vien`) ON DELETE CASCADE;
-
---
--- Constraints for table `chitiethoadon`
---
-ALTER TABLE `chitiethoadon`
-  ADD CONSTRAINT `fk_cthd_donhang` FOREIGN KEY (`ma_don_hang`) REFERENCES `donhang` (`ma_don_hang`) ON DELETE CASCADE;
-
---
--- Constraints for table `chitiet_phieunhap`
---
-ALTER TABLE `chitiet_phieunhap`
-  ADD CONSTRAINT `fk_ctpn_nguyenlieu` FOREIGN KEY (`ma_nguyen_lieu`) REFERENCES `nguyenlieu` (`ma_nguyen_lieu`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_ctpn_phieu` FOREIGN KEY (`ma_phieu`) REFERENCES `phieunhap` (`ma_phieu`) ON DELETE CASCADE;
-
---
--- Constraints for table `congthuc`
---
-ALTER TABLE `congthuc`
-  ADD CONSTRAINT `fk_congthuc_mon` FOREIGN KEY (`ma_mon`) REFERENCES `mon` (`ma_mon`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_congthuc_nguyenlieu` FOREIGN KEY (`ma_nguyen_lieu`) REFERENCES `nguyenlieu` (`ma_nguyen_lieu`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `mon`
@@ -1009,6 +965,12 @@ ALTER TABLE `mon`
 --
 ALTER TABLE `nhanvien_luong`
   ADD CONSTRAINT `fk_nv_luong_nv` FOREIGN KEY (`ma_nhan_vien`) REFERENCES `nhanvien` (`ma_nhan_vien`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `phancong`
+--
+ALTER TABLE `phancong`
+  ADD CONSTRAINT `fk_pc_calam` FOREIGN KEY (`ma_ca`) REFERENCES `calam` (`ma_ca`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

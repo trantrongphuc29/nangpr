@@ -1,4 +1,4 @@
-/* ===== 💰 NHẬP HÀNG & CÔNG NỢ =====
+/* =====NHẬP HÀNG & CÔNG NỢ =====
  * Quản lý phiếu nhập kho, theo dõi công nợ nhà cung cấp
  * Tích hợp: lịch sử nhập kho + công nợ + in phiếu
  * ==================================== */
@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import * as congNoService from "../services/congNoService";
 import { exportPhieuNhapExcel } from "../utils/bangLuongExport";
 import { ToastContainer, useToast } from "../components/Toast";
+import PriceInput from "../components/PriceInput";
 
 /* ── In phiếu thanh toán công nợ (form giấy tờ) ── */
 function inPhieuThanhToan(thanhToan) {
@@ -272,13 +273,10 @@ function ModalThanhToan({ phieu, onDong, onThanhCong }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold mb-1">Số tiền thanh toán</label>
-              <input
-                type="number"
-                min="1"
-                max={conNo}
+              <PriceInput
                 className="input-field text-lg font-bold"
                 value={soTien}
-                onChange={(e) => setSoTien(e.target.value)}
+                onChange={(val) => setSoTien(val)}
                 placeholder="0"
                 required
                 autoFocus
@@ -950,6 +948,7 @@ export default function CongNo() {
                         </td>
                         <td className="px-4 py-3.5 text-xs text-muted">{item.ghi_chu || '—'}</td>
                         <td className="px-4 py-3.5 text-center">
+                          {/* ── In phiếu thanh toán công nợ từ bảng ── */}
                           <button onClick={() => inPhieuThanhToan(item)}
                             className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all hover:bg-primary/10"
                             style={{ color: "var(--color-primary)" }} title="In phiếu thanh toán">

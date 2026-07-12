@@ -52,7 +52,12 @@ export const setTrangThaiNguyenLieu = async (id, trang_thai) => {
     return response.data;
 };
 
-export const getExpiredHistory = async () => {
-    const response = await axiosClient.get(`${API_URL}/expired-history`);
+export const getDiscardHistory = async () => {
+    const response = await axiosClient.get(`${API_URL}/discard-history`);
+    return response.data;
+};
+
+export const discardStock = async (id, payload) => {
+    const response = await axiosClient.post(`${API_URL}/${id}/discard`, payload);
     return response.data;
 };

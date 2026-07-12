@@ -63,6 +63,7 @@ function baseHTML(body) {
 <body>${body}</body></html>`;
 }
 
+/* ── In hóa đơn chi tiết đơn hàng (dạng bill nhỏ) ── */
 function buildPrintBill(order, loaiDonLabel, hinhThucThanhToanLabel) {
   const items = order?.items || [];
   const tien = Number(order.tong_tien || 0);
@@ -176,6 +177,7 @@ function ModalChiTietDon({ donHang, onDong }) {
   const phi = Number(donHang.phi_giao_hang || 0);
   const tong = tien + phi;
 
+  /* ── In chi tiết đơn hàng (hóa đơn) ── */
   const handlePrint = () => {
     const html = buildPrintBill(donHang, loaiDonLabel, hinhThucThanhToanLabel);
     const w = window.open("", "_blank", "width=380,height=600,menubar=no,toolbar=no,scrollbars=yes");

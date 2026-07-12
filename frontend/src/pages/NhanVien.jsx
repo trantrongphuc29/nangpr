@@ -227,7 +227,7 @@ const NhanVien = () => {
     }
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => window.print(); /* ── In lịch phân công (toàn trang) ── */
 
   const openStaffDetails = (staffId) => {
     const staff = staffList.find(s => String(s.ma_nhan_vien) === String(staffId));

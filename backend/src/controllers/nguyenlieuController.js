@@ -71,9 +71,9 @@ const NguyenLieuController = {
     } catch (error) { res.status(400).json({ message: error.message }); }
   },
 
-  getExpiredHistory: async (req, res) => {
+  getDiscardHistory: async (req, res) => {
     try {
-      const data = await NguyenLieuService.getLichSuHetHan();
+      const data = await NguyenLieuService.getLichSuHuyHang();
       res.json(data);
     } catch (error) { res.status(500).json({ message: error.message }); }
   },
@@ -84,6 +84,23 @@ const NguyenLieuController = {
       await NguyenLieuService.doiTrangThai(cleanId, req.body.trang_thai);
       res.json({
         message: req.body.trang_thai ? "Đã kích hoạt nguyên liệu." : "Đã ngưng sử dụng nguyên liệu.",
+      });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  },
+
+
+
+  /** Hủy hàng — tổng quát, có lý do, có số lượng */
+  discard: async (req, res) => {
+    try {
+      const cleanId = parseInt(req.params.id);
+      const { so_luong, ly_do } = req.body;
+      const result = await NguyenLieuService.huyNguyenLieu(cleanId, { so_luong, ly_do });
+      res.json({
+        message: `Đã huỷ ${result.so_luong_da_huy.toLocaleString('vi-VN')} ${result.don_vi}. Còn ${result.ton_kho_con_lai.toLocaleString('vi-VN')} ${result.don_vi} trong kho.`,
+        data: result,
       });
     } catch (error) {
       res.status(400).json({ message: error.message });

@@ -88,9 +88,14 @@ const NguyenLieuService = {
 
   xoa: async (id) => NguyenLieuRepository.delete(id),
 
-  //  LỊCH SỬ NGUYÊN LIỆU HẾT HẠN
-  getLichSuHetHan: async () => {
-    return await NguyenLieuRepository.getExpiredHistory();
+  //  LỊCH SỬ HỦY HÀNG
+  getLichSuHuyHang: async () => {
+    return await NguyenLieuRepository.getDiscardHistory();
+  },
+
+  //  HỦY HÀNG (Discard) — tổng quát, cho phép huỷ một phần + ghi lý do
+  huyNguyenLieu: async (id, { so_luong, ly_do }) => {
+    return await NguyenLieuRepository.discardStock(id, { so_luong, ly_do });
   },
 };
 
