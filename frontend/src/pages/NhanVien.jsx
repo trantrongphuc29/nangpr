@@ -2,11 +2,15 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   createNhanVien,
   createPhanCong,
+  createPhanCongLinhHoat,
   deletePhanCong,
+  deletePhanCongLinhHoat,
   getLichPhanCong,
+  getLichPhanCongLinhHoat,
   getNhanVienList,
   updateNhanVien,
-  updateNhanVienStatus, 
+  updateNhanVienStatus,
+  updatePhanCongLinhHoat,
 } from "../services/nhanVienService";
 import {
   TRANG_THAI_LABELS,
@@ -16,6 +20,9 @@ import {
   shouldShowAssignmentOnSchedule,
 } from "../utils/nhanVienStatus";
 import { formatPhoneDisplay } from "../utils/formatPhone";
+
+// Ca linh hoạt: chỉ chọn theo giờ tròn (định dạng 24h), không chọn phút
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, "0")}:00`);
 
 // =====================================================================
 // NOTE 1: KHU VỰC XỬ LÝ NGÀY THÁNG (GIỮ NGUYÊN)
@@ -49,6 +56,13 @@ const normalizeAssignments = (rows) =>
     ...a,
     ma_nhan_vien: Number(a.ma_nhan_vien),
     ma_ca: Number(a.ma_ca),
+    ngay: toYmd(a.ngay),
+  }));
+
+const normalizeFlexAssignments = (rows) =>
+  (Array.isArray(rows) ? rows : []).map((a) => ({
+    ...a,
+    ma_nhan_vien: Number(a.ma_nhan_vien),
     ngay: toYmd(a.ngay),
   }));
 
@@ -88,17 +102,21 @@ const NhanVien = () => {
   // =====================================================================
   const [staffList, setStaffList] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  
+  const [flexAssignments, setFlexAssignments] = useState([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isFlexModalOpen, setIsFlexModalOpen] = useState(false);
   const [staffDetailModal, setStaffDetailModal] = useState({ isOpen: false, data: null, isEditing: false });
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({ ten: '', ngay_sinh: '', so_dien_thoai: '', dia_chi: '' });
-  
+
   const today = getLocalDateString(new Date());
   const [assignForm, setAssignForm] = useState({ ma_nhan_vien: '', ma_ca: '', ngay: today });
-  
+  const emptyFlexForm = { id: null, ma_nhan_vien: '', ngay: today, gio_bat_dau: '', gio_ket_thuc: '', ghi_chu: '' };
+  const [flexForm, setFlexForm] = useState(emptyFlexForm);
+
   const [filterDate, setFilterDate] = useState(today);
   const [viewMode, setViewMode] = useState('week');
   const [loadError, setLoadError] = useState("");
@@ -119,20 +137,23 @@ const NhanVien = () => {
     setLoadError("");
     try {
       const { startStr, endStr } = getWeekRange(filterDate);
-      const [staffRes, assignRes] = await Promise.all([
+      const [staffRes, assignRes, flexRes] = await Promise.all([
         getNhanVienList(),
         getLichPhanCong({ startDate: startStr, endDate: endStr }),
+        getLichPhanCongLinhHoat({ startDate: startStr, endDate: endStr }),
       ]);
       setStaffList(Array.isArray(staffRes) ? staffRes : []);
       setAssignments(normalizeAssignments(assignRes));
+      setFlexAssignments(normalizeFlexAssignments(flexRes));
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
       setLoadError(error.response?.data?.message || error.message || "Không tải được dữ liệu phân công");
       setAssignments([]);
+      setFlexAssignments([]);
     } finally {
       setLoading(false);
     }
-  }, [filterDate]); 
+  }, [filterDate]);
 
   useEffect(() => {
     fetchData();
@@ -225,6 +246,58 @@ const NhanVien = () => {
         alert("Lỗi khi xóa phân công: " + (error.response?.data?.message || error.message));
       }
     }
+  };
+
+  const handleSaveFlex = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ma_nhan_vien: flexForm.ma_nhan_vien,
+        ngay: flexForm.ngay,
+        gio_bat_dau: flexForm.gio_bat_dau,
+        gio_ket_thuc: flexForm.gio_ket_thuc,
+        ghi_chu: flexForm.ghi_chu || null,
+      };
+      if (flexForm.id) {
+        await updatePhanCongLinhHoat(flexForm.id, payload);
+      } else {
+        await createPhanCongLinhHoat(payload);
+      }
+      setIsFlexModalOpen(false);
+      setFlexForm(emptyFlexForm);
+      fetchData();
+    } catch (error) {
+      alert("Lỗi: " + (error.response?.data?.message || "Không thể lưu ca linh hoạt"));
+    }
+  };
+
+  const handleDeleteFlex = async (id, e) => {
+    e.stopPropagation();
+    if (window.confirm("Bạn có chắc chắn muốn xóa ca linh hoạt này?")) {
+      try {
+        await deletePhanCongLinhHoat(id);
+        fetchData();
+      } catch (error) {
+        alert("Lỗi khi xóa ca linh hoạt: " + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
+  const openFlexModalForDay = (dayStr) => {
+    setFlexForm({ ...emptyFlexForm, ngay: dayStr });
+    setIsFlexModalOpen(true);
+  };
+
+  const openFlexModalForEdit = (assign) => {
+    setFlexForm({
+      id: assign.id,
+      ma_nhan_vien: String(assign.ma_nhan_vien),
+      ngay: assign.ngay,
+      gio_bat_dau: assign.gio_bat_dau,
+      gio_ket_thuc: assign.gio_ket_thuc,
+      ghi_chu: assign.ghi_chu || '',
+    });
+    setIsFlexModalOpen(true);
   };
 
   const handlePrint = () => window.print(); /* ── In lịch phân công (toàn trang) ── */
@@ -337,6 +410,16 @@ const NhanVien = () => {
     const [y, m, d] = ymd.split("-");
     return `${d}/${m}/${y}`;
   };
+
+  const visibleFlexAssignments = useMemo(() => {
+    const list =
+      viewMode === "week"
+        ? flexAssignments
+        : flexAssignments.filter((a) => a.ngay === filterDate);
+    return [...list].sort((a, b) =>
+      a.ngay === b.ngay ? a.gio_bat_dau.localeCompare(b.gio_bat_dau) : a.ngay.localeCompare(b.ngay)
+    );
+  }, [flexAssignments, viewMode, filterDate]);
 
   // =====================================================================
   // NOTE 5: GIAO DIỆN HIỂN THỊ
@@ -497,29 +580,24 @@ const NhanVien = () => {
       <div className="w-full min-w-0 flex flex-col gap-4 md:gap-5 min-h-[calc(100dvh-7.5rem)] print:min-h-0 print:block print:space-y-4">
         {/* Tiêu đề trang */}
         <div className="print:hidden shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-              <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>badge</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Quản lý nhân sự</h2>
-              <p className="text-xs text-muted">Quản lý thông tin nhân viên và lịch phân công ca</p>
-            </div>
+          <div>
+            <h2 className="text-xl font-bold text-on-surface">Quản lý nhân sự</h2>
+            <p className="text-sm text-muted">Thông tin nhân viên và lịch phân công ca</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
-            <button type="button" onClick={() => setIsModalOpen(true)} className="btn-primary !py-2 !px-4 !text-sm">
-              <span className="material-symbols-outlined text-lg">person_add</span>
+            <button type="button" onClick={() => setIsModalOpen(true)} className="btn-primary !py-2 !px-3 !text-xs">
+              <span className="material-symbols-outlined text-base">person_add</span>
               Thêm nhân viên
             </button>
-            <button type="button" onClick={handlePrint} className="btn-outline !py-2 !px-4 !text-sm">
-              <span className="material-symbols-outlined text-lg">print</span>
+            <button type="button" onClick={handlePrint} className="btn-outline !py-2 !px-3 !text-xs">
+              <span className="material-symbols-outlined text-base">print</span>
               In lịch
             </button>
           </div>
         </div>
 
         {/* Lịch phân công — co giãn theo kích thước màn hình */}
-        <section className="card border-none overflow-hidden print:border print:border-black w-full min-w-0 flex-1 flex flex-col min-h-0 print:flex-none">
+        <section className="card overflow-hidden print:border print:border-black w-full min-w-0 flex-1 flex flex-col min-h-0 print:flex-none">
           <div className="print:hidden p-3 md:p-4 border-b border-outline shrink-0">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
@@ -670,8 +748,69 @@ const NhanVien = () => {
           )}
         </section>
 
+        {/* Ca linh hoạt — phân công giờ tùy chỉnh, ngoài các ca mặc định */}
+        <section className="card overflow-hidden print:hidden shrink-0">
+          <div className="p-3 md:p-4 border-b border-outline flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold text-primary text-sm">Ca linh hoạt (giờ tùy chỉnh)</h2>
+              <p className="text-xs text-muted mt-0.5">
+                Phân công nhân viên theo khung giờ tự do, ngoài các ca mặc định
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => openFlexModalForDay(viewMode === "day" ? filterDate : today)}
+              className="btn-outline !py-2 !px-3 !text-xs shrink-0"
+            >
+              <span className="material-symbols-outlined text-base">add</span>
+              Thêm ca linh hoạt
+            </button>
+          </div>
+          <div className="p-3 md:p-4">
+            {visibleFlexAssignments.length === 0 ? (
+              <p className="text-center text-muted text-sm py-4">Chưa có ca linh hoạt nào trong khoảng thời gian này</p>
+            ) : (
+              <div className="space-y-2">
+                {visibleFlexAssignments.map((a) => {
+                  const staffName =
+                    a.ten || staffList.find((s) => String(s.ma_nhan_vien) === String(a.ma_nhan_vien))?.ten || `#${a.ma_nhan_vien}`;
+                  return (
+                    <div
+                      key={a.id}
+                      className="flex items-center gap-3 p-2.5 rounded-lg border border-outline/30 hover:border-primary/40 transition-colors"
+                    >
+                      <div className="w-16 shrink-0 text-xs font-semibold text-muted tabular-nums">
+                        {formatDisplayDate(a.ngay)}
+                      </div>
+                      <div className="w-24 shrink-0 text-xs font-bold text-primary tabular-nums">
+                        {a.gio_bat_dau}–{a.gio_ket_thuc}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openFlexModalForEdit(a)}
+                        className="min-w-0 flex-1 text-left text-sm font-medium hover:text-primary truncate"
+                      >
+                        {staffName}
+                      </button>
+                      {a.ghi_chu && <span className="text-xs text-muted truncate max-w-[10rem] hidden sm:block">{a.ghi_chu}</span>}
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteFlex(a.id, e)}
+                        className="shrink-0 inline-flex items-center justify-center w-8 h-8 text-error hover:bg-error/15 rounded-md transition-colors"
+                        aria-label="Xóa ca linh hoạt"
+                      >
+                        <span className="material-symbols-outlined text-[18px] leading-none">close</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* Danh sách nhân viên — dưới lịch */}
-        <aside className="card border-none overflow-hidden print:hidden shrink-0">
+        <aside className="card overflow-hidden print:hidden shrink-0">
           <div className="p-3 md:p-4 border-b border-outline">
             <h2 className="font-bold text-primary text-sm">Danh sách nhân viên</h2>
           </div>
@@ -862,6 +1001,96 @@ const NhanVien = () => {
                 </select>
               </div>
               <button type="submit" className="btn-primary w-full !py-3">Xác nhận phân công</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal ca linh hoạt (thêm/sửa) */}
+      {isFlexModalOpen && (
+        <div
+          className="print:hidden modal-overlay"
+          onClick={() => { setIsFlexModalOpen(false); setFlexForm(emptyFlexForm); }}
+        >
+          <div className="modal-panel max-w-md p-5 md:p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => { setIsFlexModalOpen(false); setFlexForm(emptyFlexForm); }}
+              className="absolute top-4 right-4 btn-ghost !p-2"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="text-lg font-bold text-primary mb-1">
+              {flexForm.id ? "Sửa ca linh hoạt" : "Thêm ca linh hoạt"}
+            </h3>
+            <p className="text-sm text-muted mb-4">Phân công theo khung giờ tùy chỉnh</p>
+            <form onSubmit={handleSaveFlex} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-muted">Ngày làm việc</label>
+                <input
+                  type="date"
+                  required
+                  className="mt-1"
+                  value={flexForm.ngay}
+                  onChange={(e) => setFlexForm({ ...flexForm, ngay: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted">Giờ bắt đầu</label>
+                  <select
+                    required
+                    className="input-field mt-1"
+                    value={flexForm.gio_bat_dau}
+                    onChange={(e) => setFlexForm({ ...flexForm, gio_bat_dau: e.target.value })}
+                  >
+                    <option value="" disabled>Chọn giờ</option>
+                    {HOUR_OPTIONS.map((h) => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted">Giờ kết thúc</label>
+                  <select
+                    required
+                    className="input-field mt-1"
+                    value={flexForm.gio_ket_thuc}
+                    onChange={(e) => setFlexForm({ ...flexForm, gio_ket_thuc: e.target.value })}
+                  >
+                    <option value="" disabled>Chọn giờ</option>
+                    {HOUR_OPTIONS.map((h) => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted">Nhân viên</label>
+                <select
+                  required
+                  className="input-field mt-1"
+                  value={flexForm.ma_nhan_vien}
+                  onChange={(e) => setFlexForm({ ...flexForm, ma_nhan_vien: e.target.value })}
+                >
+                  <option value="" disabled>Chọn nhân viên</option>
+                  {staffList.filter((nv) => canSelectInAssignModal(nv.trang_thai, flexForm.ngay, today)).map((nv) => (
+                    <option key={nv.ma_nhan_vien} value={nv.ma_nhan_vien}>{nv.ten}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted">Ghi chú (không bắt buộc)</label>
+                <input
+                  type="text"
+                  className="mt-1"
+                  value={flexForm.ghi_chu}
+                  onChange={(e) => setFlexForm({ ...flexForm, ghi_chu: e.target.value })}
+                />
+              </div>
+              <button type="submit" className="btn-primary w-full !py-3">
+                {flexForm.id ? "Lưu thay đổi" : "Xác nhận phân công"}
+              </button>
             </form>
           </div>
         </div>

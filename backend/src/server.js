@@ -6,6 +6,7 @@ const { ensureNhanVienSchema } = require("./config/ensureNhanVienSchema");
 const { ensurePOSSchema } = require("./config/ensurePOSSchema");
 const { ensureCongNoSchema } = require("./config/ensureCongNoSchema");
 const { ensureCaLamSchema } = require("./config/ensureCaLamSchema");
+const { ensureCaLinhHoatSchema } = require("./config/ensureCaLinhHoatSchema");
 
 const MODULES = [
   { name: "Nguyên liệu và Hạn sử dụng", fn: async () => { await ensureNguyenLieuSchema(); await ensureDiscardTable(); } },
@@ -14,6 +15,7 @@ const MODULES = [
   { name: "Bán hàng",           fn: ensurePOSSchema },
   { name: "Công nợ",                  fn: ensureCongNoSchema },
   { name: "Ca làm",                   fn: ensureCaLamSchema },
+  { name: "Ca linh hoạt",             fn: ensureCaLinhHoatSchema },
 ];
 
 async function start() {

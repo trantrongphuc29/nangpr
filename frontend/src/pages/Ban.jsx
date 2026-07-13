@@ -6,7 +6,7 @@ const removeVietnameseTones = (str) => {
   return str
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/đ/g, 'd')
     .trim();
 };
@@ -30,11 +30,18 @@ export default function Ban() {
     }
   };
 
+  // Sắp xếp tăng dần theo tên bàn — dùng so sánh tự nhiên (numeric) để "Bàn 2" đứng trước "Bàn 10"
+  const sortedList = useMemo(() => {
+    return [...list].sort((a, b) =>
+      (a.ten_ban || '').localeCompare(b.ten_ban || '', 'vi', { numeric: true, sensitivity: 'base' })
+    );
+  }, [list]);
+
   const filteredList = useMemo(() => {
-    if (!searchTerm.trim()) return list;
+    if (!searchTerm.trim()) return sortedList;
     const q = removeVietnameseTones(searchTerm);
-    return list.filter((b) => removeVietnameseTones(b.ten_ban || '').includes(q));
-  }, [list, searchTerm]);
+    return sortedList.filter((b) => removeVietnameseTones(b.ten_ban || '').includes(q));
+  }, [sortedList, searchTerm]);
 
   useEffect(() => {
     loadData();
@@ -84,42 +91,34 @@ export default function Ban() {
 
   return (
     <div className="space-y-4 text-on-surface pb-8">
-      {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-            <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>table_restaurant</span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Quản Lý Bàn</h2>
-            <p className="text-xs text-muted">Quản lý danh sách bàn phục vụ tại quán</p>
-          </div>
+        <div>
+          <h2 className="text-xl font-bold text-on-surface">Quản lý bàn</h2>
+          <p className="text-sm text-muted">Danh sách bàn phục vụ tại quán</p>
         </div>
       </div>
 
-      {/* FORM: Ô nhập và nút thêm */}
-      <div className="card p-4 md:p-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center border-none">
+      <div className="card p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         <input
           value={tenBan}
           onChange={(e) => setTenBan(e.target.value)}
-          placeholder="Nhập tên bàn (ví dụ: Bàn 01)..."
+          placeholder="Nhập tên bàn (VD: Bàn 01)..."
           className="input-field flex-1 min-w-0"
         />
 
         {editId ? (
-          <button onClick={updateBan} className="btn-secondary shrink-0 uppercase">
-            <span className="material-symbols-outlined">check</span>
-            Cập Nhật
+          <button onClick={updateBan} className="btn-secondary shrink-0">
+            <span className="material-symbols-outlined text-lg">check</span>
+            Cập nhật
           </button>
         ) : (
-          <button onClick={addBan} className="btn-primary shrink-0 uppercase">
-            <span className="material-symbols-outlined">add</span>
-            Thêm Bàn
+          <button onClick={addBan} className="btn-primary shrink-0">
+            <span className="material-symbols-outlined text-lg">add</span>
+            Thêm bàn
           </button>
         )}
       </div>
 
-      {/* SEARCH */}
       <div className="relative">
         <input
           type="text"
@@ -133,50 +132,46 @@ export default function Ban() {
         </span>
       </div>
 
-      {/* LOADING */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="w-10 h-10 border-4 border-primary border-dashed rounded-full animate-spin" />
+          <div className="w-8 h-8 border-3 border-primary border-dashed rounded-full animate-spin" />
         </div>
       ) : list.length === 0 ? (
-        <div className="flex flex-col items-center py-16 text-muted">
-          <span className="material-symbols-outlined text-5xl text-muted/40 block mb-3">table_restaurant</span>
-          <p className="font-medium uppercase">Chưa Có Dữ Liệu Bàn</p>
+        <div className="card flex flex-col items-center py-16 text-muted">
+          <span className="material-symbols-outlined text-4xl text-muted/30 mb-2">table_restaurant</span>
+          <p className="text-sm">Chưa có bàn nào</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
           {filteredList.length === 0 ? (
             <div className="col-span-full flex flex-col items-center py-16 text-muted">
-              <span className="material-symbols-outlined text-4xl mb-2">search_off</span>
-              <p className="font-medium uppercase">Không Tìm Thấy Bàn</p>
+              <span className="material-symbols-outlined text-3xl mb-2">search_off</span>
+              <p className="text-sm">Không tìm thấy bàn</p>
             </div>
           ) : (
             filteredList.map((ban) => (
-              <div
-                key={ban.ma_ban}
-                className="card p-5 hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 border-none"
-              >
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-xl font-bold text-on-surface uppercase">
+              <div key={ban.ma_ban} className="card p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-semibold text-on-surface">
                     {ban.ten_ban}
                   </h2>
-                  <span className="material-symbols-outlined text-2xl text-muted/20">table_restaurant</span>
+                  <span className="material-symbols-outlined text-xl text-muted/20">table_restaurant</span>
                 </div>
 
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleEdit(ban)}
-                    className="flex-1 btn-outline !py-2 !text-xs"
+                    className="flex-1 btn-outline !py-1.5 !text-xs"
                   >
                     <span className="material-symbols-outlined text-sm">edit</span>
-                    SỬA
+                    Sửa
                   </button>
                   <button
                     onClick={() => deleteBan(ban.ma_ban)}
-                    className="flex-1 btn-outline !py-2 !text-xs !border-error/40 !text-error hover:!bg-error/10 hover:!border-error uppercase"
+                    className="flex-1 btn-outline !py-1.5 !text-xs !border-error/30 !text-error hover:!bg-error/5"
                   >
                     <span className="material-symbols-outlined text-sm">delete</span>
-                    XÓA
+                    Xóa
                   </button>
                 </div>
               </div>

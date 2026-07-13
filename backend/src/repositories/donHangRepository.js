@@ -9,6 +9,11 @@ const ACTIVE_ORDER = `
   AND COALESCE(trang_thai_don, '') NOT IN ('Da huy', 'Hoan thanh')
 `;
 
+const toSafeInt = (v, fallback) => {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+};
+
 const mapItems = (rows) =>
   rows.map((r) => ({
     ...r,
@@ -256,6 +261,8 @@ const DonHangRepository = {
 
   /** Lấy danh sách đơn đã hoàn thành (cho lịch sử bán hàng) */
   getCompletedOrders: async (limit = 50, offset = 0) => {
+    const safeLimit = toSafeInt(limit, 50);
+    const safeOffset = toSafeInt(offset, 0);
     const [rows] = await db.execute(
       `SELECT dh.*, b.ten_ban,
               COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien
@@ -265,8 +272,7 @@ const DonHangRepository = {
        WHERE dh.trang_thai_thanh_toan = 'Da thanh toan'
        GROUP BY dh.ma_don_hang
        ORDER BY dh.ngay_tao DESC
-       LIMIT ? OFFSET ?`,
-      [limit, offset]
+       LIMIT ${safeLimit} OFFSET ${safeOffset}`
     );
     return rows;
   },
@@ -355,6 +361,8 @@ const DonHangRepository = {
     }
 
     // Lấy danh sách đơn có phân trang
+    const safeLimit = toSafeInt(limit, 20);
+    const safeOffset = toSafeInt(offset, 0);
     const [orders] = await db.execute(
       `SELECT dh.*, b.ten_ban,
               COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien
@@ -364,8 +372,8 @@ const DonHangRepository = {
        WHERE ${where}
        GROUP BY dh.ma_don_hang
        ORDER BY dh.ngay_tao DESC
-       LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+       LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+      params
     );
 
     // Lấy items cho các đơn ở trang hiện tại
@@ -420,14 +428,15 @@ const DonHangRepository = {
 
   /** Lấy tất cả lịch sử huỷ (có phân trang) */
   getAllCancelHistory: async (limit = 50, offset = 0) => {
+    const safeLimit = toSafeInt(limit, 50);
+    const safeOffset = toSafeInt(offset, 0);
     const [rows] = await db.execute(
       `SELECT h.*, dh.ma_ban, b.ten_ban
        FROM huy_mon_log h
        LEFT JOIN donhang dh ON h.ma_don_hang = dh.ma_don_hang
        LEFT JOIN ban b ON dh.ma_ban = b.ma_ban
        ORDER BY h.ngay_huy DESC
-       LIMIT ? OFFSET ?`,
-      [limit, offset]
+       LIMIT ${safeLimit} OFFSET ${safeOffset}`
     );
     return rows;
   },

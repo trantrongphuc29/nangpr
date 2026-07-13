@@ -211,7 +211,7 @@ export default function BangLuong() {
       return;
     }
     const ok = window.confirm(
-      `Chốt lương tháng ${pad2(thang)}/${nam}?\n\nSau khi chốt, bảng lương sẽ khóa chỉnh sửa cho đến khi mở chốt (admin).`
+      `Chốt lương tháng ${pad2(thang)}/${nam}?\n\nSau khi chốt, bảng lương sẽ khóa chỉnh sửa cho đến khi mở chốt`
     );
     if (!ok) return;
     try {
@@ -292,18 +292,13 @@ export default function BangLuong() {
 
   return (
     <div className="space-y-5 md:space-y-6 text-on-surface pb-8">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-          <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>payments</span>
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Bảng lương</h2>
-          <p className="text-xs text-muted">Tự động tính lương khi kỳ ở trạng thái Chưa chốt</p>
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-on-surface">Bảng lương</h2>
+        <p className="text-sm text-muted">Tự động tính lương khi kỳ ở trạng thái Chưa chốt</p>
       </div>
 
       {/* Filters */}
-      <div className="card p-4 md:p-5 border-none space-y-4">
+      <div className="card p-4 space-y-4">
         <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 min-w-0">
             <div className="flex items-center gap-2 shrink-0">
@@ -394,9 +389,9 @@ export default function BangLuong() {
             ) : (
               <>
                 <div className="text-muted text-xs uppercase tracking-widest font-semibold">
-                  Kỳ đã {kyLabel}. Dữ liệu đã khóa.
+                  Kỳ {kyLabel}. Dữ liệu đã khóa.
                 </div>
-                <button className="btn-outline !py-2 !px-4 !text-sm border-2 border-primary" onClick={handleExportExcel}>
+                <button className="btn-outline !py-2 !px-4 !text-sm" onClick={handleExportExcel}>
                   <span className="material-symbols-outlined text-lg">download</span>
                   Xuất Excel
                 </button>
@@ -412,7 +407,7 @@ export default function BangLuong() {
                     </button>
                     <button className="btn-ghost !py-2 !px-4 !text-sm border border-outline" onClick={handleUnlock}>
                       <span className="material-symbols-outlined text-lg">lock_open</span>
-                      Mở chốt (admin)
+                      Mở chốt
                     </button>
                   </>
                 )}
@@ -437,23 +432,35 @@ export default function BangLuong() {
       </div>
 
       {/* Totals */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng nhân viên</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{totals?.tong_nhan_vien || 0}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="card p-4 relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-primary)" }} />
+          <div className="pl-2">
+            <p className="text-xs font-medium text-muted">Tổng nhân viên</p>
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{totals?.tong_nhan_vien || 0}</p>
+          </div>
         </div>
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng giờ làm</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{formatNumber(totals?.tong_gio || 0)}</p>
+        <div className="card p-4 relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-success)" }} />
+          <div className="pl-2">
+            <p className="text-xs font-medium text-muted">Tổng giờ làm</p>
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{formatNumber(totals?.tong_gio || 0)}</p>
+          </div>
         </div>
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng lương cơ bản</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{formatMoney(totals?.tong_luong_co_ban || 0)}</p>
-          <p className="text-[10px] text-muted mt-1 leading-snug">Chưa gồm phụ cấp/thưởng/khấu trừ</p>
+        <div className="card p-4 relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-warning)" }} />
+          <div className="pl-2">
+            <p className="text-xs font-medium text-muted">Tổng lương cơ bản</p>
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{formatMoney(totals?.tong_luong_co_ban || 0)}</p>
+            <p className="text-[11px] text-muted mt-0.5">Chưa gồm phụ cấp/thưởng/khấu trừ</p>
+          </div>
         </div>
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng tiền phải trả</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{formatMoney(totals?.tong_tien_phai_tra || 0)}</p>
+        <div className="card p-4 relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-error)" }} />
+          <div className="pl-2">
+            <p className="text-xs font-medium text-muted">Tổng tiền phải trả</p>
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{formatMoney(totals?.tong_tien_phai_tra || 0)}</p>
+          </div>
         </div>
       </div>
 
@@ -464,7 +471,7 @@ export default function BangLuong() {
       ) : error ? (
         <div className="alert-error text-error bg-error-container/20 border border-error/20 rounded-xl p-4">{error}</div>
       ) : (
-        <div className="card border-none overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left text-sm min-w-[1100px]">
               <thead className="table-head">

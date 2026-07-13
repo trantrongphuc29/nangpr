@@ -1185,7 +1185,7 @@ export default function BanHang() {
             {/* Grid: Menu + Cart */}
             <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 flex-1 min-h-0">
               {/* Menu */}
-              <section className="lg:col-span-7 card border-none shadow-lg p-4 flex flex-col min-h-0">
+              <section className="lg:col-span-7 card p-4 flex flex-col min-h-0">
                 <div className="flex items-center gap-2 mb-3 shrink-0">
                  
                   <h3 className="font-bold text-on-surface text-sm">Thực đơn</h3>
@@ -1194,7 +1194,7 @@ export default function BanHang() {
               </section>
 
               {/* Cart - Desktop */}
-              <section className="hidden lg:flex lg:col-span-3 flex-col min-h-0 card border-none shadow-lg p-4">
+              <section className="hidden lg:flex lg:col-span-3 flex-col min-h-0 card p-4">
                 <div className="flex items-center justify-between mb-3 shrink-0">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-lg">shopping_cart</span>
@@ -1234,14 +1234,10 @@ export default function BanHang() {
           <div className="flex flex-col flex-1 min-h-0">
             {/* Header + Actions */}
             <div className="shrink-0 mb-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-                      <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>storefront</span>
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-on-surface">Bán hàng</h2>
-                      <p className="text-xs text-muted">Chọn bàn để gọi món</p>
-                    </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-on-surface">Bán hàng</h2>
+                    <p className="text-sm text-muted">Chọn bàn để gọi món</p>
                   </div>
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold border" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-primary)" }}>
@@ -1261,7 +1257,7 @@ export default function BanHang() {
                   type="button"
                   disabled={bh.busy}
                   onClick={() => bh.openKhongBan("mang_ve")}
-                  className="card border-none shadow-lg p-4 text-left transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+                  className="card p-4 text-left transition-all duration-200 hover:border-primary/40 disabled:opacity-50"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 15%, transparent)", color: "var(--color-primary)" }}>
@@ -1277,7 +1273,7 @@ export default function BanHang() {
                   type="button"
                   disabled={bh.busy}
                   onClick={() => bh.openKhongBan("giao_hang")}
-                  className="card border-none shadow-lg p-4 text-left transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+                  className="card p-4 text-left transition-all duration-200 hover:border-primary/40 disabled:opacity-50"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-secondary) 15%, transparent)", color: "var(--color-secondary)" }}>
@@ -1293,7 +1289,7 @@ export default function BanHang() {
             </div>
 
             {/* Tables */}
-            <div className="flex-1 overflow-y-auto min-h-0 card border-none shadow-lg p-5">
+            <div className="flex-1 overflow-y-auto min-h-0 card p-4">
               <BanHangTables
                 tables={bh.tables}
                 selected={bh.table}

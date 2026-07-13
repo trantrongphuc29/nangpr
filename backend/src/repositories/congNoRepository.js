@@ -3,6 +3,12 @@
  * ================================== */
 const db = require("../config/database");
 
+// mysql2 (execute) không nhận placeholder `?` cho LIMIT/OFFSET nên phải nội suy trực tiếp số nguyên đã kiểm tra
+const toSafeInt = (v, fallback) => {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+};
+
 const CongNoRepository = {
   /** Lấy danh sách công nợ (phiếu nhập chưa thanh toán / đã thanh toán) */
   getAll: async ({ trang_thai, nha_cung_cap, search, from_date, to_date, limit = 50, offset = 0 } = {}) => {
@@ -69,8 +75,8 @@ const CongNoRepository = {
       FROM phieunhap pn
       ${where}
       ORDER BY pn.ngay_nhap DESC
-      LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+      LIMIT ${toSafeInt(limit, 50)} OFFSET ${toSafeInt(offset, 0)}`,
+      params
     );
 
     return { rows, total };
@@ -275,8 +281,8 @@ const CongNoRepository = {
        FROM lich_su_thanh_toan
        ${where}
        ORDER BY ngay_thanh_toan DESC
-       LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+       LIMIT ${toSafeInt(limit, 50)} OFFSET ${toSafeInt(offset, 0)}`,
+      params
     );
 
     // Thống kê

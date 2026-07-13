@@ -27,12 +27,13 @@ async function recalculateBangCong({ ky_luong_id, thang, nam }) {
 
   const insertDetailsSql = `
     INSERT INTO bang_cong_chi_tiet
-      (ky_luong_id, ma_nhan_vien, ngay, ma_ca, ten_ca, thoi_gian_ca, so_gio)
+      (ky_luong_id, ma_nhan_vien, ngay, ma_ca, loai_ca, ten_ca, thoi_gian_ca, so_gio)
     SELECT
       ? AS ky_luong_id,
       pc.ma_nhan_vien,
       pc.ngay,
       pc.ma_ca,
+      'mac_dinh' AS loai_ca,
       CASE pc.ma_ca
         WHEN 1 THEN 'Ca Sáng'
         WHEN 2 THEN 'Ca Chiều'
@@ -58,18 +59,39 @@ async function recalculateBangCong({ ky_luong_id, thang, nam }) {
 
   await db.execute(insertDetailsSql, [ky_luong_id, firstDay, lastDay]);
 
+  // Ca linh hoạt (giờ tùy chỉnh) — số giờ tính trực tiếp từ khoảng gio_bat_dau/gio_ket_thuc
+  const insertFlexDetailsSql = `
+    INSERT INTO bang_cong_chi_tiet
+      (ky_luong_id, ma_nhan_vien, ngay, ma_ca, loai_ca, ten_ca, thoi_gian_ca, so_gio)
+    SELECT
+      ? AS ky_luong_id,
+      plh.ma_nhan_vien,
+      plh.ngay,
+      NULL AS ma_ca,
+      'linh_hoat' AS loai_ca,
+      'Ca Linh Hoạt' AS ten_ca,
+      CONCAT(TIME_FORMAT(plh.gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(plh.gio_ket_thuc, '%H:%i')) AS thoi_gian_ca,
+      ROUND(TIME_TO_SEC(TIMEDIFF(plh.gio_ket_thuc, plh.gio_bat_dau)) / 3600, 2) AS so_gio
+    FROM phancong_linh_hoat plh
+    WHERE plh.ngay >= ? AND plh.ngay <= ?
+      AND plh.ngay + INTERVAL 7 HOUR < CURDATE() + INTERVAL 7 HOUR
+  `;
+
+  await db.execute(insertFlexDetailsSql, [ky_luong_id, firstDay, lastDay]);
+
   const insertSummarySql = `
     INSERT INTO bang_cong_thang
-      (ky_luong_id, ma_nhan_vien, so_ca_sang, so_ca_chieu, so_ca_toi, so_ngay_lam, tong_ca, tong_gio, last_recalc_at)
+      (ky_luong_id, ma_nhan_vien, so_ca_sang, so_ca_chieu, so_ca_toi, so_ca_linh_hoat, so_ngay_lam, tong_ca, tong_gio, last_recalc_at)
     SELECT
       ky_luong_id,
       ma_nhan_vien,
       SUM(CASE ma_ca WHEN 1 THEN 1 ELSE 0 END) AS so_ca_sang,
       SUM(CASE ma_ca WHEN 2 THEN 1 ELSE 0 END) AS so_ca_chieu,
       SUM(CASE ma_ca WHEN 3 THEN 1 ELSE 0 END) AS so_ca_toi,
+      SUM(CASE WHEN loai_ca = 'linh_hoat' THEN 1 ELSE 0 END) AS so_ca_linh_hoat,
       COUNT(DISTINCT ngay) AS so_ngay_lam,
       COUNT(*) AS tong_ca,
-      SUM(CASE ma_ca WHEN 1 THEN 6 WHEN 2 THEN 6 WHEN 3 THEN 5 ELSE 0 END) AS tong_gio,
+      SUM(so_gio) AS tong_gio,
       NOW() AS last_recalc_at
     FROM bang_cong_chi_tiet
     WHERE ky_luong_id = ?
@@ -158,7 +180,8 @@ async function getBangCongSummary({ ky_luong_id, ma_nhan_vien }) {
         COALESCE(SUM(bc.tong_gio), 0) AS tong_gio_lam,
         COALESCE(SUM(bc.so_ca_sang), 0) AS tong_ca_sang,
         COALESCE(SUM(bc.so_ca_chieu), 0) AS tong_ca_chieu,
-        COALESCE(SUM(bc.so_ca_toi), 0) AS tong_ca_toi
+        COALESCE(SUM(bc.so_ca_toi), 0) AS tong_ca_toi,
+        COALESCE(SUM(bc.so_ca_linh_hoat), 0) AS tong_ca_linh_hoat
       FROM nhanvien nv
       LEFT JOIN bang_cong_thang bc
         ON bc.ky_luong_id = ? AND bc.ma_nhan_vien = nv.ma_nhan_vien
@@ -177,6 +200,7 @@ async function getBangCongSummary({ ky_luong_id, ma_nhan_vien }) {
         COALESCE(bc.so_ca_sang, 0) AS so_ca_sang,
         COALESCE(bc.so_ca_chieu, 0) AS so_ca_chieu,
         COALESCE(bc.so_ca_toi, 0) AS so_ca_toi,
+        COALESCE(bc.so_ca_linh_hoat, 0) AS so_ca_linh_hoat,
         COALESCE(bc.so_ngay_lam, 0) AS so_ngay_lam,
         COALESCE(bc.tong_ca, 0) AS tong_ca,
         COALESCE(bc.tong_gio, 0) AS tong_gio
@@ -196,6 +220,7 @@ async function getBangCongSummary({ ky_luong_id, ma_nhan_vien }) {
     tong_ca_sang: 0,
     tong_ca_chieu: 0,
     tong_ca_toi: 0,
+    tong_ca_linh_hoat: 0,
   };
 
   return {

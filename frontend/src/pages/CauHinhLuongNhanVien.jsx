@@ -156,14 +156,9 @@ export default function CauHinhLuongNhanVien() {
 
   return (
     <div className="space-y-5 md:space-y-6 text-on-surface pb-8">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-          <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>tune</span>
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Cấu hình lương nhân viên</h2>
-          <p className="text-xs text-muted">Thiết lập lương giờ và phụ cấp mặc định cho nhân viên</p>
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-on-surface">Cấu hình lương nhân viên</h2>
+        <p className="text-sm text-muted">Thiết lập lương giờ và phụ cấp mặc định</p>
       </div>
 
       {loading ? (
@@ -173,7 +168,7 @@ export default function CauHinhLuongNhanVien() {
       ) : error ? (
         <div className="alert-error text-error bg-error-container/20 border border-error/20 rounded-xl p-4">{error}</div>
       ) : (
-        <div className="card p-4 md:p-5 border-none overflow-hidden">
+        <div className="card p-4 overflow-hidden">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-4">
             <div>
               <p className="text-muted text-xs uppercase tracking-widest font-semibold">

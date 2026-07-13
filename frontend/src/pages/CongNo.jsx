@@ -189,20 +189,20 @@ function inPhieuNhap(phieu) {
   printWindow.document.close();
 }
 
-/* ── Thẻ thống kê (giống DoanhThu) ── */
-function SummaryCard({ nhan, giaTri, sub, icon, accent }) {
+function SummaryCard({ nhan, giaTri, sub, icon, accent, borderColor }) {
   return (
-    <div className="card p-5 border-none shadow-lg hover:shadow-xl transition-all duration-300 group">
-      <div className="flex items-start justify-between">
+    <div className="card p-4 relative overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: borderColor || "var(--color-primary)" }} />
+      <div className="flex items-start justify-between gap-3 pl-2">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-black uppercase text-muted tracking-widest">{nhan}</p>
-          <p className="text-2xl md:text-3xl font-black text-on-surface mt-1 truncate group-hover:text-primary transition-colors">
-            {giaTri}
-          </p>
-          {sub && <p className="text-xs text-muted mt-1">{sub}</p>}
+          <p className="text-xs font-medium text-muted">{nhan}</p>
+          <p className="text-xl font-bold text-on-surface mt-1 truncate tabular-nums">{giaTri}</p>
+          {sub && <p className="text-[11px] text-muted mt-0.5">{sub}</p>}
         </div>
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ml-3 ${accent || 'bg-primary/10 text-primary'}`}>
-          <span className="material-symbols-outlined text-2xl">{icon}</span>
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, transparent)" }}
+        >
+          <span className="material-symbols-outlined text-xl" style={{ color: borderColor || "var(--color-primary)" }}>{icon}</span>
         </div>
       </div>
     </div>
@@ -555,14 +555,9 @@ export default function CongNo() {
 
       {/* ── Header + Bộ lọc thời gian (giống DoanhThu) ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-            <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>account_balance</span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Công nợ</h2>
-            <p className="text-xs text-muted">Quản lý phiếu nhập kho, theo dõi công nợ nhà cung cấp</p>
-          </div>
+        <div>
+          <h2 className="text-xl font-bold text-on-surface">Công nợ</h2>
+          <p className="text-sm text-muted">Quản lý phiếu nhập kho, theo dõi công nợ NCC</p>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-fit">
@@ -604,18 +599,17 @@ export default function CongNo() {
 
       {/* ── ROW 1: Thống kê chính (3 cột) ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Tổng công nợ - nổi bật */}
-        <div className="card p-6 border-none shadow-lg relative overflow-hidden" style={{ background: "linear-gradient(135deg, var(--color-error) 0%, #B4534A 100%)" }}>
-          <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: "var(--color-surface-lowest)", transform: "translate(30%, -30%)" }} />
-          <div className="flex items-start justify-between relative z-10">
+        {/* Tổng công nợ */}
+        <div className="card p-5 relative overflow-hidden" style={{ backgroundColor: "var(--color-error)" }}>
+          <div className="flex items-start justify-between">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: "var(--color-on-primary)", opacity: 0.7 }}>Tổng tổng nợ</p>
-              <p className="text-3xl md:text-4xl font-black mt-1 truncate" style={{ color: "var(--color-on-primary)" }}>
+              <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-on-error)", opacity: 0.7 }}>Tổng công nợ</p>
+              <p className="text-2xl md:text-3xl font-bold mt-1 truncate tabular-nums" style={{ color: "var(--color-on-error)" }}>
                 {dinhDangTien(thongKe.tong_con_no)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ml-3" style={{ backgroundColor: "color-mix(in srgb, var(--color-on-primary) 20%, transparent)" }}>
-              <span className="material-symbols-outlined text-2xl" style={{ color: "var(--color-on-primary)" }}>account_balance</span>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ml-3" style={{ backgroundColor: "color-mix(in srgb, var(--color-on-error) 15%, transparent)" }}>
+              <span className="material-symbols-outlined text-xl" style={{ color: "var(--color-on-error)" }}>account_balance</span>
             </div>
           </div>
         </div>
@@ -625,7 +619,7 @@ export default function CongNo() {
           nhan={`Công nợ trong ${boLocThoiGian.find(k => k.key === khoangThoiGian)?.label || 'kỳ'}`}
           giaTri={dinhDangTien(thongKe.tong_con_no_ky)}
           icon="receipt"
-          accent="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+          borderColor="var(--color-warning)"
         />
 
         {/* Đã thanh toán trong kỳ */}
@@ -633,7 +627,7 @@ export default function CongNo() {
           nhan={`Đã thanh toán trong ${boLocThoiGian.find(k => k.key === khoangThoiGian)?.label || 'kỳ'}`}
           giaTri={dinhDangTien(thongKe.da_tra_trong_thang)}
           icon="payments"
-          accent="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+          borderColor="var(--color-success)"
         />
       </div>
 
@@ -732,7 +726,7 @@ export default function CongNo() {
       </div>
 
       {/* ── Card chứa Tabs + Nội dung ── */}
-      <div className="card border-none shadow-lg rounded-2xl overflow-hidden">
+      <div className="card overflow-hidden">
         {/* Header card: Tabs Phiếu nhập | Phiếu thanh toán */}
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--color-border)", backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 20%, transparent)" }}>
           <div className="flex gap-1 bg-surface-container-high p-0.5 rounded-lg">

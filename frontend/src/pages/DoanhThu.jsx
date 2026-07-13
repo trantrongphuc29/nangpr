@@ -125,20 +125,20 @@ function buildPrintBill(order, loaiDonLabel, hinhThucThanhToanLabel) {
   `);
 }
 
-/* ── Thẻ thống kê  ── */
-function SummaryCard({ nhan, giaTri, sub, icon, accent }) {
+function SummaryCard({ nhan, giaTri, sub, icon, accent, borderColor }) {
   return (
-    <div className="card p-5 border-none shadow-lg hover:shadow-xl transition-all duration-300 group">
-      <div className="flex items-start justify-between">
+    <div className="card p-4 relative overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: borderColor || "var(--color-primary)" }} />
+      <div className="flex items-start justify-between gap-3 pl-2">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-black uppercase text-muted tracking-widest">{nhan}</p>
-          <p className="text-2xl md:text-3xl font-black text-on-surface mt-1 truncate group-hover:text-primary transition-colors">
-            {giaTri}
-          </p>
-          {sub && <p className="text-xs text-muted mt-1">{sub}</p>}
+          <p className="text-xs font-medium text-muted">{nhan}</p>
+          <p className="text-xl font-bold text-on-surface mt-1 truncate tabular-nums">{giaTri}</p>
+          {sub && <p className="text-[11px] text-muted mt-0.5">{sub}</p>}
         </div>
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ml-3 ${accent || 'bg-primary/10 text-primary'}`}>
-          <span className="material-symbols-outlined text-2xl">{icon}</span>
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, transparent)" }}
+        >
+          <span className="material-symbols-outlined text-xl" style={{ color: borderColor || "var(--color-primary)" }}>{icon}</span>
         </div>
       </div>
     </div>
@@ -466,14 +466,9 @@ export default function DoanhThu() {
     <div className="transition-colors duration-500 space-y-3">
       {/* ── Header + Bộ lọc thời gian ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-            <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>payments</span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Doanh thu</h2>
-            <p className="text-xs text-muted">Tổng hợp doanh thu bán hàng</p>
-          </div>
+        <div>
+          <h2 className="text-xl font-bold text-on-surface">Doanh thu</h2>
+          <p className="text-sm text-muted">Tổng hợp doanh thu bán hàng</p>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-fit">
@@ -522,24 +517,23 @@ export default function DoanhThu() {
         <>
           {/* ── Summary Cards - Hàng trên: Doanh thu nổi bật + Tiền mặt + Chuyển khoản ── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Doanh thu - to nhất, nổi bật nhất */}
-            <div className="card p-6 border-none shadow-lg relative overflow-hidden" style={{ background: "linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)" }}>
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10" style={{ background: "var(--color-surface-lowest)", transform: "translate(30%, -30%)" }} />
-              <div className="flex items-start justify-between relative z-10">
+            {/* Doanh thu */}
+            <div className="card p-5 relative overflow-hidden" style={{ backgroundColor: "var(--color-primary)" }}>
+              <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: "var(--color-on-primary)", opacity: 0.7 }}>Doanh thu</p>
-                  <p className="text-3xl md:text-4xl font-black mt-1 truncate" style={{ color: "var(--color-on-primary)" }}>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-on-primary)", opacity: 0.7 }}>Doanh thu</p>
+                  <p className="text-2xl md:text-3xl font-bold mt-1 truncate tabular-nums" style={{ color: "var(--color-on-primary)" }}>
                     {dinhDangTien(doanhThuTong)}
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ml-3" style={{ backgroundColor: "color-mix(in srgb, var(--color-on-primary) 20%, transparent)" }}>
-                  <span className="material-symbols-outlined text-2xl" style={{ color: "var(--color-on-primary)" }}>payments</span>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ml-3" style={{ backgroundColor: "color-mix(in srgb, var(--color-on-primary) 15%, transparent)" }}>
+                  <span className="material-symbols-outlined text-xl" style={{ color: "var(--color-on-primary)" }}>payments</span>
                 </div>
               </div>
             </div>
 
-            <SummaryCard nhan="Tiền mặt" giaTri={dinhDangTien(tienMat)} icon="money" accent="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" />
-            <SummaryCard nhan="Chuyển khoản" giaTri={dinhDangTien(chuyenKhoan)} icon="account_balance" accent="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" />
+            <SummaryCard nhan="Tiền mặt" giaTri={dinhDangTien(tienMat)} icon="money" borderColor="var(--color-success)" />
+            <SummaryCard nhan="Chuyển khoản" giaTri={dinhDangTien(chuyenKhoan)} icon="account_balance" borderColor="var(--color-primary)" />
           </div>
 
           {/* ── Search + Summary Cards: Tìm kiếm 50% | Số đơn hàng + Món hủy 50% ── */}
@@ -551,33 +545,25 @@ export default function DoanhThu() {
               <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--color-primary)" }}>search</span>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="card p-3 border-none hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                    <span className="material-symbols-outlined text-lg">receipt_long</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase text-muted tracking-wide">Số đơn hàng</p>
-                    <p className="text-xl font-bold text-on-surface">{tongSoDon.toLocaleString("vi-VN")} <span className="text-xs font-medium text-muted">đơn</span></p>
-                  </div>
+              <div className="card p-3 relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-primary)" }} />
+                <div className="pl-2">
+                  <p className="text-[11px] font-medium text-muted">Số đơn hàng</p>
+                  <p className="text-xl font-bold text-on-surface tabular-nums">{tongSoDon.toLocaleString("vi-VN")} <span className="text-xs font-medium text-muted">đơn</span></p>
                 </div>
               </div>
-              <div className="card p-3 border-none hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
-                    <span className="material-symbols-outlined text-lg">delete</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase text-muted tracking-wide">Món hủy</p>
-                    <p className="text-xl font-bold text-on-surface">{tongMonDaHuy}</p>
-                  </div>
+              <div className="card p-3 relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-error)" }} />
+                <div className="pl-2">
+                  <p className="text-[11px] font-medium text-muted">Món hủy</p>
+                  <p className="text-xl font-bold text-on-surface tabular-nums">{tongMonDaHuy}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* ── Main Table ── */}
-          <div className="card border-none shadow-lg rounded-2xl overflow-hidden">
+          <div className="card overflow-hidden">
             {/* Tabs + Filters */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b" style={{ borderColor: "var(--color-border)" }}>
               <div className="flex">

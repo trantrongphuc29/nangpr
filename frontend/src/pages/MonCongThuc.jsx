@@ -717,14 +717,9 @@ export default function MonCongThuc() {
 
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full pb-6 border-b gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-            <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>restaurant_menu</span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Quản lý món &amp; công thức</h2>
-            <p className="text-xs text-muted">Quản lý danh sách món ăn và đồ uống của Nắng PR</p>
-          </div>
+        <div>
+          <h2 className="text-xl font-bold text-on-surface">Quản lý món & công thức</h2>
+          <p className="text-sm text-muted">Danh sách món ăn và đồ uống</p>
         </div>
         <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">            <div className="relative w-full sm:w-auto group">
             <input 

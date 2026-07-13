@@ -94,18 +94,13 @@ export default function BangCong() {
 
   return (
     <div className="space-y-5 md:space-y-6 text-on-surface pb-8">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-          <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>calendar_month</span>
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Bảng công</h2>
-          <p className="text-xs text-muted">Tự động tổng hợp giờ làm từ lịch phân công ca</p>
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-on-surface">Bảng công</h2>
+        <p className="text-sm text-muted">Tổng hợp giờ làm từ lịch phân công ca</p>
       </div>
 
       {/* Filters */}
-      <div className="card p-4 md:p-5 border-none space-y-4">
+      <div className="card p-4 space-y-4">
         <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 min-w-0">
             <div className="flex items-center gap-2 shrink-0">
@@ -169,24 +164,36 @@ export default function BangCong() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Nhân viên có công</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{totals.tong_nhan_vien_co_cong || 0}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="card p-4 relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-primary)" }} />
+          <div className="pl-2">
+            <p className="text-xs font-medium text-muted">Nhân viên có công</p>
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{totals.tong_nhan_vien_co_cong || 0}</p>
+          </div>
         </div>
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng ca đã làm</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{totals.tong_ca_da_lam || 0}</p>
+        <div className="card p-4 relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-success)" }} />
+          <div className="pl-2">
+            <p className="text-xs font-medium text-muted">Tổng ca đã làm</p>
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{totals.tong_ca_da_lam || 0}</p>
+          </div>
         </div>
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng giờ làm</p>
-          <p className="text-xl md:text-2xl font-bold text-primary tabular-nums mt-1">{hours(totals.tong_gio_lam || 0).replace(" giờ", "")}</p>
+        <div className="card p-4 relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-warning)" }} />
+          <div className="pl-2">
+            <p className="text-xs font-medium text-muted">Tổng giờ làm</p>
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{hours(totals.tong_gio_lam || 0).replace(" giờ", "")}</p>
+          </div>
         </div>
-        <div className="card p-4 md:p-5 border-none shadow-none bg-primary/5">
-          <p className="text-[10px] font-black uppercase text-muted opacity-70 tracking-widest">Tổng ca sáng/chiều/tối</p>
-          <p className="text-lg font-bold text-on-surface tabular-nums mt-1">
-            {(totals.tong_ca_sang || 0)} / {(totals.tong_ca_chieu || 0)} / {(totals.tong_ca_toi || 0)}
-          </p>
+        <div className="card p-4 relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-secondary)" }} />
+          <div className="pl-2">
+            <p className="text-xs font-medium text-muted">Ca sáng / chiều / tối / linh hoạt</p>
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">
+              {(totals.tong_ca_sang || 0)} / {(totals.tong_ca_chieu || 0)} / {(totals.tong_ca_toi || 0)} / {(totals.tong_ca_linh_hoat || 0)}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -200,7 +207,7 @@ export default function BangCong() {
           {error}
         </div>
       ) : (
-        <div className="card border-none overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left text-sm min-w-[1020px]">
               <thead className="table-head">
@@ -210,6 +217,7 @@ export default function BangCong() {
                   <th className="px-4 py-3 text-center">Ca sáng</th>
                   <th className="px-4 py-3 text-center">Ca chiều</th>
                   <th className="px-4 py-3 text-center">Ca tối</th>
+                  <th className="px-4 py-3 text-center">Ca linh hoạt</th>
                   <th className="px-4 py-3 text-center">Tổng số ca</th>
                   <th className="px-4 py-3 text-center">Tổng giờ làm</th>
                   <th className="px-4 py-3 text-center">Thao tác</th>
@@ -218,7 +226,7 @@ export default function BangCong() {
               <tbody className="divide-y divide-outline">
                 {sortedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-muted">
+                    <td colSpan={9} className="px-4 py-12 text-center text-muted">
                       Không có dữ liệu cho bộ lọc này.
                     </td>
                   </tr>
@@ -230,6 +238,7 @@ export default function BangCong() {
                       <td className="px-4 py-3 text-center text-muted">{row.so_ca_sang}</td>
                       <td className="px-4 py-3 text-center text-muted">{row.so_ca_chieu}</td>
                       <td className="px-4 py-3 text-center text-muted">{row.so_ca_toi}</td>
+                      <td className="px-4 py-3 text-center text-muted">{row.so_ca_linh_hoat}</td>
                       <td className="px-4 py-3 text-center font-bold">{row.tong_ca}</td>
                       <td className="px-4 py-3 text-center font-bold">
                         {Number(row.tong_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}{" "}

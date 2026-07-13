@@ -73,15 +73,20 @@ function ExpiryStatusBadge({ status, daysLeft }) {
   return <span className="badge-neutral">—</span>;
 }
 
-function StatCard({ label, value, icon, accent }) {
+function StatCard({ label, value, icon, borderColor }) {
   return (
-    <div className="card p-4 md:p-5 flex items-center gap-4 border-none">
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${accent || 'bg-primary/10 text-primary'}`}>
-        <span className="material-symbols-outlined">{icon}</span>
-      </div>
-      <div className="min-w-0">
-        <p className="text-[11px] font-semibold text-muted uppercase tracking-wide">{label}</p>
-        <p className="text-xl md:text-2xl font-bold text-on-surface truncate">{value}</p>
+    <div className="card p-4 relative overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: borderColor || "var(--color-primary)" }} />
+      <div className="flex items-center gap-3 pl-2">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, transparent)" }}
+        >
+          <span className="material-symbols-outlined text-xl" style={{ color: borderColor || "var(--color-primary)" }}>{icon}</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-muted">{label}</p>
+          <p className="text-lg font-bold text-on-surface truncate tabular-nums">{value}</p>
+        </div>
       </div>
     </div>
   );
@@ -475,32 +480,27 @@ const categories = useMemo(() => {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}>
-            <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }}>inventory_2</span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight" style={{ color: "var(--color-primary)" }}>Quản lý nguyên liệu</h2>
-            <p className="text-xs text-muted">Khai báo nguyên liệu, theo dõi tồn kho và nhập hàng</p>
-          </div>
+        <div>
+          <h2 className="text-xl font-bold text-on-surface">Quản lý nguyên liệu</h2>
+          <p className="text-sm text-muted">Khai báo nguyên liệu, theo dõi tồn kho và nhập hàng</p>
         </div>
         <div className="flex gap-2 shrink-0 self-start">
-          <button type="button" onClick={handleOpenDiscardHistory} className="btn-outline !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">history</span>Lịch sử hủy hàng</button>
-          <button type="button" onClick={openCreateModal} className="btn-primary !py-2.5 !px-4 !text-sm"><span className="material-symbols-outlined text-lg">add</span>Thêm nguyên liệu</button>
+          <button type="button" onClick={handleOpenDiscardHistory} className="btn-outline !py-2 !px-3 !text-xs"><span className="material-symbols-outlined text-base">history</span>Lịch sử hủy</button>
+          <button type="button" onClick={openCreateModal} className="btn-primary !py-2 !px-3 !text-xs"><span className="material-symbols-outlined text-base">add</span>Thêm nguyên liệu</button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard label="Tổng nguyên liệu" value={statsSummary.total} icon="inventory_2" />
-        <StatCard label="Sắp hết" value={statsSummary.sapHet} icon="warning" accent="bg-warning-bg text-warning" />
-        <StatCard label="Hết hàng" value={statsSummary.hetHang} icon="error" accent="bg-error-container text-error" />
-        <StatCard label="Sắp hết hạn" value={statsSummary.sapHetHan} icon="hourglass_top" accent="bg-warning-bg text-warning" />
-        <StatCard label="Hết hạn" value={statsSummary.hetHan} icon="event_busy" accent="bg-error-container text-error" />
+        <StatCard label="Sắp hết" value={statsSummary.sapHet} icon="warning" borderColor="var(--color-warning)" />
+        <StatCard label="Hết hàng" value={statsSummary.hetHang} icon="error" borderColor="var(--color-error)" />
+        <StatCard label="Sắp hết hạn" value={statsSummary.sapHetHan} icon="hourglass_top" borderColor="var(--color-warning)" />
+        <StatCard label="Hết hạn" value={statsSummary.hetHan} icon="event_busy" borderColor="var(--color-error)" />
       </div>
 
       {/* Toolbar */}
-      <div className="card p-4 md:p-5 border-none space-y-4">          <div className="flex flex-col lg:flex-row gap-3">
+      <div className="card p-4 space-y-4">          <div className="flex flex-col lg:flex-row gap-3">
             <div className="relative flex-1">
               <input type="text" placeholder="Tìm kiếm..." className="peer input-field !pr-10 !py-2.5" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xl pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">search</span>
@@ -526,7 +526,7 @@ const categories = useMemo(() => {
       </div>
 
       {/* Table */}
-      <div className="card border-none overflow-hidden space-y-4">
+      <div className="card overflow-hidden space-y-4">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left text-sm min-w-[900px]">
             <thead className="table-head">
