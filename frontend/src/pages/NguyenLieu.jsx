@@ -867,7 +867,7 @@ const categories = useMemo(() => {
                                           <td></td>
                                           <td></td>
                                           <td>
-                                            <div class="title">QUẢN LÝ</div>
+                                            <div class="title">Người Lập Phiếu </div>
                                             <div class="sig-line">(Ký, ghi rõ họ tên)</div>
                                           </td>
                                         </tr>

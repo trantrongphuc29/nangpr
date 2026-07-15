@@ -58,7 +58,7 @@ function inPhieuThanhToan(thanhToan) {
         </table>
         <div class="footer-sign">
           <div class="sign-box">
-            <div class="sign-line">Người nộp tiền</div>
+            <div class="sign-line">Người thanh toán</div>
             <div style="font-size:12px;margin-top:4px;color:#555">(Ký và ghi rõ họ tên)</div>
           </div>
           <div class="sign-box">

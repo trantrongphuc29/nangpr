@@ -295,7 +295,7 @@ function BanHangCart({
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 {daGui > 0 && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: "color-mix(in srgb, var(--color-secondary) 12%, transparent)", color: "var(--color-secondary)" }}>
-                    🖨 {daGui} đã in
+                     {daGui} đã in
                   </span>
                 )}
                 {choBar > 0 && (

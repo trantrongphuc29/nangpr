@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `bang_cong_chi_tiet` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_bcc` (`ky_luong_id`,`ma_nhan_vien`,`ngay`,`ma_ca`),
   KEY `idx_bcc_nv` (`ma_nhan_vien`,`ky_luong_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4676 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4676 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `bang_cong_chi_tiet`
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS `bang_cong_thang` (
   PRIMARY KEY (`ky_luong_id`,`ma_nhan_vien`),
   KEY `idx_bc_ky` (`ky_luong_id`),
   KEY `fk_bc_nv` (`ma_nhan_vien`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `bang_cong_thang`
@@ -216,7 +216,7 @@ CREATE TABLE IF NOT EXISTS `bang_luong_thang` (
   PRIMARY KEY (`ky_luong_id`,`ma_nhan_vien`),
   KEY `idx_bl_ky` (`ky_luong_id`),
   KEY `fk_bl_nv` (`ma_nhan_vien`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `bang_luong_thang`
@@ -253,7 +253,7 @@ CREATE TABLE IF NOT EXISTS `calam` (
   `buoi` varchar(50) DEFAULT NULL,
   `ngay` date DEFAULT NULL,
   PRIMARY KEY (`ma_ca`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `calam`
@@ -276,7 +276,7 @@ CREATE TABLE IF NOT EXISTS `chitiethoadon` (
   `ma_mon` int NOT NULL,
   `so_luong` int NOT NULL,
   `so_luong_da_gui_bar` int NOT NULL DEFAULT '0',
-  `ghi_chu_mon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `ghi_chu_mon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `trang_thai_mon` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Dang cho',
   `don_gia` decimal(10,2) NOT NULL,
   PRIMARY KEY (`ma_don_hang`,`ma_mon`),
@@ -368,7 +368,7 @@ CREATE TABLE IF NOT EXISTS `chuquan` (
   `role` varchar(20) DEFAULT 'admin',
   PRIMARY KEY (`ma_admin`),
   UNIQUE KEY `ten_dang_nhap` (`ten_dang_nhap`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `chuquan`
@@ -538,7 +538,7 @@ CREATE TABLE IF NOT EXISTS `ky_luong` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_thang_nam` (`thang`,`nam`),
   KEY `idx_ky_luong_trang_thai` (`trang_thai`)
-) ENGINE=InnoDB AUTO_INCREMENT=528 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=528 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `ky_luong`
@@ -780,7 +780,7 @@ CREATE TABLE IF NOT EXISTS `nhanvien_luong` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`ma_nhan_vien`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `nhanvien_luong`
@@ -942,7 +942,7 @@ CREATE TABLE IF NOT EXISTS `phancong_linh_hoat` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_pclh_nv_ngay` (`ma_nhan_vien`,`ngay`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `phancong_linh_hoat`
