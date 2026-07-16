@@ -9,6 +9,147 @@ import { exportPhieuNhapExcel } from "../utils/bangLuongExport";
 import { ToastContainer, useToast } from "../components/Toast";
 import PriceInput from "../components/PriceInput";
 
+function moCuaSoIn(html) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Trình duyệt đã chặn cửa sổ in. Vui lòng cho phép popup cho trang này rồi thử lại.");
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+
+  const kickOffPrint = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  if (printWindow.document.readyState === "complete") {
+    setTimeout(kickOffPrint, 200);
+  } else {
+    printWindow.addEventListener("load", () => setTimeout(kickOffPrint, 200));
+  }
+
+  let daDong = false;
+  const dongCuaSo = () => {
+    if (daDong) return;
+    daDong = true;
+    printWindow.close();
+  };
+  printWindow.addEventListener("afterprint", dongCuaSo);
+
+  setTimeout(dongCuaSo, 60000);
+}
+
+/* ── Đọc số tiền bằng chữ (theo quy ước phiếu thu/chi kế toán VN) ── */
+function soTienBangChu(soTien) {
+  const chuSo = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+  const donViNhom = ["", "nghìn", "triệu", "tỷ"];
+
+  function docBaChuSo(baSo, canHienThiTramNeuKhong) {
+    const tram = Math.floor(baSo / 100);
+    const chuc = Math.floor((baSo % 100) / 10);
+    const donVi = baSo % 10;
+    const phan = [];
+
+    if (tram > 0) {
+      phan.push(chuSo[tram], "trăm");
+    } else if (canHienThiTramNeuKhong) {
+      phan.push("không", "trăm");
+    }
+
+    if (chuc > 1) {
+      phan.push(chuSo[chuc], "mươi");
+      if (donVi === 1) phan.push("mốt");
+      else if (donVi === 5) phan.push("lăm");
+      else if (donVi > 0) phan.push(chuSo[donVi]);
+    } else if (chuc === 1) {
+      phan.push("mười");
+      if (donVi === 5) phan.push("lăm");
+      else if (donVi > 0) phan.push(chuSo[donVi]);
+    } else if (donVi > 0) {
+      if (tram > 0 || canHienThiTramNeuKhong) phan.push("linh");
+      phan.push(chuSo[donVi]);
+    }
+
+    return phan.join(" ");
+  }
+
+  let so = Math.floor(Math.abs(Number(soTien) || 0));
+  if (so === 0) return "Không đồng";
+
+  const nhom = [];
+  while (so > 0) {
+    nhom.unshift(so % 1000);
+    so = Math.floor(so / 1000);
+  }
+
+  const tongSoNhom = nhom.length;
+  const cacPhan = [];
+  nhom.forEach((giaTri, idx) => {
+    if (giaTri === 0) return;
+    const canHienThiTram = idx > 0 && giaTri < 100;
+    const chu = docBaChuSo(giaTri, canHienThiTram);
+    const bacSo = donViNhom[tongSoNhom - idx - 1];
+    cacPhan.push(bacSo ? `${chu} ${bacSo}` : chu);
+  });
+
+  const cauChu = cacPhan.join(" ").replace(/\s+/g, " ").trim();
+  return cauChu.charAt(0).toUpperCase() + cauChu.slice(1) + " đồng";
+}
+
+/* ── CSS dùng chung cho các phiếu in — dạng chứng từ kế toán chuyên nghiệp ── */
+const CSS_PHIEU_IN = `
+  * { box-sizing: border-box; }
+  body { font-family: 'Times New Roman', Georgia, serif; color: #1a1a1a; margin: 0; padding: 22px; font-size: 13.5px; line-height: 1.55; }
+  .sheet { max-width: 740px; margin: 0 auto; padding: 26px 38px 34px; border: 1px solid #000; }
+  .brand-bar { height: 4px; background: #2F5D50; margin: -26px -38px 20px; }
+  .letterhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; border-bottom: 1.5px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
+  .brand-name { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .brand-sub { font-size: 11px; color: #555; margin-top: 2px; }
+  .doc-meta { text-align: right; font-size: 12px; color: #333; white-space: nowrap; }
+  .doc-meta b { color: #000; }
+  .doc-title-block { text-align: center; margin-bottom: 18px; }
+  .doc-title { font-size: 21px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+  .doc-subtitle { font-size: 12.5px; font-style: italic; color: #444; margin-top: 4px; }
+  .info-grid { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  .info-grid td { padding: 4.5px 0; font-size: 13.5px; vertical-align: top; }
+  .info-grid td.label { width: 190px; color: #333; }
+  .info-grid td.value { font-weight: 600; }
+  .info-grid tr.amount-row td { border-top: 1px solid #000; padding-top: 12px; margin-top: 4px; }
+  .info-grid td.amount-value { font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
+  .info-grid td.words-value { font-weight: 600; font-style: italic; color: #333; }
+  .amount-words { font-size: 12.5px; font-style: italic; color: #333; margin-top: 8px; }
+  .item-table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; }
+  .item-table th { border: 1px solid #000; background: #eeeeec; padding: 7px 6px; font-size: 11.5px; font-weight: 700; text-align: center; text-transform: uppercase; }
+  .item-table td { border: 1px solid #000; padding: 6px 8px; font-size: 12.5px; }
+  .item-table tbody tr:nth-child(even) { background: #fafaf8; }
+  .item-table tfoot td { font-weight: 700; padding: 8px; border-top: 1.5px solid #000; }
+  .sign-date { text-align: right; font-size: 12.5px; font-style: italic; color: #333; margin: 24px 0 6px; }
+  .signatures { display: flex; justify-content: space-between; text-align: center; margin-top: 4px; }
+  .sign-box { flex: 1; }
+  .sign-role { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .sign-hint { font-size: 11px; font-style: italic; color: #666; margin-top: 2px; }
+  .sign-space { height: 64px; }
+  @media print {
+    body { padding: 0; }
+    .sheet { border: none; max-width: none; }
+    .brand-bar { margin: 0 0 20px; }
+    @page { size: A4; margin: 14mm; }
+  }
+`;
+
+function layNgayThangNamHienTai() {
+  const now = new Date();
+  return `Ngày ${String(now.getDate()).padStart(2, "0")} tháng ${String(now.getMonth() + 1).padStart(2, "0")} năm ${now.getFullYear()}`;
+}
+
+/* Định dạng dd/MM/yyyy cố định — không phụ thuộc locale mặc định của từng trình duyệt/hệ điều hành */
+function formatDdMmYyyy(d) {
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
 /* ── In phiếu thanh toán công nợ (form giấy tờ) ── */
 function inPhieuThanhToan(thanhToan) {
   const date = new Date(thanhToan.ngay_thanh_toan);
@@ -16,61 +157,63 @@ function inPhieuThanhToan(thanhToan) {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
   });
+  const soPhieu = `TT-${String(thanhToan.id).padStart(6, "0")}`;
+  const soTien = Number(thanhToan.so_tien || 0);
+  const conNo = Number(thanhToan.con_no_sau_khi_tra || 0);
 
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(`
+  const html = `
     <html>
       <head>
-        <title>Phieu Thanh Toan #${thanhToan.id}</title>
-        <style>
-          body { font-family: 'Times New Roman', serif; color: #000; padding: 40px; line-height: 1.6; font-size: 14px; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
-          .title { font-size: 22px; font-weight: bold; text-transform: uppercase; margin: 0; }
-          .subtitle { font-size: 13px; margin-top: 6px; }
-          table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-          td { padding: 6px 0; font-size: 14px; }
-          .amount-box { text-align: center; padding: 25px; margin: 20px 0; border: 2px solid #000; }
-          .amount { font-size: 32px; font-weight: bold; letter-spacing: 1px; }
-          .amount-label { font-size: 13px; margin-bottom: 8px; }
-          .footer-sign { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; }
-          .sign-box { width: 45%; }
-          .sign-line { margin-top: 50px; border-top: 1px solid #000; padding-top: 6px; font-size: 13px; }
-        </style>
+        <title>Phieu Thanh Toan ${soPhieu}</title>
+        <style>${CSS_PHIEU_IN}</style>
       </head>
       <body>
-        <div class="header">
-          <div class="title">NANG PR CAFE</div>
-          <div class="subtitle">PHIẾU THANH TOÁN CÔNG NỢ</div>
-        </div>
-        <table>
-          <tr><td style="width:200px"><strong>Mã phiếu thanh toán:</strong></td><td>#${thanhToan.id}</td></tr>
-          <tr><td><strong> Mã Phiếu nhập:</strong></td><td>#${thanhToan.ma_phieu}</td></tr>
-          <tr><td><strong>Nhà cung cấp:</strong></td><td>${thanhToan.nha_cung_cap || "Dai ly tu do"}</td></tr>
-          <tr><td><strong>Thời gian thanh toán:</strong></td><td>${formattedDate}</td></tr>
-          <tr><td><strong>Ghi chú:</strong></td><td>${thanhToan.ghi_chu || "—"}</td></tr>
-        </table>
-        <div class="amount-box">
-          <div class="amount-label">Số tiền đã thanh toán</div>
-          <div class="amount">${Number(thanhToan.so_tien).toLocaleString("vi-VN")} đồng</div>
-        </div>
-        <table>
-          <tr><td><strong>Số tiền còn nợ sau khi thanh toán:</strong> ${Number(thanhToan.con_no_sau_khi_tra).toLocaleString("vi-VN")} đồng</td></tr>
-        </table>
-        <div class="footer-sign">
-          <div class="sign-box">
-            <div class="sign-line">Người thanh toán</div>
-            <div style="font-size:12px;margin-top:4px;color:#555">(Ký và ghi rõ họ tên)</div>
+        <div class="sheet">
+          <div class="brand-bar"></div>
+          <div class="letterhead">
+            <div>
+              <div class="brand-name">Nắng PR</div>
+              <div class="brand-sub">Hệ thống quản lý bán hàng &amp; công nợ</div>
+            </div>
+            <div class="doc-meta">
+              Số: <b>${soPhieu}</b><br />
+              Ngày lập: <b>${formatDdMmYyyy(date)}</b>
+            </div>
           </div>
-          <div class="sign-box">
-            <div class="sign-line">Người nhận tiền</div>
-            <div style="font-size:12px;margin-top:4px;color:#555">(Ký và ghi rõ họ tên)</div>
+
+          <div class="doc-title-block">
+            <p class="doc-title">Phiếu chi</p>
+            <p class="doc-subtitle">(Thanh toán công nợ nhà cung cấp)</p>
+          </div>
+
+          <table class="info-grid">
+            <tr><td class="label">Họ, tên người nhận tiền:</td><td class="value">${thanhToan.nha_cung_cap || "Đại lý tự do"}</td></tr>
+            <tr><td class="label">Lý do chi:</td><td class="value">Thanh toán công nợ nhập hàng — Phiếu nhập #${thanhToan.ma_phieu}</td></tr>
+            <tr><td class="label">Thời gian thanh toán:</td><td class="value">${formattedDate}</td></tr>
+            <tr><td class="label">Ghi chú:</td><td class="value">${thanhToan.ghi_chu || "—"}</td></tr>
+            <tr class="amount-row"><td class="label">Số tiền:</td><td class="value amount-value">${soTien.toLocaleString("vi-VN")} đồng</td></tr>
+            <tr><td class="label">Viết bằng chữ:</td><td class="value words-value">${soTienBangChu(soTien)}</td></tr>
+            <tr><td class="label">Còn nợ lại sau thanh toán:</td><td class="value">${conNo.toLocaleString("vi-VN")} đồng</td></tr>
+          </table>
+
+          <div class="sign-date">Nắng PR, ${layNgayThangNamHienTai()}</div>
+          <div class="signatures">
+            <div class="sign-box">
+              <div class="sign-role">Người thanh toán</div>
+              <div class="sign-hint">(Ký, ghi rõ họ tên)</div>
+              <div class="sign-space"></div>
+            </div>
+            <div class="sign-box">
+              <div class="sign-role">Người nhận tiền</div>
+              <div class="sign-hint">(Ký, ghi rõ họ tên)</div>
+              <div class="sign-space"></div>
+            </div>
           </div>
         </div>
-        <script>window.onload = function() { window.print(); window.close(); }</script>
       </body>
     </html>
-  `);
-  printWindow.document.close();
+  `;
+  moCuaSoIn(html);
 }
 
 const dinhDangTien = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
@@ -107,86 +250,94 @@ function inPhieuNhap(phieu) {
     hour12: false,
   });
 
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(`
+  const soPhieu = `PN-${String(phieu.ma_phieu).padStart(6, "0")}`;
+  const tongTien = Number(phieu.tong_tien || 0);
+
+  const html = `
     <html>
       <head>
-        <title>Phieu Nhap Kho #${phieu.ma_phieu}</title>
-        <style>
-          body { font-family: 'Times New Roman', serif; color: #000; padding: 40px; line-height: 1.6; font-size: 14px; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
-          .title { font-size: 22px; font-weight: bold; text-transform: uppercase; margin: 0; }
-          .subtitle { font-size: 13px; margin-top: 6px; }
-          table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-          td.info-label { width: 160px; font-weight: bold; }
-          td.info-value { }
-          .item-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-          .item-table th { border: 1px solid #000; padding: 8px 6px; font-size: 12px; font-weight: bold; text-align: center; }
-          .item-table td { border: 1px solid #000; padding: 6px; font-size: 13px; }
-          .total-row td { font-weight: bold; padding: 8px; }
-          .footer-sign { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; }
-          .sign-box { width: 45%; }
-          .sign-line { margin-top: 50px; border-top: 1px solid #000; padding-top: 6px; font-size: 13px; }
-        </style>
+        <title>Phieu Nhap Kho ${soPhieu}</title>
+        <style>${CSS_PHIEU_IN}</style>
       </head>
       <body>
-        <div class="header">
-          <div class="title">NANG PR CAFE</div>
-          <div class="subtitle">PHIẾU NHẬP KHO</div>
-        </div>
-        <table>
-          <tr><td class="info-label">Mã phiếu nhập:</td><td class="info-value">#${phieu.ma_phieu}</td></tr>
-          <tr><td class="info-label">Thời gian:</td><td class="info-value">${formattedDate}</td></tr>
-          <tr><td class="info-label">Nhà cung cấp:</td><td class="info-value">${targetNCC}</td></tr>
-          <tr><td class="info-label">Ghi chu:</td><td class="info-value">${phieu.ghi_chu || "Nhập kho hệ thống"}</td></tr>
-        </table>
-        <table class="item-table">
-          <thead>
-            <tr>
-              <th style="width:40px">STT</th>
-              <th style="text-align:left">Nguyên liệu</th>
-              <th style="width:60px">Số lượng</th>
-              <th style="width:60px">Đơn vị</th>
-              <th style="width:100px">Đơn giá</th>
-              <th style="width:110px">Thành tiền</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items
-              .map(
-                (item, i) => `
+        <div class="sheet">
+          <div class="brand-bar"></div>
+          <div class="letterhead">
+            <div>
+              <div class="brand-name">Nắng PR</div>
+              <div class="brand-sub">Hệ thống quản lý bán hàng &amp; công nợ</div>
+            </div>
+            <div class="doc-meta">
+              Số: <b>${soPhieu}</b><br />
+              Ngày lập: <b>${formatDdMmYyyy(date)}</b>
+            </div>
+          </div>
+
+          <div class="doc-title-block">
+            <p class="doc-title">Phiếu nhập kho</p>
+            <p class="doc-subtitle">(Nhập hàng từ nhà cung cấp)</p>
+          </div>
+
+          <table class="info-grid">
+            <tr><td class="label">Nhà cung cấp:</td><td class="value">${targetNCC}</td></tr>
+            <tr><td class="label">Thời gian nhập:</td><td class="value">${formattedDate}</td></tr>
+            <tr><td class="label">Ghi chú:</td><td class="value">${phieu.ghi_chu || "Nhập kho hệ thống"}</td></tr>
+          </table>
+
+          <table class="item-table">
+            <thead>
               <tr>
-                <td style="text-align:center">${i + 1}</td>
-                <td>${item.ten_nguyen_lieu}</td>
-                <td style="text-align:center">${item.so_luong}</td>
-                <td style="text-align:center;text-transform:uppercase">${item.don_vi_nhap || "—"}</td>
-                <td style="text-align:right">${Number(item.gia_nhap).toLocaleString("vi-VN")} đ</td>
-                <td style="text-align:right">${(Number(item.so_luong) * Number(item.gia_nhap)).toLocaleString("vi-VN")} đ</td>
+                <th style="width:36px">STT</th>
+                <th style="text-align:left">Nguyên liệu</th>
+                <th style="width:70px">Số lượng</th>
+                <th style="width:60px">ĐVT</th>
+                <th style="width:100px">Đơn giá</th>
+                <th style="width:120px">Thành tiền</th>
               </tr>
-            `
-              )
-              .join("")}
-            <tr class="total-row">
-              <td colspan="5" style="text-align:right;padding:8px;border:1px solid #000;border-top:2px solid #000">Tổng thanh toán:</td>
-              <td style="text-align:right;padding:8px;border:1px solid #000;border-top:2px solid #000">${Number(phieu.tong_tien).toLocaleString("vi-VN")} đ</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="footer-sign">
-          <div class="sign-box">
-            <div class="sign-line">Người lập phiếu</div>
-            <div style="font-size:12px;margin-top:4px;color:#555">(Ký và ghi rõ họ tên)</div>
-          </div>
-          <div class="sign-box">
-            <div class="sign-line">Đại diện giao hàng</div>
-            <div style="font-size:12px;margin-top:4px;color:#555">(Ký và ghi rõ họ tên)</div>
+            </thead>
+            <tbody>
+              ${items
+                .map(
+                  (item, i) => `
+                <tr>
+                  <td style="text-align:center">${i + 1}</td>
+                  <td>${item.ten_nguyen_lieu}</td>
+                  <td style="text-align:center">${item.so_luong}</td>
+                  <td style="text-align:center;text-transform:uppercase">${item.don_vi_nhap || "—"}</td>
+                  <td style="text-align:right">${Number(item.gia_nhap).toLocaleString("vi-VN")}</td>
+                  <td style="text-align:right">${(Number(item.so_luong) * Number(item.gia_nhap)).toLocaleString("vi-VN")}</td>
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5" style="text-align:right">Tổng cộng</td>
+                <td style="text-align:right">${tongTien.toLocaleString("vi-VN")} đ</td>
+              </tr>
+            </tfoot>
+          </table>
+          <div class="amount-words" style="margin-bottom: 18px;">Bằng chữ: ${soTienBangChu(tongTien)}</div>
+
+          <div class="sign-date">Nắng PR, ${layNgayThangNamHienTai()}</div>
+          <div class="signatures">
+            <div class="sign-box">
+              <div class="sign-role">Người lập phiếu</div>
+              <div class="sign-hint">(Ký, ghi rõ họ tên)</div>
+              <div class="sign-space"></div>
+            </div>
+            <div class="sign-box">
+              <div class="sign-role">Người giao hàng</div>
+              <div class="sign-hint">(Ký, ghi rõ họ tên)</div>
+              <div class="sign-space"></div>
+            </div>
           </div>
         </div>
-        <script>window.onload = function() { window.print(); window.close(); }</script>
       </body>
     </html>
-  `);
-  printWindow.document.close();
+  `;
+  moCuaSoIn(html);
 }
 
 function SummaryCard({ nhan, giaTri, sub, icon, accent, borderColor }) {
