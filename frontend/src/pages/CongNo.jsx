@@ -707,11 +707,11 @@ export default function CongNo() {
       {/* ── Header + Bộ lọc thời gian (giống DoanhThu) ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-on-surface">Công nợ</h2>
+          <h2 className="text-3xl font-bold text-on-surface">Công nợ</h2>
           <p className="text-sm text-muted">Quản lý phiếu nhập kho, theo dõi công nợ NCC</p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-fit">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-fit">
           <div className="flex bg-surface-container-high p-0.5 rounded-lg items-center">
             {boLocThoiGian.map((k) => (
               <button

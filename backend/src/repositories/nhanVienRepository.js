@@ -6,6 +6,13 @@ const getAll = async () => {
   return rows;
 };
 
+const getShifts = async () => {
+  const [rows] = await db.execute(
+    "SELECT ma_ca, buoi, gio_bat_dau, gio_ket_thuc FROM calam ORDER BY ma_ca ASC"
+  );
+  return rows.map((r) => ({ ...r, ma_ca: Number(r.ma_ca) }));
+};
+
 function normalizeNgayYmd(value) {
   if (!value) return "";
   if (value instanceof Date) {
@@ -106,6 +113,7 @@ const removeStaff = async (id) => {
 
 module.exports = {
   getAll,
+  getShifts,
   getAssignments,
   createStaff,
   updateStatus,

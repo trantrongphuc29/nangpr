@@ -9,6 +9,15 @@ const getList = async (req, res) => {
   }
 };
 
+const getShifts = async (req, res) => {
+  try {
+    const results = await nhanVienService.getShifts();
+    return res.json(results);
+  } catch (err) {
+    return res.status(500).json({ message: "Lỗi tải danh sách ca", error: err.message });
+  }
+};
+
 const getAssignments = async (req, res) => {
   try {
     const results = await nhanVienService.getAssignments(req.query);
@@ -82,6 +91,7 @@ const removeStaff = async (req, res) => {
 
 module.exports = {
   getList,
+  getShifts,
   getAssignments,
   createStaff,
   toggleStatus,

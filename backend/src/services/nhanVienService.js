@@ -3,6 +3,8 @@ const { isValidTrangThai, normalizeTrangThai } = require("../utils/nhanVienStatu
 
 const getList = async () => await nhanVienRepository.getAll();
 
+const getShifts = async () => await nhanVienRepository.getShifts();
+
 const getAssignments = async (queryOptions) => await nhanVienRepository.getAssignments(queryOptions);
 
 const createStaff = async (payload) => {
@@ -59,6 +61,7 @@ const removeStaff = async (id) => await nhanVienRepository.removeStaff(id);
 
 module.exports = {
   getList,
+  getShifts,
   getAssignments,
   createStaff,
   toggleStatus,

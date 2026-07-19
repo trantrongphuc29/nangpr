@@ -14,39 +14,42 @@ import CauHinhLuongNhanVien from "./pages/CauHinhLuongNhanVien";
 import DoanhThu from "./pages/DoanhThu";
 import CongNo from "./pages/CongNo";
 
-import { ThemeProvider } from "./context/ThemeContext"; 
+import { ThemeProvider } from "./context/ThemeContext";
+import { ConfirmProvider } from "./context/ConfirmContext";
 
 function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Trang mặc định: Form đăng nhập */}
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
+      <ConfirmProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Trang mặc định: Form đăng nhập */}
+            <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Login />} />
 
-          {/* Protected routes - giữ nguyên đường dẫn (sidebar không bị ảnh hưởng) */}
-          <Route
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/ban" element={<Ban />} />
-            <Route path="/nhanvien" element={<NhanVien />} />
-            <Route path="/nguyenlieu" element={<NguyenLieu />} />
-            <Route path="/bangcong" element={<BangCong />} />
-            <Route path="/bangluong" element={<BangLuong />} />
-            <Route path="/luongnhanvien" element={<CauHinhLuongNhanVien />} />
-            <Route path="/menu" element={<MonCongThuc />} />
-            <Route path="/pos" element={<BanHang />} />
-            <Route path="/doanhthu" element={<DoanhThu />} />
-            <Route path="/congno" element={<CongNo />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+            {/* Protected routes - giữ nguyên đường dẫn (sidebar không bị ảnh hưởng) */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/ban" element={<Ban />} />
+              <Route path="/nhanvien" element={<NhanVien />} />
+              <Route path="/nguyenlieu" element={<NguyenLieu />} />
+              <Route path="/bangcong" element={<BangCong />} />
+              <Route path="/bangluong" element={<BangLuong />} />
+              <Route path="/luongnhanvien" element={<CauHinhLuongNhanVien />} />
+              <Route path="/menu" element={<MonCongThuc />} />
+              <Route path="/pos" element={<BanHang />} />
+              <Route path="/doanhthu" element={<DoanhThu />} />
+              <Route path="/congno" element={<CongNo />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </ConfirmProvider>
     </ThemeProvider>
   );
 }

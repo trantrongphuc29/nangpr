@@ -83,6 +83,21 @@ async function markKyLuongPaid({ thang, nam }) {
   await payrollRepository.markKyLuongPaid({ ky_id: ky.id });
 }
 
+// Mật khẩu xác nhận cho thao tác hoàn tác thanh toán (yêu cầu nghiệp vụ: xác nhận trước khi đảo trạng thái đã thanh toán)
+const MAT_KHAU_HOAN_TAC = "123456";
+
+async function revertKyLuongPaid({ thang, nam, mat_khau }) {
+  if (mat_khau !== MAT_KHAU_HOAN_TAC) {
+    throw { status: 403, message: "Mật khẩu admin không đúng." };
+  }
+
+  const ky = await payrollRepository.ensureKyLuong({ thang, nam });
+  if (ky.trang_thai !== "da_thanh_toan") {
+    throw { status: 400, message: "Kỳ lương chưa ở trạng thái Đã thanh toán." };
+  }
+  await payrollRepository.revertKyLuongPaid({ ky_id: ky.id });
+}
+
 async function getLuongNhanVien() {
   return payrollRepository.getLuongNhanVien();
 }
@@ -94,6 +109,34 @@ async function upsertLuongNhanVienBulk({ items }) {
   return payrollRepository.upsertLuongNhanVienBulk({ items });
 }
 
+// ===== Ngày lễ / hệ số lương =====
+async function getNgayLe() {
+  return payrollRepository.getNgayLe();
+}
+
+async function upsertNgayLe({ ngay, ten, he_so }) {
+  if (!ngay || !/^\d{4}-\d{2}-\d{2}$/.test(String(ngay))) {
+    throw { status: 400, message: "Ngày không hợp lệ (yyyy-MM-dd)" };
+  }
+  const heSo = Number(he_so);
+  if (!Number.isFinite(heSo) || heSo <= 0) {
+    throw { status: 400, message: "Hệ số phải là số lớn hơn 0" };
+  }
+  return payrollRepository.upsertNgayLe({
+    ngay,
+    ten: ten ? String(ten).trim() : null,
+    he_so: heSo,
+  });
+}
+
+async function deleteNgayLe({ ngay }) {
+  if (!ngay || !/^\d{4}-\d{2}-\d{2}$/.test(String(ngay))) {
+    throw { status: 400, message: "Ngày không hợp lệ" };
+  }
+  const ok = await payrollRepository.deleteNgayLe({ ngay });
+  if (!ok) throw { status: 404, message: "Không tìm thấy ngày lễ" };
+}
+
 module.exports = {
   getBangCong,
   getBangCongChiTiet,
@@ -102,7 +145,11 @@ module.exports = {
   lockKyLuong,
   unlockKyLuong,
   markKyLuongPaid,
+  revertKyLuongPaid,
   getLuongNhanVien,
   upsertLuongNhanVienBulk,
+  getNgayLe,
+  upsertNgayLe,
+  deleteNgayLe,
 };
 

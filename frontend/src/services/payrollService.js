@@ -57,6 +57,11 @@ export const markKyLuongPaid = async ({ thang, nam }) => {
   return response.data;
 };
 
+export const revertKyLuongPaid = async ({ thang, nam, mat_khau }) => {
+  const response = await axiosClient.post("/api/payroll/ky-luong/hoan-tac-thanh-toan", { thang, nam, mat_khau });
+  return response.data;
+};
+
 export const getLuongNhanVien = async () => {
   const response = await axiosClient.get("/api/payroll/luong-nhan-vien");
   return response.data;
@@ -64,6 +69,22 @@ export const getLuongNhanVien = async () => {
 
 export const upsertLuongNhanVienBulk = async ({ items }) => {
   const response = await axiosClient.put("/api/payroll/luong-nhan-vien/bulk", { items });
+  return response.data;
+};
+
+// ===== Ngày lễ / hệ số lương =====
+export const getNgayLe = async () => {
+  const response = await axiosClient.get("/api/payroll/ngay-le");
+  return Array.isArray(response.data) ? response.data : [];
+};
+
+export const upsertNgayLe = async ({ ngay, ten, he_so }) => {
+  const response = await axiosClient.post("/api/payroll/ngay-le", { ngay, ten, he_so });
+  return response.data;
+};
+
+export const deleteNgayLe = async (ngay) => {
+  const response = await axiosClient.delete(`/api/payroll/ngay-le/${ngay}`);
   return response.data;
 };
 

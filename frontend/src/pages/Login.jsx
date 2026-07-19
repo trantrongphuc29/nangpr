@@ -61,20 +61,18 @@ export default function Login() {
       <div className="relative z-10 w-full max-w-[400px] mx-4">
         {/* Branding */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4"
-            style={{ boxShadow: "0 4px 14px color-mix(in srgb, var(--color-primary) 25%, transparent)" }}
-          >
-            <span className="material-symbols-outlined text-[28px]" style={{ color: "var(--color-btn-text)" }}>coffee</span>
-          </div>
-          <h1 className="text-2xl font-bold text-on-surface tracking-tight">Nắng PR</h1>
-          <p className="text-sm text-muted mt-1.5">Hệ thống quản lý quán cà phê</p>
+          <img
+            src={`${process.env.PUBLIC_URL}/logoNangPR.svg`}
+            alt="Nắng PR"
+            className="h-20 w-auto object-contain mx-auto mb-4"
+          />
+          <p className="text-sm text-muted">Hệ thống quản lý quán cà phê</p>
         </div>
 
         {/* Login card */}
         <div className="card-elevated p-7">
           <div className="mb-6">
             <h2 className="text-lg font-bold text-on-surface">Đăng nhập</h2>
-            <p className="text-[13px] text-muted mt-1">Nhập thông tin để truy cập hệ thống</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -150,11 +148,6 @@ export default function Login() {
             </button>
           </form>
         </div>
-
-        {/* Footer */}
-        <p className="mt-6 text-center text-xs text-muted">
-          © 2026 Nắng PR · Quản lý quán cà phê
-        </p>
       </div>
     </div>
   );

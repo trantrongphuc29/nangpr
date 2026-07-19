@@ -51,9 +51,9 @@ export default function PosMenu({ menu, busy, onAdd }) {
             key={c}
             type="button"
             onClick={() => setCat(c)}
-            className={`px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+            className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors duration-150 ${
               cat === c
-                ? "bg-primary text-on-primary shadow-md shadow-primary/20 scale-105"
+                ? "bg-primary text-on-primary"
                 : "bg-surface-container-high/60 text-on-surface-variant hover:bg-surface-container-high hover:text-primary border border-outline/10"
             }`}
           >
@@ -81,16 +81,16 @@ export default function PosMenu({ menu, busy, onAdd }) {
               disabled={busy || locked}
               onClick={() => onAdd(mon)}
               title={locked ? "Hết kho — tạm khóa" : mon.ten_mon}
-              className="group bg-surface-container-lowest rounded-2xl border border-outline/15 hover:border-primary/30 hover:shadow-xl transition-all duration-300 p-2.5 text-left cursor-pointer active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+              className="group bg-surface-container-lowest rounded-2xl border border-outline/15 hover:border-primary/40 hover:shadow-md transition-all duration-150 p-2.5 text-left cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {/* Image */}
-              <div className="aspect-square overflow-hidden rounded-xl mb-2 bg-surface-container shadow-inner">
+              <div className="aspect-square overflow-hidden rounded-xl mb-2 bg-surface-container">
                 {img ? (
                   <div className="w-full h-full relative">
                     <img
                       src={img}
                       alt={mon.ten_mon}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         e.target.style.display = "none";
                         const fallback = e.target.parentElement.querySelector(".fallback-icon");
@@ -118,18 +118,18 @@ export default function PosMenu({ menu, busy, onAdd }) {
               </div>
 
               {/* Info */}
-              <div className="space-y-1" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                <h4 className="font-bold text-on-surface text-lg leading-tight line-clamp-2 min-h-[2.5rem]">
+              <div className="space-y-0.5">
+                <h4 className="font-semibold text-on-surface text-sm leading-snug line-clamp-2 min-h-[2.25rem]">
                   {mon.ten_mon}
                 </h4>
-                <p className="text-2xl text-primary font-bold tracking-tight">
+                <p className="text-base text-primary font-bold tracking-tight">
                   {fmtMoney(mon.gia_ban)}
                 </p>
                 <p
-                  className={`text-xs font-bold mt-1 ${
+                  className={`text-[11px] font-semibold ${
                     Number(mon.so_luong_co_the_lam) <= 5
                       ? "text-error"
-                      : "text-on-surface-variant"
+                      : "text-muted"
                   }`}
                 >
                   {stockText}

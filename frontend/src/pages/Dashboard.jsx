@@ -352,7 +352,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
         <div>
-          <h2 className="text-xl font-bold text-on-surface tracking-tight">Dashboard</h2>
+          <h2 className="text-3xl font-bold text-on-surface tracking-tight">Dashboard</h2>
           <p className="text-[13px] text-muted mt-0.5">{dateStr}</p>
         </div>
         <button type="button" onClick={loadDashboard} disabled={loading}

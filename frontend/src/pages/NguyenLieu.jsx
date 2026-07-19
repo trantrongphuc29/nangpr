@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import * as nlService from '../services/nguyenlieuService';
 import { ToastContainer, useToast } from '../components/Toast';
+import { useConfirm } from '../context/ConfirmContext';
 import ModalPortal from '../components/ModalPortal';
 import PriceInput from '../components/PriceInput';
 import { exportDiscardHistoryExcel } from '../utils/bangLuongExport';
@@ -94,6 +95,7 @@ function StatCard({ label, value, icon, borderColor }) {
 
 export default function NguyenLieu() {
   const { toasts, show: toast, dismiss } = useToast();
+  const { confirm } = useConfirm();
   const [list, setList] = useState([]);
   const [stats, setStats] = useState({ month: 0 });
 
@@ -462,7 +464,7 @@ const categories = useMemo(() => {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Xóa vĩnh viễn nguyên liệu "${name}"?`)) return;
+    if (!(await confirm(`Xóa vĩnh viễn nguyên liệu "${name}"?`, { danger: true, confirmLabel: "Xóa" }))) return;
     try {
       await nlService.deleteNguyenLieu(id);
       toast('Đã xóa nguyên liệu.');
@@ -481,7 +483,7 @@ const categories = useMemo(() => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-on-surface">Quản lý nguyên liệu</h2>
+          <h2 className="text-3xl font-bold text-on-surface">Quản lý nguyên liệu</h2>
           <p className="text-sm text-muted">Khai báo nguyên liệu, theo dõi tồn kho và nhập hàng</p>
         </div>
         <div className="flex gap-2 shrink-0 self-start">
@@ -711,7 +713,7 @@ const categories = useMemo(() => {
                   <option value="ml">ml</option>
                 </select>
               ) : (
-                <input className="input-field bg-slate-100 font-bold uppercase" value={crudData.don_vi_tinh} disabled />
+                <input className="input-field bg-surface-container-high font-bold uppercase" value={crudData.don_vi_tinh} disabled />
               )}
             </div>
           </div>
@@ -725,7 +727,7 @@ const categories = useMemo(() => {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-on-surface mb-1">Dung tích / quy đổi</label>
-                <input type="number" className="input-field disabled:opacity-60 disabled:bg-slate-100 font-bold" value={crudData.don_vi_nhap === 'kg' ? 1000 : crudData.dung_tich_san_pham} onChange={(e) => setCrudData({ ...crudData, dung_tich_san_pham: e.target.value })} placeholder="1000" disabled={crudData.don_vi_nhap === 'kg'} />
+                <input type="number" className="input-field disabled:opacity-60 disabled:bg-surface-container-high font-bold" value={crudData.don_vi_nhap === 'kg' ? 1000 : crudData.dung_tich_san_pham} onChange={(e) => setCrudData({ ...crudData, dung_tich_san_pham: e.target.value })} placeholder="1000" disabled={crudData.don_vi_nhap === 'kg'} />
                 {crudData.danh_muc === 'Nước uống đóng chai' && (
                   <p className="text-xs text-muted mt-1">1 {crudData.don_vi_nhap} = {crudData.dung_tich_san_pham} đơn vị</p>
                 )}

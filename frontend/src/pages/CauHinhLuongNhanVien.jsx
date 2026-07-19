@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { getLuongNhanVien, upsertLuongNhanVienBulk } from "../services/payrollService";
+import {
+  getLuongNhanVien,
+  upsertLuongNhanVienBulk,
+  getNgayLe,
+  upsertNgayLe,
+  deleteNgayLe,
+} from "../services/payrollService";
+import { ToastContainer, useToast } from "../components/Toast";
+import { useConfirm } from "../context/ConfirmContext";
 
 function toInteger(v) {
   const n = Number(v);
@@ -70,7 +78,139 @@ function MoneyEditInput({ ma_nhan_vien, field, value, editingField, setEditingFi
   );
 }
 
+function NgayLeSection({ toast }) {
+  const { confirm } = useConfirm();
+  const [list, setList] = useState([]);
+  const [loadingLe, setLoadingLe] = useState(false);
+  const [savingLe, setSavingLe] = useState(false);
+  const [form, setForm] = useState({ ngay: "", ten: "", he_so: "2" });
+
+  const loadLe = async () => {
+    setLoadingLe(true);
+    try {
+      setList(await getNgayLe());
+    } catch {
+      setList([]);
+    } finally {
+      setLoadingLe(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLe();
+  }, []);
+
+  const fmtDate = (ymd) => {
+    const [y, m, d] = String(ymd).split("-");
+    return `${d}/${m}/${y}`;
+  };
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (savingLe) return;
+    const heSo = Number(form.he_so);
+    if (!form.ngay) return toast("Vui lòng chọn ngày", "error");
+    if (!Number.isFinite(heSo) || heSo <= 0) return toast("Hệ số phải là số lớn hơn 0", "error");
+    setSavingLe(true);
+    try {
+      await upsertNgayLe({ ngay: form.ngay, ten: form.ten, he_so: heSo });
+      toast("Đã lưu ngày lễ");
+      setForm({ ngay: "", ten: "", he_so: "2" });
+      await loadLe();
+    } catch (err) {
+      toast(err.response?.data?.message || err.message || "Không thể lưu ngày lễ", "error");
+    } finally {
+      setSavingLe(false);
+    }
+  };
+
+  const handleDelete = async (le) => {
+    if (!(await confirm(`Xóa ngày lễ ${fmtDate(le.ngay)}${le.ten ? ` (${le.ten})` : ""}?`, { danger: true, confirmLabel: "Xóa" }))) return;
+    try {
+      await deleteNgayLe(le.ngay);
+      toast("Đã xóa ngày lễ");
+      await loadLe();
+    } catch (err) {
+      toast(err.response?.data?.message || err.message || "Không thể xóa", "error");
+    }
+  };
+
+  return (
+    <div className="card p-4">
+      <h3 className="font-bold text-primary">Ngày lễ / hệ số lương</h3>
+      <p className="text-xs text-muted mt-1 mb-4">
+        Đánh dấu ngày lễ để nhân lương giờ (hệ số 2 = ×2, 3 = ×3…). Chỉ áp dụng cho kỳ lương <b>chưa chốt</b>; kỳ đã chốt giữ nguyên.
+      </p>
+
+      <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 mb-4">
+        <div>
+          <label className="text-xs font-semibold text-muted block mb-1">Ngày</label>
+          <input
+            type="date"
+            className="input-field !py-2 !w-auto"
+            value={form.ngay}
+            onChange={(e) => setForm({ ...form, ngay: e.target.value })}
+          />
+        </div>
+        <div className="flex-1 min-w-[10rem]">
+          <label className="text-xs font-semibold text-muted block mb-1">Tên (tùy chọn)</label>
+          <input
+            type="text"
+            className="input-field !py-2"
+            placeholder="VD: Giỗ Tổ, 30/4…"
+            value={form.ten}
+            onChange={(e) => setForm({ ...form, ten: e.target.value })}
+          />
+        </div>
+        <div className="w-24">
+          <label className="text-xs font-semibold text-muted block mb-1">Hệ số</label>
+          <input
+            type="text"
+            inputMode="decimal"
+            className="input-field !py-2 !text-right"
+            value={form.he_so}
+            onChange={(e) => setForm({ ...form, he_so: e.target.value.replace(/[^\d.]/g, "") })}
+          />
+        </div>
+        <button type="submit" disabled={savingLe} className="btn-primary !py-2 !px-4 !text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+          <span className="material-symbols-outlined text-lg">add</span>
+          {savingLe ? "Đang lưu..." : "Thêm"}
+        </button>
+      </form>
+
+      {loadingLe ? (
+        <p className="text-sm text-muted">Đang tải…</p>
+      ) : list.length === 0 ? (
+        <p className="text-sm text-muted">Chưa có ngày lễ nào.</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {list.map((le) => (
+            <div
+              key={le.ngay}
+              className="inline-flex items-center gap-2 rounded-lg border border-outline/50 pl-3 pr-1 py-1.5 text-sm"
+              style={{ backgroundColor: "color-mix(in srgb, var(--color-warning) 8%, transparent)" }}
+            >
+              <span className="font-semibold">{fmtDate(le.ngay)}</span>
+              {le.ten && <span className="text-muted truncate max-w-[10rem]">· {le.ten}</span>}
+              <span className="font-bold text-warning">×{le.he_so}</span>
+              <button
+                type="button"
+                onClick={() => handleDelete(le)}
+                className="w-6 h-6 flex items-center justify-center rounded-md text-error hover:bg-error/15"
+                aria-label="Xóa"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CauHinhLuongNhanVien() {
+  const { toasts, show: toast, dismiss } = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -140,15 +280,11 @@ export default function CauHinhLuongNhanVien() {
         trang_thai: r.trang_thai || "dang_lam",
       }));
 
-      const res = await upsertLuongNhanVienBulk({ items });
+      await upsertLuongNhanVienBulk({ items });
       await load();
-      const dongBo = res?.bang_luong_dong_bo ?? 0;
-      alert(
-        `Đã lưu ${changeCount} thay đổi` +
-          (dongBo ? ` (đồng bộ ${dongBo} dòng bảng lương kỳ chưa chốt)` : "")
-      );
+      toast("Đã lưu thay đổi");
     } catch (err) {
-      alert(err.response?.data?.message || err.message || "Không thể lưu cấu hình");
+      toast(err.response?.data?.message || err.message || "Không thể lưu cấu hình", "error");
     } finally {
       setSaving(false);
     }
@@ -156,8 +292,9 @@ export default function CauHinhLuongNhanVien() {
 
   return (
     <div className="space-y-5 md:space-y-6 text-on-surface pb-8">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div>
-        <h2 className="text-xl font-bold text-on-surface">Cấu hình lương nhân viên</h2>
+        <h2 className="text-3xl font-bold text-on-surface">Cấu hình lương nhân viên</h2>
         <p className="text-sm text-muted">Thiết lập lương giờ và phụ cấp mặc định</p>
       </div>
 
@@ -266,6 +403,8 @@ export default function CauHinhLuongNhanVien() {
           </div>
         </div>
       )}
+
+      <NgayLeSection toast={toast} />
     </div>
   );
 }

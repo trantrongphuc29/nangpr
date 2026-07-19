@@ -4,12 +4,14 @@
  * Hook: useBanHang
  * Utils: fmtMoney, buildPrintHTML
  * =========================================== */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getBanPosList } from "../services/banService";
 import { getMenuPos } from "../services/monService";
 import * as donHangApi from "../services/donHangService";
 import PosMenu from "../components/PosMenu";
 import PriceInput from "../components/PriceInput";
+import { ToastContainer, useToast } from "../components/Toast";
+import { useConfirm } from "../context/ConfirmContext";
 
 /* ───── banhangUtils ───── */
 const fmtMoney = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
@@ -151,8 +153,9 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
           ${i.ten_mon}
           ${i.ghi_chu_mon ? `<br><span class="xsmall">(Ghi chú: ${i.ghi_chu_mon})</span>` : ''}
         </td>
-        <td class="center" style="width:30px">${i.so_luong}</td>
-        <td class="right" style="width:70px">${fmtMoney(i.so_luong * i.don_gia)}</td>
+        <td class="center" style="width:24px">${i.so_luong}</td>
+        <td class="right" style="width:58px">${fmtMoney(i.don_gia)}</td>
+        <td class="right" style="width:66px">${fmtMoney(i.so_luong * i.don_gia)}</td>
       </tr>`
     )
     .join("");
@@ -160,6 +163,8 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
   const tongTienMon = Number(order?.tong_tien || 0);
   const phiGiao = Number(phiGiaoHang || 0);
   const tongCong = tongTienMon + phiGiao;
+  const gioVao = order?.ngay_tao ? new Date(order.ngay_tao).toLocaleString("vi-VN") : now;
+  const gioRa = now;
 
   return baseHTML(`
     <div style="padding:16px;max-width:360px;margin:0 auto">
@@ -169,6 +174,13 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
       <div class="line"></div>
       <div class="center bold" style="padding:4px 0">${tenBan}</div>
       ${maDon ? `<div class="center small mb4">Đơn #${maDon}</div>` : ''}
+      <div class="line-dashed"></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;padding:1px 6px">
+        <span>Giờ vào:</span><span>${gioVao}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;padding:1px 6px">
+        <span>Giờ ra:</span><span>${gioRa}</span>
+      </div>
       ${deliveryOrder ? `
       <div class="line-dashed"></div>
       <div class="small bold mb4">THÔNG TIN GIAO HÀNG</div>
@@ -181,12 +193,13 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
         <thead>
           <tr style="border-bottom:2px solid #000;font-size:10px;text-transform:uppercase">
             <th style="padding:4px 6px;text-align:left">Món</th>
-            <th style="padding:4px 6px;text-align:center;width:28px">SL</th>
-            <th style="padding:4px 6px;text-align:right;width:68px">Tiền</th>
+            <th style="padding:4px 6px;text-align:right;width:58px;white-space:nowrap">Đơn giá</th>
+            <th style="padding:4px 6px;text-align:center;width:24px">SL</th>
+            <th style="padding:4px 6px;text-align:right;width:66px;white-space:nowrap">Thành tiền</th>
           </tr>
         </thead>
         <tbody>
-          ${rows || '<tr><td colspan="3" class="center small" style="padding:20px 0">Trống</td></tr>'}
+          ${rows || '<tr><td colspan="4" class="center small" style="padding:20px 0">Trống</td></tr>'}
         </tbody>
       </table>
       <div class="line"></div>
@@ -207,8 +220,7 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
       </div>
       `}
       <div class="line"></div>
-      <div class="center small mt8">${now}</div>
-      <div class="center small">Cảm ơn quý khách!</div>
+      <div class="center small mt8">Cảm ơn quý khách. Hẹn gặp lại!</div>
     </div>
   `);
 }
@@ -241,10 +253,14 @@ function BanHangCart({
   onQty,
   onPrintMon,
   onPrintBill,
+  onReprintBar,
   onPay,
   onCancelAndQty,
   onUpdateNote,
+  toast,
 }) {
+  const { promptText } = useConfirm();
+
   if (!order) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-12 text-on-surface-variant">
@@ -257,6 +273,7 @@ function BanHangCart({
 
   const items = order.items || [];
   const hasNewItems = items.some((i) => i.so_luong_cho_bar > 0);
+  const hasSentItems = items.some((i) => Number(i.so_luong_da_gui_bar || 0) > 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -333,14 +350,17 @@ function BanHangCart({
                       : 'text-on-surface-variant hover:bg-surface-container-high active:scale-90'
                 }`}
                 style={daInHet && !busy ? { backgroundColor: "color-mix(in srgb, var(--color-error) 8%, transparent)" } : {}}
-                onClick={() => {
+                onClick={async () => {
                   if (daInHet) {
                     const maxReduce = item.so_luong;
-                    const input = prompt(`⚠️ Món "${item.ten_mon}" đã in ${daGui} cái xuống bếp.\nNhập số lượng muốn huỷ (1 → ${maxReduce}):`, "1");
+                    const input = await promptText(
+                      `Món "${item.ten_mon}" đã in ${daGui} cái xuống bếp.\nNhập số lượng muốn huỷ (1 → ${maxReduce}):`,
+                      { defaultValue: "1", danger: true, confirmLabel: "Huỷ món" }
+                    );
                     if (input === null) return;
                     const soLuongHuy = parseInt(input, 10);
                     if (isNaN(soLuongHuy) || soLuongHuy < 1 || soLuongHuy > maxReduce) {
-                      alert(`Số không hợp lệ! Vui lòng nhập từ 1 đến ${maxReduce}.`);
+                      toast(`Số không hợp lệ! Vui lòng nhập từ 1 đến ${maxReduce}.`, "error");
                       return;
                     }
                     if (onCancelAndQty) onCancelAndQty(item, soLuongHuy);
@@ -443,25 +463,38 @@ function BanHangCart({
                 type="button"
                 disabled={busy || !items.length || !hasNewItems}
                 onClick={onPrintMon}
-                className="py-2.5 rounded-xl font-bold text-xs uppercase transition-all disabled:opacity-40"
+                className="inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-xs transition-all disabled:opacity-40"
                 style={{ backgroundColor: "var(--color-primary)", color: "var(--color-on-primary)" }}
               >
-                 In món
+                <span className="material-symbols-outlined text-base">print</span>
+                In món
               </button>
               <button
                 type="button"
                 disabled={busy || !items.length}
                 onClick={onPrintBill}
-                className="btn-outline !py-2.5 !px-4 !text-xs uppercase"
+                className="btn-outline !py-2.5 !px-4 !text-xs"
               >
+                <span className="material-symbols-outlined text-base">receipt_long</span>
                 In bill
               </button>
             </div>
+            {hasSentItems && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onReprintBar}
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-on-surface-variant border border-outline/40 hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-40"
+              >
+                <span className="material-symbols-outlined text-base">print</span>
+                In lại phiếu bar
+              </button>
+            )}
             <button
               type="button"
               disabled={busy || !items.length}
               onClick={onPay}
-              className="btn-primary w-full !py-3 !text-sm uppercase"
+              className="btn-primary w-full !py-3 !text-sm"
             >
               Thanh toán
             </button>
@@ -471,7 +504,7 @@ function BanHangCart({
             type="button"
             disabled={busy || !items.length}
             onClick={onPay}
-            className="btn-primary w-full !py-4 !text-sm uppercase flex items-center justify-center gap-2"
+            className="btn-primary w-full !py-4 !text-sm flex items-center justify-center gap-2"
           >
             <span>In bill & Thanh toán</span>
           </button>
@@ -482,16 +515,17 @@ function BanHangCart({
 }
 
 /* ───── BanHangTables ───── */
-function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
+function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order, toast }) {
   const [swapMode, setSwapMode] = useState(false);
+  const { confirm } = useConfirm();
 
-  const handleClick = (ban) => {
+  const handleClick = async (ban) => {
     if (swapMode && order?.ma_don_hang && ban.ma_ban !== selected?.ma_ban) {
       if (isTableBusy(ban)) {
-        alert("Bàn này đang có khách, không thể chuyển đến!");
+        toast("Bàn này đang có khách, không thể chuyển đến!", "error");
         return;
       }
-      if (window.confirm(`Chuyển đơn #${order.ma_don_hang} từ "${selected?.ten_ban}" sang "${ban.ten_ban}"?`)) {
+      if (await confirm(`Chuyển đơn #${order.ma_don_hang} từ "${selected?.ten_ban}" sang "${ban.ten_ban}"?`, { confirmLabel: "Chuyển bàn" })) {
         onMoveBan(ban.ma_ban);
       }
       setSwapMode(false);
@@ -523,14 +557,15 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
           <button
             type="button"
             onClick={handleSwapToggle}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
               swapMode
                 ? "text-white"
                 : "text-on-surface-variant border"
             }`}
             style={swapMode ? { backgroundColor: "var(--color-primary)" } : { borderColor: "var(--color-border)" }}
           >
-            {swapMode ? "✕ Huỷ" : "⇄ Đổi bàn"}
+            <span className="material-symbols-outlined text-sm">{swapMode ? "close" : "swap_horiz"}</span>
+            {swapMode ? "Huỷ" : "Đổi bàn"}
           </button>
         )}
       </div>
@@ -569,24 +604,24 @@ function BanHangTables({ tables, selected, busy, onSelect, onMoveBan, order }) {
                   return { backgroundColor: "var(--color-surface-lowest)", border: "2px solid var(--color-primary)", ringColor: "var(--color-primary)" };
                 }
                 if (busyTable && !swapMode) {
-                  return { backgroundColor: "color-mix(in srgb, var(--color-error) 18%, var(--color-surface-lowest))", border: "2px solid var(--color-error)", boxShadow: "0 4px 12px rgba(220,38,38,0.25)" };
+                  return { backgroundColor: "color-mix(in srgb, var(--color-warning) 12%, var(--color-surface-lowest))", border: "1.5px solid color-mix(in srgb, var(--color-warning) 55%, transparent)" };
                 }
                 return { backgroundColor: "var(--color-surface-lowest)", border: "1px solid var(--color-border)" };
               })()}
             >
               <div className="flex flex-col items-center gap-1.5">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all"
-                style={busyTable && !swapMode && !isMoving ? { backgroundColor: "color-mix(in srgb, var(--color-error) 20%, transparent)" } : { backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" }}
+                style={busyTable && !swapMode && !isMoving ? { backgroundColor: "color-mix(in srgb, var(--color-warning) 18%, transparent)", color: "var(--color-warning)" } : { backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)", color: "var(--color-primary)" }}
                 >
                   {busyTable ? <span className="material-symbols-outlined text-lg">restaurant</span> : <span className="material-symbols-outlined text-lg">chair</span>}
                 </div>
-                <p className={`font-bold text-xs uppercase ${
-                  busyTable && !swapMode && !isMoving ? "text-error" : "text-on-surface"
+                <p className={`font-semibold text-xs ${
+                  busyTable && !swapMode && !isMoving ? "text-warning" : "text-on-surface"
                 }`}>{b.ten_ban}</p>
-                <p className={`font-bold text-sm ${
+                <p className={`${
                   busyTable && !swapMode && !isMoving
-                    ? "text-error"
-                    : "text-muted text-[9px] font-medium"
+                    ? "text-warning font-bold text-sm"
+                    : "text-muted text-[10px] font-medium"
                 }`}>
                   {busyTable ? fmtMoney(b.tong_tien_hien_tai) : "Trống"}
                 </p>
@@ -884,9 +919,9 @@ function useBanHang() {
         currentOrder = await persistOrderToDb();
         setOrder(currentOrder);
       }
-      // Gửi bar
-      const data = await donHangApi.sendToBar(currentOrder.ma_don_hang);
-      setOrder(data);
+      // Gửi bar — API trả về { message, data: <đơn hàng> }, cần lấy phần .data
+      const res = await donHangApi.sendToBar(currentOrder.ma_don_hang);
+      setOrder(res?.data || res);
       setError("");
       await Promise.all([refreshTables(), refreshMenu()]);
       return true;
@@ -992,6 +1027,7 @@ function useBanHang() {
 
 /* ───── Main Page Component ───── */
 export default function BanHang() {
+  const { toasts, show: toast, dismiss } = useToast();
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [moveBanErr, setMoveBanErr] = useState("");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -1005,6 +1041,9 @@ export default function BanHang() {
   const doPrint = async (mode) => {
     if (!bh.order?.items?.length) return;
 
+    const tenBan = bh.table?.ten_ban
+      || (bh.loaiDon === "mang_ve" ? "Mang về" : bh.loaiDon === "giao_hang" ? "Giao hàng" : "");
+
     if (mode === "mon") {
       const newItems = bh.order.items.filter((i) => i.so_luong_cho_bar > 0);
       if (!newItems.length) {
@@ -1015,10 +1054,7 @@ export default function BanHang() {
       if (!ok) return;
       const html = buildPrintHTML("mon", { table: bh.table, order: bh.order, newItems });
       openAndPrint(html);
-      const stay = window.confirm(" Đã in món! Bạn có muốn ở lại để thêm món tiếp không?");
-      if (!stay) {
-        bh.clearSelection();
-      }
+      toast(tenBan ? `Đã in món cho ${tenBan}!` : "Đã in món thành công!");
     } else {
       // In bill → persist trước để có mã đơn 
       if (!bh.order?.ma_don_hang) {
@@ -1038,7 +1074,22 @@ export default function BanHang() {
         phiGiaoHang: bh.phiGiaoHang,
       });
       openAndPrint(html);
+      toast(tenBan ? `Đã in bill cho ${tenBan}!` : "Đã in bill thành công!");
     }
+  };
+
+  /* ── In lại phiếu chế biến cho các món ĐÃ gửi bar (không fire lại, không trừ kho) ── */
+  const doReprintBar = () => {
+    if (!bh.order?.items?.length) return;
+    const sentItems = bh.order.items
+      .filter((i) => Number(i.so_luong_da_gui_bar || 0) > 0)
+      .map((i) => ({ ...i, so_luong_cho_bar: Number(i.so_luong_da_gui_bar) }));
+    if (!sentItems.length) {
+      bh.setError("Chưa có món nào đã gửi bar để in lại");
+      return;
+    }
+    const html = buildPrintHTML("mon", { table: bh.table, order: bh.order, newItems: sentItems });
+    openAndPrint(html);
   };
 
   /* ── Mở popup và in (dùng chung cho in món, in bill, in hủy) ── */
@@ -1077,32 +1128,31 @@ export default function BanHang() {
     if (!bh.order?.items?.length) return;
 
     const hasNewItems = bh.order.items.some((i) => i.so_luong_cho_bar > 0);
+    const tenBan = bh.table?.ten_ban
+      || (bh.loaiDon === "mang_ve" ? "Mang về" : bh.loaiDon === "giao_hang" ? "Giao hàng" : "");
+    const paidMsg = tenBan ? `Đã thanh toán ${tenBan} thành công!` : "Đã thanh toán thành công!";
 
-    if (bh.loaiDon === "tai_cho") {
-      if (hasNewItems) {
-        await bh.sendBar();
-      }
-      const ok = await bh.pay(hinhThuc);
-      if (ok) bh.setError(" Đã thanh toán thành công!");
-      return;
-    }
-
-    const html = buildCombinedPrintHTML({
+    // In khi thanh toán (mọi loại đơn):
+    //  - còn món mới chưa gửi bar -> in kèm phiếu chế biến (bar) + hóa đơn
+    //  - không còn món mới        -> chỉ in hóa đơn
+    const printArgs = {
       table: bh.table,
       order: bh.order,
       tenKhach: bh.tenKhach,
       soDienThoaiGiao: bh.soDienThoaiGiao,
       diaChiGiao: bh.diaChiGiao,
       phiGiaoHang: bh.phiGiaoHang,
-    });
+    };
+    const html = hasNewItems
+      ? buildCombinedPrintHTML(printArgs)
+      : buildPrintHTML("bill", printArgs);
     openAndPrint(html);
+
     if (hasNewItems) {
       await bh.sendBar();
     }
     const ok = await bh.pay(hinhThuc);
-    if (ok) {
-      bh.setError(" Đã thanh toán thành công!");
-    }
+    if (ok) toast(paidMsg);
   };
 
   const handleMoveBan = async (targetBan) => {
@@ -1129,11 +1179,12 @@ export default function BanHang() {
 
   return (
     <>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div className="h-full flex flex-col min-h-0">
         {/* Error banner */}
         {bh.error && (
-          <div className="mb-4 p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-fade-in" style={{ backgroundColor: bh.error.includes("✅") ? "color-mix(in srgb, var(--color-success) 10%, transparent)" : "color-mix(in srgb, var(--color-error) 10%, transparent)", borderLeft: `4px solid ${bh.error.includes("✅") ? "var(--color-success)" : "var(--color-error)"}`, color: bh.error.includes("✅") ? "var(--color-success)" : "var(--color-error)" }}>
-            <span className="material-symbols-outlined text-lg shrink-0">{bh.error.includes("✅") ? "check_circle" : "info"}</span>
+          <div className="mb-4 p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-fade-in" style={{ backgroundColor: "color-mix(in srgb, var(--color-error) 10%, transparent)", borderLeft: "4px solid var(--color-error)", color: "var(--color-error)" }}>
+            <span className="material-symbols-outlined text-lg shrink-0">info</span>
             {bh.error}
           </div>
         )}
@@ -1165,19 +1216,21 @@ export default function BanHang() {
                   <button
                     type="button"
                     onClick={() => { setMoveBanErr(""); setShowMoveModal(true); }}
-                    className="px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all"
                     style={{ borderColor: "var(--color-border)", color: "var(--color-on-surface-variant)" }}
                   >
-                    ⇄ Đổi bàn
+                    <span className="material-symbols-outlined text-lg">swap_horiz</span>
+                    Đổi bàn
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={bh.clearSelection}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all text-white"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold transition-all text-white"
                   style={{ backgroundColor: "var(--color-primary)" }}
                 >
-                  ← Về sơ đồ bàn
+                  <span className="material-symbols-outlined text-lg">arrow_back</span>
+                  Về sơ đồ bàn
                 </button>
               </div>
             </div>
@@ -1187,7 +1240,7 @@ export default function BanHang() {
               {/* Menu */}
               <section className="lg:col-span-7 card p-4 flex flex-col min-h-0">
                 <div className="flex items-center gap-2 mb-3 shrink-0">
-                 
+                  <span className="material-symbols-outlined text-lg text-primary">restaurant_menu</span>
                   <h3 className="font-bold text-on-surface text-sm">Thực đơn</h3>
                 </div>
                 <PosMenu menu={bh.menu} busy={bh.busy} onAdd={bh.addMon} />
@@ -1221,9 +1274,11 @@ export default function BanHang() {
                     onQty={bh.changeQty}
                     onPrintMon={() => doPrint("mon")}
                     onPrintBill={() => doPrint("bill")}
+                    onReprintBar={doReprintBar}
                     onPay={() => { setHinhThucThanhToan("tien_mat"); setShowPaymentModal(true); }}
                     onCancelAndQty={handleCancelAndQty}
                     onUpdateNote={bh.updateNote}
+                    toast={toast}
                   />
                 </div>
               </section>
@@ -1236,7 +1291,7 @@ export default function BanHang() {
             <div className="shrink-0 mb-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <div>
-                    <h2 className="text-xl font-bold text-on-surface">Bán hàng</h2>
+                    <h2 className="text-3xl font-bold text-on-surface">Bán hàng</h2>
                     <p className="text-sm text-muted">Chọn bàn để gọi món</p>
                   </div>
                 <div className="flex items-center gap-2">
@@ -1244,8 +1299,8 @@ export default function BanHang() {
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} />
                     Trống
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold border" style={{ backgroundColor: "color-mix(in srgb, var(--color-error) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-error) 20%, transparent)", color: "var(--color-error)" }}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--color-error)" }} />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold border" style={{ backgroundColor: "color-mix(in srgb, var(--color-warning) 10%, transparent)", borderColor: "color-mix(in srgb, var(--color-warning) 30%, transparent)", color: "var(--color-warning)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--color-warning)" }} />
                     Có khách
                   </span>
                 </div>
@@ -1297,6 +1352,7 @@ export default function BanHang() {
                 order={bh.order}
                 onSelect={bh.selectTable}
                 onMoveBan={bh.moveBan}
+                toast={toast}
               />
             </div>
           </div>
@@ -1366,9 +1422,11 @@ export default function BanHang() {
               onQty={bh.changeQty}
               onPrintMon={() => doPrint("mon")}
               onPrintBill={() => doPrint("bill")}
+              onReprintBar={doReprintBar}
               onPay={() => { setHinhThucThanhToan("tien_mat"); setShowPaymentModal(true); }}
               onCancelAndQty={handleCancelAndQty}
               onUpdateNote={bh.updateNote}
+              toast={toast}
             />
           </div>
         </div>
@@ -1378,7 +1436,7 @@ export default function BanHang() {
       {showPaymentModal && (
         <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
           <div
-            className="bg-card rounded-2xl shadow-2xl border border-outline p-6 w-full max-w-sm mx-4"
+            className="modal-panel p-6 max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -1388,10 +1446,10 @@ export default function BanHang() {
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(false)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all"
-                style={{ backgroundColor: "var(--color-surface-container-high)", color: "var(--color-on-surface-variant)" }}
+                className="btn-ghost !p-2"
+                aria-label="Đóng"
               >
-                ✕
+                <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
 
@@ -1429,7 +1487,7 @@ export default function BanHang() {
               type="button"
               disabled={bh.busy}
               onClick={() => handleModalPay(hinhThucThanhToan)}
-              className="btn-primary w-full !py-3.5 !text-sm uppercase flex items-center justify-center gap-2"
+              className="btn-primary w-full !py-3.5 !text-sm flex items-center justify-center gap-2"
             >
               {bh.loaiDon === "tai_cho" ? (
                 <><span className="material-symbols-outlined">check_circle</span> Xác nhận thanh toán</>
@@ -1453,18 +1511,20 @@ export default function BanHang() {
       {showMoveModal && (
         <div className="modal-overlay" onClick={() => setShowMoveModal(false)}>
           <div
-            className="bg-card rounded-2xl shadow-2xl border border-outline p-6 w-full max-w-md mx-4"
+            className="modal-panel p-6 max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-on-surface">⇄ Chọn bàn muốn chuyển</h3>
+              <h3 className="font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined">swap_horiz</span> Chọn bàn muốn chuyển
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowMoveModal(false)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all"
-                style={{ backgroundColor: "var(--color-surface-container-high)", color: "var(--color-on-surface-variant)" }}
+                className="btn-ghost !p-2"
+                aria-label="Đóng"
               >
-                ✕
+                <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
             <p className="text-xs text-muted mb-4">
@@ -1496,9 +1556,9 @@ export default function BanHang() {
                         backgroundColor: busy ? "var(--color-surface-container-high)" : "var(--color-surface-lowest)"
                       }}
                     >
-                      <p className="font-bold text-xs uppercase text-on-surface">{b.ten_ban}</p>
-                      <p className="text-[9px] font-medium text-muted mt-0.5">
-                        {busy ? `${fmtMoney(b.tong_tien_hien_tai)}` : "🟢 Trống"}
+                      <p className="font-semibold text-xs text-on-surface">{b.ten_ban}</p>
+                      <p className={`text-[10px] font-medium mt-0.5 ${busy ? "text-warning" : "text-muted"}`}>
+                        {busy ? `${fmtMoney(b.tong_tien_hien_tai)}` : "Trống"}
                       </p>
                     </button>
                   );

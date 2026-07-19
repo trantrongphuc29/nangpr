@@ -130,6 +130,21 @@ async function markKyLuongPaid(req, res) {
   }
 }
 
+async function revertKyLuongPaid(req, res) {
+  try {
+    const { thang, nam, mat_khau } = req.body || {};
+    const thangNum = parseIntSafe(thang);
+    const namNum = parseIntSafe(nam);
+    if (!thangNum || !namNum) return res.status(400).json({ message: "Thiếu tham số thang/nam" });
+    if (!mat_khau) return res.status(400).json({ message: "Vui lòng nhập mật khẩu admin" });
+
+    await payrollService.revertKyLuongPaid({ thang: thangNum, nam: namNum, mat_khau });
+    return res.json({ message: "Đã hoàn tác trạng thái thanh toán" });
+  } catch (err) {
+    return res.status(err.status || 500).json({ message: err.message || "Lỗi hoàn tác thanh toán", error: err.message });
+  }
+}
+
 async function getLuongNhanVien(req, res) {
   try {
     const result = await payrollService.getLuongNhanVien();
@@ -153,6 +168,34 @@ async function upsertLuongNhanVienBulk(req, res) {
   }
 }
 
+async function getNgayLe(req, res) {
+  try {
+    const result = await payrollService.getNgayLe();
+    return res.json(result);
+  } catch (err) {
+    return res.status(err.status || 500).json({ message: err.message || "Lỗi lấy ngày lễ", error: err.message });
+  }
+}
+
+async function upsertNgayLe(req, res) {
+  try {
+    const { ngay, ten, he_so } = req.body || {};
+    const result = await payrollService.upsertNgayLe({ ngay, ten, he_so });
+    return res.json({ message: "Đã lưu ngày lễ", data: result });
+  } catch (err) {
+    return res.status(err.status || 500).json({ message: err.message || "Lỗi lưu ngày lễ", error: err.message });
+  }
+}
+
+async function deleteNgayLe(req, res) {
+  try {
+    await payrollService.deleteNgayLe({ ngay: req.params.ngay });
+    return res.json({ message: "Đã xóa ngày lễ" });
+  } catch (err) {
+    return res.status(err.status || 500).json({ message: err.message || "Lỗi xóa ngày lễ", error: err.message });
+  }
+}
+
 module.exports = {
   getBangCong,
   getBangCongChiTiet,
@@ -161,7 +204,11 @@ module.exports = {
   lockKyLuong,
   unlockKyLuong,
   markKyLuongPaid,
+  revertKyLuongPaid,
   getLuongNhanVien,
   upsertLuongNhanVienBulk,
+  getNgayLe,
+  upsertNgayLe,
+  deleteNgayLe,
 };
 

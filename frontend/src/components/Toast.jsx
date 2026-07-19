@@ -31,7 +31,7 @@ export function ToastContainer({ toasts, onDismiss }) {
         <div
           key={t.id}
           role="alert"
-          className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg text-sm font-medium animate-in slide-in-from-right duration-300 ${
+          className={`animate-fade-in pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg text-sm font-medium ${
             t.type === 'error'
               ? 'bg-error-container border-error/30 text-error'
               : t.type === 'warning'
@@ -39,17 +39,21 @@ export function ToastContainer({ toasts, onDismiss }) {
               : 'bg-card border-outline text-on-surface'
           }`}
         >
-          <span className="material-symbols-outlined text-lg shrink-0">
-            {t.type === 'error' ? 'error' : t.type === 'warning' ? 'warning' : 'check_circle'}
+          <span className="material-symbols-outlined text-xl shrink-0 leading-none">
+            {t.type === 'error'
+              ? 'error'
+              : t.type === 'warning'
+              ? 'warning'
+              : 'check_circle'}
           </span>
           <p className="flex-1 leading-snug">{t.message}</p>
           <button
             type="button"
             onClick={() => onDismiss(t.id)}
-            className="shrink-0 opacity-60 hover:opacity-100"
+            className="shrink-0 flex items-center justify-center opacity-60 hover:opacity-100"
             aria-label="Đóng"
           >
-            <span className="material-symbols-outlined text-base">close</span>
+            <span className="material-symbols-outlined text-base leading-none">close</span>
           </button>
         </div>
       ))}

@@ -6,9 +6,12 @@ import {
   lockKyLuong,
   unlockKyLuong,
   markKyLuongPaid,
+  revertKyLuongPaid,
 } from "../services/payrollService";
 import { exportBangLuongExcel, exportBangLuongPDF } from "../utils/bangLuongExport";
 import ModalPortal from "../components/ModalPortal";
+import { ToastContainer, useToast } from "../components/Toast";
+import { useConfirm } from "../context/ConfirmContext";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -93,6 +96,8 @@ function MoneyEditInput({ ma_nhan_vien, field, value, disabled, editingField, se
 }
 
 export default function BangLuong() {
+  const { toasts, show: toast, dismiss } = useToast();
+  const { confirm, promptText } = useConfirm();
   const today = new Date();
   const [thang, setThang] = useState(today.getMonth() + 1);
   const [nam, setNam] = useState(today.getFullYear());
@@ -106,6 +111,7 @@ export default function BangLuong() {
   const [editingField, setEditingField] = useState(null);
 
   const [saving, setSaving] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState("");
 
   const [detailOpen, setDetailOpen] = useState(false);
@@ -121,6 +127,23 @@ export default function BangLuong() {
 
   const employeeOptions = useMemo(() => {
     return rows.map((r) => ({ ma_nhan_vien: r.ma_nhan_vien, ten: r.ten }));
+  }, [rows]);
+
+  const footTotals = useMemo(() => {
+    return rows.reduce(
+      (acc, r) => {
+        acc.tong_ca += Number(r.tong_ca || 0);
+        acc.tong_gio += Number(r.tong_gio || 0);
+        acc.luong_co_ban += Number(r.luong_co_ban || 0);
+        acc.phu_cap += Number(r.phu_cap || 0);
+        acc.thuong += Number(r.thuong || 0);
+        acc.khau_tru += Number(r.khau_tru || 0);
+        acc.tam_ung += Number(r.tam_ung || 0);
+        acc.luong_thuc_nhan += Number(r.luong_thuc_nhan || 0);
+        return acc;
+      },
+      { tong_ca: 0, tong_gio: 0, luong_co_ban: 0, phu_cap: 0, thuong: 0, khau_tru: 0, tam_ung: 0, luong_thuc_nhan: 0 }
+    );
   }, [rows]);
 
   async function load() {
@@ -197,49 +220,88 @@ export default function BangLuong() {
         });
       }
       await load();
-      alert(`Đã lưu ${changeCount} thay đổi`);
+      toast("Đã lưu thay đổi");
     } catch (err) {
-      alert(err.response?.data?.message || err.message || "Không thể lưu");
+      toast(err.response?.data?.message || err.message || "Không thể lưu", "error");
     } finally {
       setSaving(false);
     }
   };
 
   const handleLock = async () => {
+    if (actionBusy) return;
     if (hasUnsavedChanges) {
-      alert("Vui lòng lưu chỉnh sửa trước khi chốt lương.");
+      toast("Vui lòng lưu chỉnh sửa trước khi chốt lương.", "error");
       return;
     }
-    const ok = window.confirm(
-      `Chốt lương tháng ${pad2(thang)}/${nam}?\n\nSau khi chốt, bảng lương sẽ khóa chỉnh sửa cho đến khi mở chốt`
+    const ok = await confirm(
+      `Chốt lương tháng ${pad2(thang)}/${nam}?\n\nSau khi chốt, bảng lương sẽ khóa chỉnh sửa cho đến khi mở chốt`,
+      { confirmLabel: "Chốt lương" }
     );
     if (!ok) return;
+    setActionBusy(true);
     try {
       await lockKyLuong({ thang, nam });
       await load();
-      alert("Đã chốt lương");
+      toast("Đã chốt lương");
     } catch (err) {
-      alert(err.response?.data?.message || err.message || "Không thể chốt lương");
+      toast(err.response?.data?.message || err.message || "Không thể chốt lương", "error");
+    } finally {
+      setActionBusy(false);
     }
   };
 
   const handleUnlock = async () => {
+    if (actionBusy) return;
+    setActionBusy(true);
     try {
       await unlockKyLuong({ thang, nam });
       await load();
-      alert("Đã mở chốt lương");
+      toast("Đã mở chốt lương");
     } catch (err) {
-      alert(err.response?.data?.message || err.message || "Không thể mở chốt");
+      toast(err.response?.data?.message || err.message || "Không thể mở chốt", "error");
+    } finally {
+      setActionBusy(false);
     }
   };
 
   const handleMarkPaid = async () => {
+    if (actionBusy) return;
+    const ok = await confirm(
+      `Đánh dấu kỳ lương tháng ${pad2(thang)}/${nam} là ĐÃ THANH TOÁN?\n\nSau bước này kỳ được coi là đã trả lương cho nhân viên.`,
+      { confirmLabel: "Đã thanh toán" }
+    );
+    if (!ok) return;
+    setActionBusy(true);
     try {
       await markKyLuongPaid({ thang, nam });
       await load();
-      alert("Đã đánh dấu thanh toán");
+      toast("Đã đánh dấu thanh toán");
     } catch (err) {
-      alert(err.response?.data?.message || err.message || "Không thể đánh dấu thanh toán");
+      toast(err.response?.data?.message || err.message || "Không thể đánh dấu thanh toán", "error");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleRevertPaid = async () => {
+    if (actionBusy) return;
+    const ok = await confirm(
+      `Hoàn tác trạng thái đã thanh toán cho kỳ lương tháng ${pad2(thang)}/${nam}?\n\nKỳ sẽ trở về trạng thái "Đã chốt".`,
+      { danger: true, confirmLabel: "Hoàn tác" }
+    );
+    if (!ok) return;
+    const matKhau = await promptText("Nhập mật khẩu admin để xác nhận hoàn tác:", { password: true });
+    if (matKhau === null) return;
+    setActionBusy(true);
+    try {
+      await revertKyLuongPaid({ thang, nam, mat_khau: matKhau });
+      await load();
+      toast("Đã hoàn tác trạng thái thanh toán");
+    } catch (err) {
+      toast(err.response?.data?.message || err.message || "Không thể hoàn tác thanh toán", "error");
+    } finally {
+      setActionBusy(false);
     }
   };
 
@@ -256,7 +318,7 @@ export default function BangLuong() {
     try {
       exportBangLuongExcel(exportPayload());
     } catch (err) {
-      alert(err.message || "Không thể xuất Excel");
+      toast(err.message || "Không thể xuất Excel", "error");
     }
   };
 
@@ -264,7 +326,16 @@ export default function BangLuong() {
     try {
       await exportBangLuongPDF(exportPayload());
     } catch (err) {
-      alert(err.message || "Không thể xuất PDF");
+      toast(err.message || "Không thể xuất PDF", "error");
+    }
+  };
+
+  const handlePrintPhieuLuong = async () => {
+    if (!detailEmployee) return;
+    try {
+      await exportBangLuongPDF({ rows: [detailEmployee], totals, thang, nam, kyLabel });
+    } catch (err) {
+      toast(err.message || "Không thể in phiếu lương", "error");
     }
   };
 
@@ -281,7 +352,7 @@ export default function BangLuong() {
       setDetailRows(res.rows || []);
     } catch (err) {
       setDetailRows([]);
-      alert(err.response?.data?.message || err.message || "Không tải được chi tiết");
+      toast(err.response?.data?.message || err.message || "Không tải được chi tiết", "error");
     } finally {
       setDetailLoading(false);
     }
@@ -292,8 +363,9 @@ export default function BangLuong() {
 
   return (
     <div className="space-y-5 md:space-y-6 text-on-surface pb-8">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div>
-        <h2 className="text-xl font-bold text-on-surface">Bảng lương</h2>
+        <h2 className="text-3xl font-bold text-on-surface">Bảng lương</h2>
         <p className="text-sm text-muted">Tự động tính lương khi kỳ ở trạng thái Chưa chốt</p>
       </div>
 
@@ -381,7 +453,11 @@ export default function BangLuong() {
                       ? `Lưu ${changeCount} thay đổi`
                       : "Lưu chỉnh sửa"}
                 </button>
-                <button className="btn-outline !py-2 !px-4 !text-sm border-2 border-primary" onClick={handleLock}>
+                <button
+                  className="btn-outline !py-2 !px-4 !text-sm border-2 border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleLock}
+                  disabled={actionBusy}
+                >
                   <span className="material-symbols-outlined text-lg">lock</span>
                   Chốt lương
                 </button>
@@ -391,43 +467,51 @@ export default function BangLuong() {
                 <div className="text-muted text-xs uppercase tracking-widest font-semibold">
                   Kỳ {kyLabel}. Dữ liệu đã khóa.
                 </div>
-                <button className="btn-outline !py-2 !px-4 !text-sm" onClick={handleExportExcel}>
-                  <span className="material-symbols-outlined text-lg">download</span>
-                  Xuất Excel
-                </button>
-                <button className="btn-outline !py-2 !px-4 !text-sm" onClick={handleExportPDF}>
-                  <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
-                  Xuất PDF
-                </button>
                 {kyTrangThai === "da_chot" && (
                   <>
-                    <button className="btn-primary !py-2 !px-4 !text-sm" onClick={handleMarkPaid}>
+                    <button
+                      className="btn-primary !py-2 !px-4 !text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleMarkPaid}
+                      disabled={actionBusy}
+                    >
                       <span className="material-symbols-outlined text-lg">payments</span>
                       Đánh dấu đã thanh toán
                     </button>
-                    <button className="btn-ghost !py-2 !px-4 !text-sm border border-outline" onClick={handleUnlock}>
+                    <button
+                      className="btn-ghost !py-2 !px-4 !text-sm border border-outline disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleUnlock}
+                      disabled={actionBusy}
+                    >
                       <span className="material-symbols-outlined text-lg">lock_open</span>
                       Mở chốt
                     </button>
                   </>
                 )}
+                {kyTrangThai === "da_thanh_toan" && (
+                  <button
+                    className="btn-outline !py-2 !px-4 !text-sm !border-error/40 !text-error hover:!bg-error/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleRevertPaid}
+                    disabled={actionBusy}
+                  >
+                    <span className="material-symbols-outlined text-lg">undo</span>
+                    Hoàn tác thanh toán
+                  </button>
+                )}
               </>
             )}
           </div>
 
-          {/* For chua_chot also allow exports */}
-          {isChuaChot && (
-            <div className="flex flex-wrap items-center gap-2">
-              <button className="btn-outline !py-2 !px-4 !text-sm border-2 border-primary" onClick={handleExportExcel}>
-                <span className="material-symbols-outlined text-lg">download</span>
-                Xuất Excel
-              </button>
-              <button className="btn-outline !py-2 !px-4 !text-sm" onClick={handleExportPDF}>
-                <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
-                Xuất PDF
-              </button>
-            </div>
-          )}
+          {/* Xuất file — luôn ở bên phải cho mọi trạng thái */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button className="btn-outline !py-2 !px-4 !text-sm" onClick={handleExportExcel}>
+              <span className="material-symbols-outlined text-lg">download</span>
+              Xuất Excel
+            </button>
+            <button className="btn-outline !py-2 !px-4 !text-sm" onClick={handleExportPDF}>
+              <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
+              Xuất PDF
+            </button>
+          </div>
         </div>
       </div>
 
@@ -486,24 +570,36 @@ export default function BangLuong() {
                   <th className="px-4 py-3 text-center">Khấu trừ</th>
                   <th className="px-4 py-3 text-center">Tạm ứng</th>
                   <th className="px-4 py-3 text-center">Lương thực nhận</th>
-                  <th className="px-4 py-3 text-center">Trạng thái</th>
                   <th className="px-4 py-3 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline">
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="px-4 py-12 text-center text-muted">
+                    <td colSpan={11} className="px-4 py-12 text-center text-muted">
                       Không có dữ liệu cho bộ lọc này.
                     </td>
                   </tr>
                 ) : (
-                  rows.map((r) => (
-                    <tr key={r.ma_nhan_vien} className="hover:bg-primary/5 transition-colors">
-                      <td className="px-4 py-3 font-semibold">{r.ten}</td>
+                  rows.map((r) => {
+                    const chuaCauHinhLuong = Number(r.luong_gio || 0) === 0;
+                    return (
+                    <tr
+                      key={r.ma_nhan_vien}
+                      className="transition-colors hover:bg-primary/5"
+                      style={chuaCauHinhLuong ? { backgroundColor: "color-mix(in srgb, var(--color-warning) 10%, transparent)" } : undefined}
+                    >
+                      <td className="px-4 py-3 font-semibold">
+                        <div className="flex items-center gap-1.5">
+                          <span>{r.ten}</span>
+                          {chuaCauHinhLuong && (
+                            <span className="material-symbols-outlined text-warning text-base" title="Chưa cấu hình lương/giờ">warning</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-center text-muted">{r.tong_ca}</td>
                       <td className="px-4 py-3 text-right font-bold">{Number(r.tong_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}</td>
-                      <td className="px-4 py-3 text-right font-bold">{formatMoney(r.luong_gio)}</td>
+                      <td className={`px-4 py-3 text-right font-bold ${chuaCauHinhLuong ? "text-warning" : ""}`}>{formatMoney(r.luong_gio)}</td>
                       <td className="px-4 py-3 text-right font-bold">{formatMoney(r.luong_co_ban)}</td>
 
                       <td className="px-1 py-3 text-right">
@@ -552,10 +648,6 @@ export default function BangLuong() {
                       </td>
                       <td className="px-4 py-3 text-right font-bold">{formatMoney(r.luong_thuc_nhan)}</td>
 
-                      <td className="px-4 py-3 text-left text-muted">
-                        {kyLabel}
-                      </td>
-
                       <td className="px-4 py-3 text-right">
                         <button
                           className="btn-outline !py-2 !px-3 !text-xs"
@@ -565,9 +657,27 @@ export default function BangLuong() {
                         </button>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
+              {rows.length > 0 && (
+                <tfoot>
+                  <tr className="border-t-2 border-outline bg-primary/5 font-bold">
+                    <td className="px-4 py-3">TỔNG CỘNG</td>
+                    <td className="px-4 py-3 text-center">{footTotals.tong_ca}</td>
+                    <td className="px-4 py-3 text-right">{footTotals.tong_gio.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3"></td>
+                    <td className="px-4 py-3 text-right">{formatMoney(footTotals.luong_co_ban)}</td>
+                    <td className="px-2 py-3 text-right">{formatMoney(footTotals.phu_cap)}</td>
+                    <td className="px-2 py-3 text-right">{formatMoney(footTotals.thuong)}</td>
+                    <td className="px-2 py-3 text-right">{formatMoney(footTotals.khau_tru)}</td>
+                    <td className="px-2 py-3 text-right">{formatMoney(footTotals.tam_ung)}</td>
+                    <td className="px-4 py-3 text-right text-primary">{formatMoney(footTotals.luong_thuc_nhan)}</td>
+                    <td className="px-4 py-3"></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </div>
@@ -588,24 +698,63 @@ export default function BangLuong() {
                     {pad2(thang)}/{nam}
                   </p>
                 </div>
-                <button type="button" className="btn-ghost !p-2 shrink-0" onClick={() => setDetailOpen(false)} aria-label="Đóng">
-                  <span className="material-symbols-outlined">close</span>
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    className="btn-outline !py-2 !px-3 !text-xs"
+                    onClick={handlePrintPhieuLuong}
+                    disabled={!detailEmployee}
+                  >
+                    <span className="material-symbols-outlined text-base">print</span>
+                    In phiếu lương
+                  </button>
+                  <button type="button" className="btn-ghost !p-2" onClick={() => setDetailOpen(false)} aria-label="Đóng">
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                </div>
               </div>
 
               {detailEmployee && (
-                <div className="shrink-0 px-5 md:px-6 py-4 border-b border-outline grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div className="rounded-xl bg-primary/5 px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Lương/giờ</p>
-                    <p className="text-base font-bold text-primary tabular-nums mt-0.5">{formatMoney(detailEmployee.luong_gio)}</p>
+                <div className="shrink-0 px-5 md:px-6 py-4 border-b border-outline space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="rounded-xl bg-primary/5 px-3 py-2.5">
+                      <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Lương/giờ</p>
+                      <p className="text-base font-bold text-primary tabular-nums mt-0.5">{formatMoney(detailEmployee.luong_gio)}</p>
+                    </div>
+                    <div className="rounded-xl bg-primary/5 px-3 py-2.5">
+                      <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Tổng giờ</p>
+                      <p className="text-base font-bold text-primary tabular-nums mt-0.5">{Number(detailEmployee.tong_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="rounded-xl bg-primary/5 px-3 py-2.5">
+                      <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Lương cơ bản</p>
+                      <p className="text-base font-bold text-primary tabular-nums mt-0.5">{formatMoney(detailEmployee.luong_co_ban)}</p>
+                    </div>
                   </div>
-                  <div className="rounded-xl bg-primary/5 px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Lương cơ bản</p>
-                    <p className="text-base font-bold text-primary tabular-nums mt-0.5">{formatMoney(detailEmployee.luong_co_ban)}</p>
-                  </div>
-                  <div className="rounded-xl bg-primary/5 px-3 py-2.5 col-span-2 sm:col-span-1">
-                    <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Lương thực nhận</p>
-                    <p className="text-base font-bold text-primary tabular-nums mt-0.5">{formatMoney(detailEmployee.luong_thuc_nhan)}</p>
+                  <div className="rounded-xl border border-outline/60 divide-y divide-outline/40 text-sm overflow-hidden">
+                    <div className="flex justify-between px-3 py-2">
+                      <span className="text-muted">Lương cơ bản</span>
+                      <span className="font-semibold tabular-nums">{formatMoney(detailEmployee.luong_co_ban)}</span>
+                    </div>
+                    <div className="flex justify-between px-3 py-2">
+                      <span className="text-muted">+ Phụ cấp</span>
+                      <span className="font-semibold tabular-nums text-success">{formatMoney(detailEmployee.phu_cap)}</span>
+                    </div>
+                    <div className="flex justify-between px-3 py-2">
+                      <span className="text-muted">+ Thưởng</span>
+                      <span className="font-semibold tabular-nums text-success">{formatMoney(detailEmployee.thuong)}</span>
+                    </div>
+                    <div className="flex justify-between px-3 py-2">
+                      <span className="text-muted">− Khấu trừ</span>
+                      <span className="font-semibold tabular-nums text-error">{formatMoney(detailEmployee.khau_tru)}</span>
+                    </div>
+                    <div className="flex justify-between px-3 py-2">
+                      <span className="text-muted">− Tạm ứng</span>
+                      <span className="font-semibold tabular-nums text-error">{formatMoney(detailEmployee.tam_ung)}</span>
+                    </div>
+                    <div className="flex justify-between px-3 py-2.5 bg-primary/5">
+                      <span className="font-bold">Lương thực nhận</span>
+                      <span className="font-bold tabular-nums text-primary">{formatMoney(detailEmployee.luong_thuc_nhan)}</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -636,11 +785,23 @@ export default function BangLuong() {
                         ) : (
                           detailRows.map((r, idx) => (
                             <tr key={`${r.ngay}-${r.ma_ca}-${idx}`} className="hover:bg-primary/5 transition-colors">
-                              <td className="px-4 py-3">{new Date(r.ngay).toLocaleDateString("vi-VN")}</td>
+                              <td className="px-4 py-3">
+                                {new Date(r.ngay).toLocaleDateString("vi-VN")}
+                                {Number(r.he_so || 1) > 1 && (
+                                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold text-warning" style={{ backgroundColor: "color-mix(in srgb, var(--color-warning) 15%, transparent)" }}>
+                                    Lễ ×{Number(r.he_so)}
+                                  </span>
+                                )}
+                              </td>
                               <td className="px-4 py-3 font-semibold text-primary">{r.ten_ca}</td>
                               <td className="px-4 py-3 text-muted">{r.thoi_gian_ca}</td>
                               <td className="px-4 py-3 text-right font-bold tabular-nums">
                                 {Number(r.so_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}
+                                {Number(r.he_so || 1) > 1 && (
+                                  <span className="block text-[10px] font-medium text-warning">
+                                    ={Number(r.so_gio_quy_doi || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} quy đổi
+                                  </span>
+                                )}
                               </td>
                             </tr>
                           ))

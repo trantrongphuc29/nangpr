@@ -25,73 +25,60 @@ async function recalculateBangCong({ ky_luong_id, thang, nam }) {
   await db.execute(`DELETE FROM bang_cong_chi_tiet WHERE ky_luong_id = ?`, [ky_luong_id]);
   await db.execute(`DELETE FROM bang_cong_thang WHERE ky_luong_id = ?`, [ky_luong_id]);
 
+  // Tên ca / thời gian / số giờ lấy từ bảng calam; áp hệ số ngày lễ để ra "số giờ quy đổi" (tính lương)
   const insertDetailsSql = `
     INSERT INTO bang_cong_chi_tiet
-      (ky_luong_id, ma_nhan_vien, ngay, ma_ca, loai_ca, ten_ca, thoi_gian_ca, so_gio)
+      (ky_luong_id, ma_nhan_vien, ngay, ma_ca, ten_ca, thoi_gian_ca, so_gio, he_so, so_gio_quy_doi)
     SELECT
       ? AS ky_luong_id,
       pc.ma_nhan_vien,
       pc.ngay,
       pc.ma_ca,
-      'mac_dinh' AS loai_ca,
-      CASE pc.ma_ca
-        WHEN 1 THEN 'Ca Sáng'
-        WHEN 2 THEN 'Ca Chiều'
-        WHEN 3 THEN 'Ca Tối'
-        ELSE 'Ca Khác'
-      END AS ten_ca,
-      CASE pc.ma_ca
-        WHEN 1 THEN '06:00-12:00'
-        WHEN 2 THEN '12:00-18:00'
-        WHEN 3 THEN '18:00-23:00'
+      COALESCE(cl.buoi, 'Ca Khác') AS ten_ca,
+      CASE
+        WHEN cl.gio_bat_dau IS NOT NULL AND cl.gio_ket_thuc IS NOT NULL
+          THEN CONCAT(cl.gio_bat_dau, '-', cl.gio_ket_thuc)
         ELSE ''
       END AS thoi_gian_ca,
-      CASE pc.ma_ca
-        WHEN 1 THEN 6
-        WHEN 2 THEN 6
-        WHEN 3 THEN 5
-        ELSE 0
-      END AS so_gio
+      COALESCE(
+        TIMESTAMPDIFF(MINUTE, STR_TO_DATE(cl.gio_bat_dau, '%H:%i'), STR_TO_DATE(cl.gio_ket_thuc, '%H:%i')) / 60.0,
+        0
+      ) AS so_gio,
+      COALESCE(nl.he_so, 1) AS he_so,
+      COALESCE(
+        TIMESTAMPDIFF(MINUTE, STR_TO_DATE(cl.gio_bat_dau, '%H:%i'), STR_TO_DATE(cl.gio_ket_thuc, '%H:%i')) / 60.0,
+        0
+      ) * COALESCE(nl.he_so, 1) AS so_gio_quy_doi
     FROM phancong pc
+    LEFT JOIN calam cl ON pc.ma_ca = cl.ma_ca
+    LEFT JOIN ngay_le nl ON nl.ngay = pc.ngay
     WHERE pc.ngay >= ? AND pc.ngay <= ?
       AND pc.ngay + INTERVAL 7 HOUR < CURDATE() + INTERVAL 7 HOUR
   `;
 
   await db.execute(insertDetailsSql, [ky_luong_id, firstDay, lastDay]);
 
-  // Ca linh hoạt (giờ tùy chỉnh) — số giờ tính trực tiếp từ khoảng gio_bat_dau/gio_ket_thuc
-  const insertFlexDetailsSql = `
-    INSERT INTO bang_cong_chi_tiet
-      (ky_luong_id, ma_nhan_vien, ngay, ma_ca, loai_ca, ten_ca, thoi_gian_ca, so_gio)
-    SELECT
-      ? AS ky_luong_id,
-      plh.ma_nhan_vien,
-      plh.ngay,
-      NULL AS ma_ca,
-      'linh_hoat' AS loai_ca,
-      'Ca Linh Hoạt' AS ten_ca,
-      CONCAT(TIME_FORMAT(plh.gio_bat_dau, '%H:%i'), '-', TIME_FORMAT(plh.gio_ket_thuc, '%H:%i')) AS thoi_gian_ca,
-      ROUND(TIME_TO_SEC(TIMEDIFF(plh.gio_ket_thuc, plh.gio_bat_dau)) / 3600, 2) AS so_gio
-    FROM phancong_linh_hoat plh
-    WHERE plh.ngay >= ? AND plh.ngay <= ?
-      AND plh.ngay + INTERVAL 7 HOUR < CURDATE() + INTERVAL 7 HOUR
-  `;
-
-  await db.execute(insertFlexDetailsSql, [ky_luong_id, firstDay, lastDay]);
-
   const insertSummarySql = `
     INSERT INTO bang_cong_thang
-      (ky_luong_id, ma_nhan_vien, so_ca_sang, so_ca_chieu, so_ca_toi, so_ca_linh_hoat, so_ngay_lam, tong_ca, tong_gio, last_recalc_at)
+      (ky_luong_id, ma_nhan_vien, so_ca_sang, so_ca_chieu, so_ca_toi, so_ngay_lam,
+       so_ca_1, so_ca_2, so_ca_3, so_ca_4, so_ca_5, so_ca_6,
+       tong_ca, tong_gio, tong_gio_quy_doi, last_recalc_at)
     SELECT
       ky_luong_id,
       ma_nhan_vien,
-      SUM(CASE ma_ca WHEN 1 THEN 1 ELSE 0 END) AS so_ca_sang,
-      SUM(CASE ma_ca WHEN 2 THEN 1 ELSE 0 END) AS so_ca_chieu,
-      SUM(CASE ma_ca WHEN 3 THEN 1 ELSE 0 END) AS so_ca_toi,
-      SUM(CASE WHEN loai_ca = 'linh_hoat' THEN 1 ELSE 0 END) AS so_ca_linh_hoat,
+      SUM(CASE WHEN ma_ca IN (1, 2) THEN 1 ELSE 0 END) AS so_ca_sang,
+      SUM(CASE WHEN ma_ca IN (3, 4) THEN 1 ELSE 0 END) AS so_ca_chieu,
+      SUM(CASE WHEN ma_ca IN (5, 6) THEN 1 ELSE 0 END) AS so_ca_toi,
       COUNT(DISTINCT ngay) AS so_ngay_lam,
+      SUM(CASE ma_ca WHEN 1 THEN 1 ELSE 0 END) AS so_ca_1,
+      SUM(CASE ma_ca WHEN 2 THEN 1 ELSE 0 END) AS so_ca_2,
+      SUM(CASE ma_ca WHEN 3 THEN 1 ELSE 0 END) AS so_ca_3,
+      SUM(CASE ma_ca WHEN 4 THEN 1 ELSE 0 END) AS so_ca_4,
+      SUM(CASE ma_ca WHEN 5 THEN 1 ELSE 0 END) AS so_ca_5,
+      SUM(CASE ma_ca WHEN 6 THEN 1 ELSE 0 END) AS so_ca_6,
       COUNT(*) AS tong_ca,
       SUM(so_gio) AS tong_gio,
+      SUM(so_gio_quy_doi) AS tong_gio_quy_doi,
       NOW() AS last_recalc_at
     FROM bang_cong_chi_tiet
     WHERE ky_luong_id = ?
@@ -150,9 +137,9 @@ async function recalculateBangLuong({ ky_luong_id }) {
       bl.tong_ca = bc.tong_ca,
       bl.tong_gio = bc.tong_gio,
       bl.luong_gio = COALESCE(nvl.luong_gio, 0),
-      bl.luong_co_ban = bc.tong_gio * COALESCE(nvl.luong_gio, 0),
+      bl.luong_co_ban = COALESCE(bc.tong_gio_quy_doi, bc.tong_gio) * COALESCE(nvl.luong_gio, 0),
       bl.phu_cap = COALESCE(nvl.phu_cap_mac_dinh, 0),
-      bl.luong_thuc_nhan = (bc.tong_gio * COALESCE(nvl.luong_gio, 0))
+      bl.luong_thuc_nhan = (COALESCE(bc.tong_gio_quy_doi, bc.tong_gio) * COALESCE(nvl.luong_gio, 0))
         + COALESCE(nvl.phu_cap_mac_dinh, 0)
         + COALESCE(bl.thuong, 0)
         - COALESCE(bl.khau_tru, 0)
@@ -180,8 +167,7 @@ async function getBangCongSummary({ ky_luong_id, ma_nhan_vien }) {
         COALESCE(SUM(bc.tong_gio), 0) AS tong_gio_lam,
         COALESCE(SUM(bc.so_ca_sang), 0) AS tong_ca_sang,
         COALESCE(SUM(bc.so_ca_chieu), 0) AS tong_ca_chieu,
-        COALESCE(SUM(bc.so_ca_toi), 0) AS tong_ca_toi,
-        COALESCE(SUM(bc.so_ca_linh_hoat), 0) AS tong_ca_linh_hoat
+        COALESCE(SUM(bc.so_ca_toi), 0) AS tong_ca_toi
       FROM nhanvien nv
       LEFT JOIN bang_cong_thang bc
         ON bc.ky_luong_id = ? AND bc.ma_nhan_vien = nv.ma_nhan_vien
@@ -200,7 +186,12 @@ async function getBangCongSummary({ ky_luong_id, ma_nhan_vien }) {
         COALESCE(bc.so_ca_sang, 0) AS so_ca_sang,
         COALESCE(bc.so_ca_chieu, 0) AS so_ca_chieu,
         COALESCE(bc.so_ca_toi, 0) AS so_ca_toi,
-        COALESCE(bc.so_ca_linh_hoat, 0) AS so_ca_linh_hoat,
+        COALESCE(bc.so_ca_1, 0) AS so_ca_1,
+        COALESCE(bc.so_ca_2, 0) AS so_ca_2,
+        COALESCE(bc.so_ca_3, 0) AS so_ca_3,
+        COALESCE(bc.so_ca_4, 0) AS so_ca_4,
+        COALESCE(bc.so_ca_5, 0) AS so_ca_5,
+        COALESCE(bc.so_ca_6, 0) AS so_ca_6,
         COALESCE(bc.so_ngay_lam, 0) AS so_ngay_lam,
         COALESCE(bc.tong_ca, 0) AS tong_ca,
         COALESCE(bc.tong_gio, 0) AS tong_gio
@@ -220,7 +211,6 @@ async function getBangCongSummary({ ky_luong_id, ma_nhan_vien }) {
     tong_ca_sang: 0,
     tong_ca_chieu: 0,
     tong_ca_toi: 0,
-    tong_ca_linh_hoat: 0,
   };
 
   return {
@@ -237,7 +227,9 @@ async function getBangCongChiTiet({ ky_luong_id, ma_nhan_vien }) {
         ten_ca,
         thoi_gian_ca,
         ma_ca,
-        so_gio
+        so_gio,
+        he_so,
+        so_gio_quy_doi
       FROM bang_cong_chi_tiet
       WHERE ky_luong_id = ? AND ma_nhan_vien = ?
       ORDER BY ngay ASC, ma_ca ASC
@@ -414,6 +406,21 @@ async function markKyLuongPaid({ ky_id }) {
   }
 }
 
+async function revertKyLuongPaid({ ky_id }) {
+  const [result] = await db.execute(
+    `
+      UPDATE ky_luong
+      SET trang_thai = 'da_chot'
+      WHERE id = ? AND trang_thai = 'da_thanh_toan'
+    `,
+    [ky_id]
+  );
+
+  if (!result || result.affectedRows === 0) {
+    throw { status: 400, message: "Không thể hoàn tác. Kỳ lương chưa ở trạng thái Đã thanh toán." };
+  }
+}
+
 async function getLuongNhanVien() {
   const [rows] = await db.execute(
     `
@@ -509,8 +516,33 @@ async function upsertLuongNhanVienBulk({ items }) {
   };
 }
 
+// ===== Ngày lễ / hệ số lương =====
+async function getNgayLe() {
+  const [rows] = await db.execute(
+    `SELECT DATE_FORMAT(ngay, '%Y-%m-%d') AS ngay, ten, he_so FROM ngay_le ORDER BY ngay ASC`
+  );
+  return rows.map((r) => ({ ...r, he_so: Number(r.he_so) }));
+}
+
+async function upsertNgayLe({ ngay, ten, he_so }) {
+  await db.execute(
+    `INSERT INTO ngay_le (ngay, ten, he_so) VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE ten = VALUES(ten), he_so = VALUES(he_so)`,
+    [ngay, ten || null, he_so]
+  );
+  return { ngay, ten: ten || null, he_so: Number(he_so) };
+}
+
+async function deleteNgayLe({ ngay }) {
+  const [result] = await db.execute(`DELETE FROM ngay_le WHERE ngay = ?`, [ngay]);
+  return result.affectedRows > 0;
+}
+
 module.exports = {
   ensureKyLuong,
+  getNgayLe,
+  upsertNgayLe,
+  deleteNgayLe,
   recalculateBangCong,
   recalculateBangLuong,
   getBangCongSummary,
@@ -521,6 +553,7 @@ module.exports = {
   lockKyLuong,
   unlockKyLuong,
   markKyLuongPaid,
+  revertKyLuongPaid,
   getLuongNhanVien,
   upsertLuongNhanVienBulk,
   syncBangLuongFromLuongConfig,

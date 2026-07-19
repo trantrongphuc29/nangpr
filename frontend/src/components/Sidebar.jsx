@@ -17,12 +17,7 @@ export default function Sidebar({ open, setOpen }) {
     { name: "Quản lý bàn", path: "/ban", icon: "table_restaurant" },
   ];
 
-  const handleLogout = async () => {
-    try {
-      await fetch("http://localhost:3000/api/logout", { method: "POST" });
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+  const handleLogout = () => {
     localStorage.clear();
     navigate("/login");
   };
@@ -58,14 +53,12 @@ export default function Sidebar({ open, setOpen }) {
         </div>
 
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm">
-            <span className="material-symbols-outlined text-xl text-white" style={{ color: "var(--color-btn-text)" }}>coffee</span>
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-[15px] font-bold text-on-surface leading-tight tracking-tight">Nắng PR</h1>
-            <p className="text-[11px] text-muted font-medium mt-0.5">Quản lý quán</p>
-          </div>
+        <div className="flex flex-col items-center gap-2 px-5 pt-6 pb-5 border-b border-outline">
+          <img
+            src={`${process.env.PUBLIC_URL}/logoNangPR.svg`}
+            alt="Nắng PR"
+            className="h-16 w-auto object-contain"
+          />
         </div>
 
         {/* Nav */}

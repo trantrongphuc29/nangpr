@@ -2,15 +2,12 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   createNhanVien,
   createPhanCong,
-  createPhanCongLinhHoat,
   deletePhanCong,
-  deletePhanCongLinhHoat,
+  getDanhSachCa,
   getLichPhanCong,
-  getLichPhanCongLinhHoat,
   getNhanVienList,
   updateNhanVien,
   updateNhanVienStatus,
-  updatePhanCongLinhHoat,
 } from "../services/nhanVienService";
 import {
   TRANG_THAI_LABELS,
@@ -19,10 +16,10 @@ import {
   canSelectInAssignModal,
   shouldShowAssignmentOnSchedule,
 } from "../utils/nhanVienStatus";
+import { getNgayLe } from "../services/payrollService";
 import { formatPhoneDisplay } from "../utils/formatPhone";
-
-// Ca linh hoạt: chỉ chọn theo giờ tròn (định dạng 24h), không chọn phút
-const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, "0")}:00`);
+import { ToastContainer, useToast } from "../components/Toast";
+import { useConfirm } from "../context/ConfirmContext";
 
 // =====================================================================
 // NOTE 1: KHU VỰC XỬ LÝ NGÀY THÁNG (GIỮ NGUYÊN)
@@ -51,18 +48,38 @@ const toYmd = (val) => {
   return formatDateString(val) || "";
 };
 
+/* ── Validate & định dạng SĐT / ngày sinh ── */
+const onlyDigits = (v) => (v || "").replace(/\D/g, "");
+// SĐT hợp lệ: đúng 10 số, bắt đầu bằng 0
+const isValidPhone = (v) => /^0\d{9}$/.test(v || "");
+// Che ngày sinh khi gõ: chỉ số, tự chèn dấu / -> dd/MM/yyyy
+const maskDateInput = (v) => {
+  const d = onlyDigits(v).slice(0, 8);
+  return [d.slice(0, 2), d.slice(2, 4), d.slice(4, 8)].filter(Boolean).join("/");
+};
+// dd/MM/yyyy -> yyyy-MM-dd (null nếu không phải ngày thật)
+const dmyToYmd = (dmy) => {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec((dmy || "").trim());
+  if (!m) return null;
+  const [, dd, mm, yyyy] = m;
+  const day = +dd, mon = +mm, yr = +yyyy;
+  const dt = new Date(yr, mon - 1, day);
+  if (dt.getFullYear() !== yr || dt.getMonth() !== mon - 1 || dt.getDate() !== day) return null;
+  return `${yyyy}-${mm}-${dd}`;
+};
+// yyyy-MM-dd (hoặc ISO) -> dd/MM/yyyy để hiển thị trong ô nhập
+const ymdToDmy = (val) => {
+  const s = toYmd(val);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return "";
+  const [y, mo, d] = s.split("-");
+  return `${d}/${mo}/${y}`;
+};
+
 const normalizeAssignments = (rows) =>
   (Array.isArray(rows) ? rows : []).map((a) => ({
     ...a,
     ma_nhan_vien: Number(a.ma_nhan_vien),
     ma_ca: Number(a.ma_ca),
-    ngay: toYmd(a.ngay),
-  }));
-
-const normalizeFlexAssignments = (rows) =>
-  (Array.isArray(rows) ? rows : []).map((a) => ({
-    ...a,
-    ma_nhan_vien: Number(a.ma_nhan_vien),
     ngay: toYmd(a.ngay),
   }));
 
@@ -84,6 +101,25 @@ const getWeekRange = (dateString) => {
   };
 };
 
+// Trình bày ca (icon + màu theo buổi) — chỉ là phần hiển thị, dữ liệu ca lấy từ DB
+const shiftPresentation = (buoi) => {
+  const b = (buoi || "").toLowerCase();
+  if (b.includes("sáng")) return { icon: "sunny", color: "var(--color-warning)" };
+  if (b.includes("chiều")) return { icon: "partly_cloudy_day", color: "var(--color-secondary)" };
+  if (b.includes("tối")) return { icon: "nights_stay", color: "var(--color-primary)" };
+  return { icon: "schedule", color: "var(--color-primary)" };
+};
+
+// Dùng tạm khi chưa tải được ca từ DB (để bảng lịch không trống)
+const DEFAULT_SHIFTS = [
+  { ma_ca: 1, buoi: "Ca Sáng 1", gio_bat_dau: "06:00", gio_ket_thuc: "09:00" },
+  { ma_ca: 2, buoi: "Ca Sáng 2", gio_bat_dau: "09:00", gio_ket_thuc: "12:00" },
+  { ma_ca: 3, buoi: "Ca Chiều 1", gio_bat_dau: "12:00", gio_ket_thuc: "15:00" },
+  { ma_ca: 4, buoi: "Ca Chiều 2", gio_bat_dau: "15:00", gio_ket_thuc: "18:00" },
+  { ma_ca: 5, buoi: "Ca Tối 1", gio_bat_dau: "18:00", gio_ket_thuc: "20:30" },
+  { ma_ca: 6, buoi: "Ca Tối 2", gio_bat_dau: "20:30", gio_ket_thuc: "23:00" },
+];
+
 function StaffStatusBadge({ status }) {
   const s = normalizeTrangThai(status);
   const label = TRANG_THAI_LABELS[s] || s;
@@ -97,25 +133,29 @@ function StaffStatusBadge({ status }) {
 }
 
 const NhanVien = () => {
+  const { toasts, show: toast, dismiss } = useToast();
+  const { confirm } = useConfirm();
   // =====================================================================
   // NOTE 2: KHAI BÁO TRẠNG THÁI (STATES)
   // =====================================================================
   const [staffList, setStaffList] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  const [flexAssignments, setFlexAssignments] = useState([]);
+  const [shifts, setShifts] = useState(DEFAULT_SHIFTS);
+  const [holidays, setHolidays] = useState({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [isFlexModalOpen, setIsFlexModalOpen] = useState(false);
   const [staffDetailModal, setStaffDetailModal] = useState({ isOpen: false, data: null, isEditing: false });
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({ ten: '', ngay_sinh: '', so_dien_thoai: '', dia_chi: '' });
+  const [editBirth, setEditBirth] = useState('');
+  const [addSaving, setAddSaving] = useState(false);
 
   const today = getLocalDateString(new Date());
-  const [assignForm, setAssignForm] = useState({ ma_nhan_vien: '', ma_ca: '', ngay: today });
-  const emptyFlexForm = { id: null, ma_nhan_vien: '', ngay: today, gio_bat_dau: '', gio_ket_thuc: '', ghi_chu: '' };
-  const [flexForm, setFlexForm] = useState(emptyFlexForm);
+  const [assignForm, setAssignForm] = useState({ ma_ca: '', ngay: today });
+  const [assignStaffIds, setAssignStaffIds] = useState([]);
+  const [assignSaving, setAssignSaving] = useState(false);
 
   const [filterDate, setFilterDate] = useState(today);
   const [viewMode, setViewMode] = useState('week');
@@ -137,19 +177,16 @@ const NhanVien = () => {
     setLoadError("");
     try {
       const { startStr, endStr } = getWeekRange(filterDate);
-      const [staffRes, assignRes, flexRes] = await Promise.all([
+      const [staffRes, assignRes] = await Promise.all([
         getNhanVienList(),
         getLichPhanCong({ startDate: startStr, endDate: endStr }),
-        getLichPhanCongLinhHoat({ startDate: startStr, endDate: endStr }),
       ]);
       setStaffList(Array.isArray(staffRes) ? staffRes : []);
       setAssignments(normalizeAssignments(assignRes));
-      setFlexAssignments(normalizeFlexAssignments(flexRes));
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
       setLoadError(error.response?.data?.message || error.message || "Không tải được dữ liệu phân công");
       setAssignments([]);
-      setFlexAssignments([]);
     } finally {
       setLoading(false);
     }
@@ -157,147 +194,117 @@ const NhanVien = () => {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]); 
+  }, [fetchData]);
+
+  // Nạp danh sách ca từ DB (nguồn chân lý); nếu lỗi vẫn dùng DEFAULT_SHIFTS
+  useEffect(() => {
+    getDanhSachCa()
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) setShifts(rows);
+      })
+      .catch(() => {});
+    getNgayLe()
+      .then((rows) => {
+        const map = {};
+        (rows || []).forEach((le) => { map[toYmd(le.ngay)] = le; });
+        setHolidays(map);
+      })
+      .catch(() => {});
+  }, []);
 
   // =====================================================================
   // NOTE 4: CÁC HÀM XỬ LÝ SỰ KIỆN (THÊM CHỨC NĂNG ẨN/HIỆN)
   // =====================================================================
-  const changeStaffStatus = async (id, newStatus) => {
-    const normalized = normalizeTrangThai(newStatus);
-    const label = TRANG_THAI_LABELS[normalized] || normalized;
-    if (!window.confirm(`Đổi trạng thái nhân viên thành "${label}"?`)) return false;
-    setStatusSaving(true);
-    try {
-      await updateNhanVienStatus(id, normalized);
-      setStaffList((prev) =>
-        prev.map((s) =>
-          String(s.ma_nhan_vien) === String(id) ? { ...s, trang_thai: normalized } : s
-        )
-      );
-      setStaffDetailModal((prev) =>
-        prev.isOpen && String(prev.data?.ma_nhan_vien) === String(id)
-          ? { ...prev, data: { ...prev.data, trang_thai: normalized } }
-          : prev
-      );
-      setStatusDraft(normalized);
-      const { startStr, endStr } = getWeekRange(filterDate);
-      const assignRes = await getLichPhanCong({ startDate: startStr, endDate: endStr });
-      setAssignments(normalizeAssignments(assignRes));
-      return true;
-    } catch (error) {
-      alert(error.response?.data?.message || "Lỗi khi cập nhật trạng thái");
-      return false;
-    } finally {
-      setStatusSaving(false);
-    }
-  };
-
   const handleAddStaff = async (e) => {
     e.preventDefault();
-    const dataToSend = { ...formData, ngay_sinh: formData.ngay_sinh || null, dia_chi: formData.dia_chi || null };
+    if (addSaving) return;
+    const dataToSend = { ...formData, ngay_sinh: dmyToYmd(formData.ngay_sinh) || null, dia_chi: formData.dia_chi || null };
+    setAddSaving(true);
     try {
       await createNhanVien(dataToSend);
-      setIsModalOpen(false); 
+      setIsModalOpen(false);
       setFormData({ ten: '', ngay_sinh: '', so_dien_thoai: '', dia_chi: '' });
+      toast("Đã thêm nhân viên mới");
       fetchData();
     } catch (error) {
-      alert("Lỗi từ hệ thống: " + (error.response?.data?.message || error.message));
+      toast("Lỗi từ hệ thống: " + (error.response?.data?.message || error.message), "error");
+    } finally {
+      setAddSaving(false);
     }
   };
 
   const handleUpdateStaff = async (e) => {
     e.preventDefault();
-    const formattedNgaySinh = formatDateString(staffDetailModal.data.ngay_sinh);
-    const dataToSend = { 
-      ...staffDetailModal.data, 
-      ngay_sinh: formattedNgaySinh || null 
+    const newStatus = normalizeTrangThai(statusDraft);
+    const dataToSend = {
+      ...staffDetailModal.data,
+      ngay_sinh: dmyToYmd(editBirth) || null,
+      trang_thai: newStatus,
     };
-
+    setStatusSaving(true);
     try {
       await updateNhanVien(dataToSend.ma_nhan_vien, dataToSend);
-      setStaffDetailModal({ ...staffDetailModal, isEditing: false });
+      // Trạng thái có endpoint riêng — chỉ gọi khi thực sự đổi
+      if (newStatus !== normalizeTrangThai(staffDetailModal.data.trang_thai)) {
+        await updateNhanVienStatus(dataToSend.ma_nhan_vien, newStatus);
+      }
+      setStaffDetailModal({ ...staffDetailModal, isEditing: false, data: dataToSend });
       fetchData();
-      alert("Cập nhật thành công!");
+      toast("Cập nhật thành công!");
     } catch (error) {
       console.error("Lỗi chi tiết:", error.response);
-      alert("Lỗi khi cập nhật: " + (error.response?.data?.message || error.message));
+      toast("Lỗi khi cập nhật: " + (error.response?.data?.message || error.message), "error");
+    } finally {
+      setStatusSaving(false);
     }
   };
 
+  const toggleAssignStaff = (id) =>
+    setAssignStaffIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+
   const handleAssignStaff = async (e) => {
     e.preventDefault();
+    if (!assignForm.ma_ca || assignStaffIds.length === 0) {
+      toast("Vui lòng chọn ca và ít nhất một nhân viên", "error");
+      return;
+    }
+    setAssignSaving(true);
     try {
-      await createPhanCong(assignForm);
-      setIsAssignModalOpen(false);
-      setAssignForm({ ma_nhan_vien: '', ma_ca: '', ngay: assignForm.ngay }); 
-      fetchData();
-    } catch (error) {
-      alert("Lỗi: " + (error.response?.data?.message || "Không thể phân công"));
+      const results = await Promise.allSettled(
+        assignStaffIds.map((id) =>
+          createPhanCong({ ma_nhan_vien: id, ma_ca: assignForm.ma_ca, ngay: assignForm.ngay })
+        )
+      );
+      const ok = results.filter((r) => r.status === "fulfilled").length;
+      const fail = results.length - ok;
+      if (ok) {
+        toast(`Đã phân công ${ok} nhân viên vào ca`);
+        setIsAssignModalOpen(false);
+        setAssignForm({ ma_ca: '', ngay: assignForm.ngay });
+        setAssignStaffIds([]);
+        fetchData();
+      }
+      if (fail) {
+        toast(`${fail} nhân viên chưa phân công được (có thể đã có trong ca)`, "error");
+      }
+    } finally {
+      setAssignSaving(false);
     }
   };
 
   const handleDeleteAssignment = async (ma_nhan_vien, ma_ca, ngayStr, e) => {
-    e.stopPropagation(); 
-    if(window.confirm("Bạn có chắc chắn muốn gỡ nhân viên này khỏi ca làm?")) {
+    e.stopPropagation();
+    if (await confirm("Bạn có chắc chắn muốn gỡ nhân viên này khỏi ca làm?", { danger: true, confirmLabel: "Gỡ ca" })) {
       try {
         await deletePhanCong({ ma_nhan_vien, ma_ca, ngay: ngayStr });
-        fetchData(); 
-      } catch (error) {
-        alert("Lỗi khi xóa phân công: " + (error.response?.data?.message || error.message));
-      }
-    }
-  };
-
-  const handleSaveFlex = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        ma_nhan_vien: flexForm.ma_nhan_vien,
-        ngay: flexForm.ngay,
-        gio_bat_dau: flexForm.gio_bat_dau,
-        gio_ket_thuc: flexForm.gio_ket_thuc,
-        ghi_chu: flexForm.ghi_chu || null,
-      };
-      if (flexForm.id) {
-        await updatePhanCongLinhHoat(flexForm.id, payload);
-      } else {
-        await createPhanCongLinhHoat(payload);
-      }
-      setIsFlexModalOpen(false);
-      setFlexForm(emptyFlexForm);
-      fetchData();
-    } catch (error) {
-      alert("Lỗi: " + (error.response?.data?.message || "Không thể lưu ca linh hoạt"));
-    }
-  };
-
-  const handleDeleteFlex = async (id, e) => {
-    e.stopPropagation();
-    if (window.confirm("Bạn có chắc chắn muốn xóa ca linh hoạt này?")) {
-      try {
-        await deletePhanCongLinhHoat(id);
+        toast("Đã gỡ phân công");
         fetchData();
       } catch (error) {
-        alert("Lỗi khi xóa ca linh hoạt: " + (error.response?.data?.message || error.message));
+        toast("Lỗi khi xóa phân công: " + (error.response?.data?.message || error.message), "error");
       }
     }
-  };
-
-  const openFlexModalForDay = (dayStr) => {
-    setFlexForm({ ...emptyFlexForm, ngay: dayStr });
-    setIsFlexModalOpen(true);
-  };
-
-  const openFlexModalForEdit = (assign) => {
-    setFlexForm({
-      id: assign.id,
-      ma_nhan_vien: String(assign.ma_nhan_vien),
-      ngay: assign.ngay,
-      gio_bat_dau: assign.gio_bat_dau,
-      gio_ket_thuc: assign.gio_ket_thuc,
-      ghi_chu: assign.ghi_chu || '',
-    });
-    setIsFlexModalOpen(true);
   };
 
   const handlePrint = () => window.print(); /* ── In lịch phân công (toàn trang) ── */
@@ -311,15 +318,27 @@ const NhanVien = () => {
   };
 
   const openAssignModalForDay = (shiftId, dayStr) => {
-    setAssignForm({ ma_nhan_vien: '', ma_ca: String(shiftId), ngay: dayStr });
+    setAssignForm({ ma_ca: String(shiftId), ngay: dayStr });
+    setAssignStaffIds([]);
     setIsAssignModalOpen(true);
   };
 
-  const shiftsConfig = [
-    { id: 1, label: 'Ca Sáng', time: '06:00-12:00', icon: 'sunny', theme: 'secondary-fixed' },
-    { id: 2, label: 'Ca Chiều', time: '12:00-18:00', icon: 'partly_cloudy_day', theme: 'tertiary-container' },
-    { id: 3, label: 'Ca Tối', time: '18:00-23:00', icon: 'nights_stay', theme: 'primary-container' }
-  ];
+  // Màu theo buổi: Sáng = ấm (amber), Chiều = trung tính (secondary), Tối = xanh đậm (primary)
+  // Ca lấy từ DB; icon/màu là phần trình bày suy ra theo buổi
+  const shiftsConfig = useMemo(
+    () =>
+      shifts.map((c) => {
+        const p = shiftPresentation(c.buoi);
+        return {
+          id: Number(c.ma_ca),
+          label: c.buoi,
+          time: c.gio_bat_dau && c.gio_ket_thuc ? `${c.gio_bat_dau}-${c.gio_ket_thuc}` : "",
+          icon: p.icon,
+          color: p.color,
+        };
+      }),
+    [shifts]
+  );
 
   const weekRange = useMemo(() => getWeekRange(filterDate), [filterDate]);
 
@@ -331,10 +350,7 @@ const NhanVien = () => {
     [staffList]
   );
 
-  /**
-   * Quá khứ & hôm nay: luôn hiện ca đã gán.
-   * Tương lai: ẩn nếu NV tạm nghỉ / đã nghỉ.
-   */
+  
   const getAssignmentsForCell = useCallback(
     (shiftId, dayStr) => {
       const ngay = toYmd(dayStr);
@@ -372,7 +388,7 @@ const NhanVien = () => {
           return (
             <div
               key={`${assign.ma_nhan_vien}-${assignIdx}`}
-              className="assignee-pill group/pill inline-flex items-center gap-0.5 pl-2 pr-0.5 py-0.5 rounded-lg bg-primary/10 border border-outline/40 text-sm font-medium w-max max-w-full min-h-[1.75rem]"
+              className="assignee-pill inline-flex items-center gap-0.5 pl-2 pr-0.5 py-0.5 rounded-lg bg-primary/10 border border-outline/40 text-sm font-medium w-max max-w-full min-h-[1.75rem]"
             >
               <span className="assignee-name hidden print:inline text-left leading-snug">{staffName}</span>
               <button
@@ -385,7 +401,7 @@ const NhanVien = () => {
               <button
                 type="button"
                 onClick={(e) => handleDeleteAssignment(assign.ma_nhan_vien, shiftId, dayStr, e)}
-                className="print:hidden opacity-0 group-hover/pill:opacity-100 inline-flex items-center justify-center w-6 h-6 shrink-0 ml-auto text-error hover:bg-error/15 rounded-md transition-opacity"
+                className="print:hidden opacity-70 hover:opacity-100 active:opacity-100 inline-flex items-center justify-center w-6 h-6 shrink-0 ml-auto text-error hover:bg-error/15 rounded-md transition-opacity"
                 aria-label="Gỡ ca"
               >
                 <span className="material-symbols-outlined text-[18px] leading-none">close</span>
@@ -411,22 +427,34 @@ const NhanVien = () => {
     return `${d}/${m}/${y}`;
   };
 
-  const visibleFlexAssignments = useMemo(() => {
-    const list =
-      viewMode === "week"
-        ? flexAssignments
-        : flexAssignments.filter((a) => a.ngay === filterDate);
-    return [...list].sort((a, b) =>
-      a.ngay === b.ngay ? a.gio_bat_dau.localeCompare(b.gio_bat_dau) : a.ngay.localeCompare(b.ngay)
-    );
-  }, [flexAssignments, viewMode, filterDate]);
+  // Ngày sinh hợp lệ: trống (tùy chọn) hoặc là ngày thật và không ở tương lai
+  const isValidBirth = (dmy) => {
+    if (!dmy) return true;
+    const ymd = dmyToYmd(dmy);
+    return !!ymd && ymd <= today;
+  };
+
+  // Nhân viên có thể phân vào ca đang chọn: hợp lệ theo trạng thái và chưa có trong ca đó
+  const assignedIdsInCell = new Set(
+    assignForm.ma_ca
+      ? getAssignmentsForCell(Number(assignForm.ma_ca), assignForm.ngay).map((a) => String(a.ma_nhan_vien))
+      : []
+  );
+  const assignCandidates = staffList.filter(
+    (nv) =>
+      canSelectInAssignModal(nv.trang_thai, assignForm.ngay, today) &&
+      !assignedIdsInCell.has(String(nv.ma_nhan_vien))
+  );
 
   // =====================================================================
   // NOTE 5: GIAO DIỆN HIỂN THỊ
   // =====================================================================
   return (
-    <div className="font-body w-full text-on-surface pb-8 print:bg-white print:m-0 print:p-0">
-      
+    <div className="w-full text-on-surface pb-8 print:bg-white print:m-0 print:p-0">
+      <div className="print:hidden">
+        <ToastContainer toasts={toasts} onDismiss={dismiss} />
+      </div>
+
       <style>
   {`
     @media print {
@@ -487,7 +515,7 @@ const NhanVien = () => {
       }
       .schedule-board {
         height: auto !important;
-        grid-template-rows: auto repeat(3, auto) !important;
+        grid-template-rows: auto repeat(6, auto) !important;
       }
       .schedule-board .schedule-body,
       .schedule-board .schedule-cell {
@@ -567,7 +595,7 @@ const NhanVien = () => {
       }
       .schedule-day-board {
         display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
+        grid-template-columns: repeat(2, 1fr) !important;
       }
       @page {
         size: landscape;
@@ -581,15 +609,15 @@ const NhanVien = () => {
         {/* Tiêu đề trang */}
         <div className="print:hidden shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold text-on-surface">Quản lý nhân sự</h2>
+            <h2 className="text-3xl font-bold text-on-surface">Quản lý nhân sự</h2>
             <p className="text-sm text-muted">Thông tin nhân viên và lịch phân công ca</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
-            <button type="button" onClick={() => setIsModalOpen(true)} className="btn-primary !py-2 !px-3 !text-xs">
+            <button type="button" onClick={() => setIsModalOpen(true)} className="btn-primary !py-2 !px-3 !text-sm">
               <span className="material-symbols-outlined text-base">person_add</span>
               Thêm nhân viên
             </button>
-            <button type="button" onClick={handlePrint} className="btn-outline !py-2 !px-3 !text-xs">
+            <button type="button" onClick={handlePrint} className="btn-outline !py-2 !px-3 !text-sm">
               <span className="material-symbols-outlined text-base">print</span>
               In lịch
             </button>
@@ -664,8 +692,9 @@ const NhanVien = () => {
           ) : (
             <div className="flex-1 min-h-0 w-full p-2 md:p-3 print:p-0">
               {viewMode === "week" ? (
+                <div className="h-full overflow-x-auto custom-scrollbar print:overflow-visible">
                 <div
-                  className="schedule-board print-table h-full"
+                  className="schedule-board print-table h-full min-w-[880px] print:min-w-0"
                   style={{
                     gridTemplateColumns: "minmax(3rem, 5%) repeat(7, minmax(0, 1fr))",
                     gridTemplateRows: `minmax(2.25rem, auto) repeat(${shiftsConfig.length}, minmax(0, 1fr))`,
@@ -677,10 +706,13 @@ const NhanVien = () => {
                   {weekDays.map((d, index) => {
                     const dayStr = formatDateString(d);
                     const isTodayCol = dayStr === today;
+                    const le = holidays[toYmd(dayStr)];
                     return (
                       <div
                         key={index}
                         className={`schedule-cell schedule-head px-1 py-2 text-center ${isTodayCol ? "bg-primary/15" : ""}`}
+                        style={le ? { backgroundColor: "color-mix(in srgb, var(--color-warning) 12%, transparent)" } : undefined}
+                        title={le ? `Ngày lễ${le.ten ? `: ${le.ten}` : ""} (×${le.he_so})` : undefined}
                       >
                         <p className="font-semibold text-muted uppercase leading-tight">
                           {index === 6 ? "CN" : `T${index + 2}`}
@@ -688,14 +720,22 @@ const NhanVien = () => {
                         <p className="font-bold text-on-surface leading-tight mt-0.5 text-[clamp(0.65rem,1.2vw,0.875rem)]">
                           {formatDisplayDate(dayStr)}
                         </p>
+                        {le && (
+                          <span className="inline-block mt-0.5 px-1 rounded text-[9px] font-bold text-warning leading-none" style={{ backgroundColor: "color-mix(in srgb, var(--color-warning) 22%, transparent)" }}>
+                            Lễ ×{le.he_so}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
                   {shiftsConfig.map((shift) => (
                     <React.Fragment key={shift.id}>
-                      <div className="schedule-cell schedule-shift px-1 py-2 flex flex-col items-center justify-center text-center gap-0.5 print:bg-gray-50">
-                        <span className="material-symbols-outlined text-primary text-[clamp(1rem,2vw,1.25rem)] print:hidden">{shift.icon}</span>
-                        <span className="font-bold text-primary leading-tight">{shift.label}</span>
+                      <div
+                        className="schedule-cell schedule-shift px-1 py-2 flex flex-col items-center justify-center text-center gap-0.5 print:bg-gray-50"
+                        style={{ background: `color-mix(in srgb, ${shift.color} 10%, transparent)` }}
+                      >
+                        <span className="material-symbols-outlined text-[clamp(1rem,2vw,1.25rem)] print:hidden" style={{ color: shift.color }}>{shift.icon}</span>
+                        <span className="font-bold leading-tight" style={{ color: shift.color }}>{shift.label}</span>
                         <span className="text-muted leading-tight">{shift.time}</span>
                       </div>
                       {weekDays.map((day, idx) => {
@@ -714,19 +754,28 @@ const NhanVien = () => {
                     </React.Fragment>
                   ))}
                 </div>
+                </div>
               ) : (
-                <div className="schedule-day-board print-table h-full grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 auto-rows-fr">
+                <div className="flex flex-col h-full min-h-0 gap-3">
+                  {holidays[toYmd(filterDate)] && (
+                    <div className="shrink-0 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-warning" style={{ backgroundColor: "color-mix(in srgb, var(--color-warning) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--color-warning) 30%, transparent)" }}>
+                      <span className="material-symbols-outlined text-lg">celebration</span>
+                      Ngày lễ{holidays[toYmd(filterDate)].ten ? `: ${holidays[toYmd(filterDate)].ten}` : ""} — lương ×{holidays[toYmd(filterDate)].he_so}
+                    </div>
+                  )}
+                <div className="schedule-day-board print-table flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 auto-rows-fr">
                   {shiftsConfig.map((shift) => {
                     const count = getAssignmentsForCell(shift.id, filterDate).length;
                     return (
                       <div
                         key={shift.id}
-                        className="schedule-day-card flex flex-col rounded-xl border border-outline/40 overflow-hidden min-h-[10rem] bg-primary/[0.03]"
+                        className="schedule-day-card flex flex-col rounded-xl border border-outline/40 overflow-hidden min-h-[10rem]"
+                        style={{ borderLeft: `3px solid ${shift.color}`, background: `color-mix(in srgb, ${shift.color} 4%, transparent)` }}
                       >
-                        <div className="px-3 py-3 border-b border-outline/30 bg-primary/5 flex items-center gap-3 shrink-0">
-                          <span className="material-symbols-outlined text-primary text-2xl print:hidden">{shift.icon}</span>
+                        <div className="px-3 py-3 border-b border-outline/30 flex items-center gap-3 shrink-0" style={{ background: `color-mix(in srgb, ${shift.color} 9%, transparent)` }}>
+                          <span className="material-symbols-outlined text-2xl print:hidden" style={{ color: shift.color }}>{shift.icon}</span>
                           <div className="min-w-0">
-                            <p className="font-bold text-primary">{shift.label}</p>
+                            <p className="font-bold" style={{ color: shift.color }}>{shift.label}</p>
                             <p className="text-xs text-muted">{shift.time}</p>
                           </div>
                           <span className="ml-auto text-xs font-semibold tabular-nums text-muted shrink-0">
@@ -743,76 +792,16 @@ const NhanVien = () => {
                     );
                   })}
                 </div>
+                </div>
               )}
             </div>
           )}
         </section>
 
-        {/* Ca linh hoạt — phân công giờ tùy chỉnh, ngoài các ca mặc định */}
-        <section className="card overflow-hidden print:hidden shrink-0">
-          <div className="p-3 md:p-4 border-b border-outline flex items-center justify-between gap-3">
-            <div>
-              <h2 className="font-bold text-primary text-sm">Ca linh hoạt (giờ tùy chỉnh)</h2>
-              <p className="text-xs text-muted mt-0.5">
-                Phân công nhân viên theo khung giờ tự do, ngoài các ca mặc định
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => openFlexModalForDay(viewMode === "day" ? filterDate : today)}
-              className="btn-outline !py-2 !px-3 !text-xs shrink-0"
-            >
-              <span className="material-symbols-outlined text-base">add</span>
-              Thêm ca linh hoạt
-            </button>
-          </div>
-          <div className="p-3 md:p-4">
-            {visibleFlexAssignments.length === 0 ? (
-              <p className="text-center text-muted text-sm py-4">Chưa có ca linh hoạt nào trong khoảng thời gian này</p>
-            ) : (
-              <div className="space-y-2">
-                {visibleFlexAssignments.map((a) => {
-                  const staffName =
-                    a.ten || staffList.find((s) => String(s.ma_nhan_vien) === String(a.ma_nhan_vien))?.ten || `#${a.ma_nhan_vien}`;
-                  return (
-                    <div
-                      key={a.id}
-                      className="flex items-center gap-3 p-2.5 rounded-lg border border-outline/30 hover:border-primary/40 transition-colors"
-                    >
-                      <div className="w-16 shrink-0 text-xs font-semibold text-muted tabular-nums">
-                        {formatDisplayDate(a.ngay)}
-                      </div>
-                      <div className="w-24 shrink-0 text-xs font-bold text-primary tabular-nums">
-                        {a.gio_bat_dau}–{a.gio_ket_thuc}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => openFlexModalForEdit(a)}
-                        className="min-w-0 flex-1 text-left text-sm font-medium hover:text-primary truncate"
-                      >
-                        {staffName}
-                      </button>
-                      {a.ghi_chu && <span className="text-xs text-muted truncate max-w-[10rem] hidden sm:block">{a.ghi_chu}</span>}
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteFlex(a.id, e)}
-                        className="shrink-0 inline-flex items-center justify-center w-8 h-8 text-error hover:bg-error/15 rounded-md transition-colors"
-                        aria-label="Xóa ca linh hoạt"
-                      >
-                        <span className="material-symbols-outlined text-[18px] leading-none">close</span>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-
         {/* Danh sách nhân viên — dưới lịch */}
         <aside className="card overflow-hidden print:hidden shrink-0">
           <div className="p-3 md:p-4 border-b border-outline">
-            <h2 className="font-bold text-primary text-sm">Danh sách nhân viên</h2>
+            <h2 className="font-bold text-primary text-lg">Danh sách nhân viên</h2>
           </div>
           <div className="p-3 md:p-4">
             {staffList.length === 0 ? (
@@ -862,73 +851,108 @@ const NhanVien = () => {
             <h3 className="text-lg font-bold text-primary pr-8">{staffDetailModal.isEditing ? "Sửa hồ sơ" : "Chi tiết nhân viên"}</h3>
 
             {staffDetailModal.isEditing ? (
-              <form onSubmit={handleUpdateStaff} className="space-y-3">
-                <div><label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">Họ và tên</label><input required type="text" value={staffDetailModal.data.ten} onChange={e => setStaffDetailModal({...staffDetailModal, data: {...staffDetailModal.data, ten: e.target.value}})} /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">Ngày sinh</label><input type="date" value={formatDateString(staffDetailModal.data.ngay_sinh) || ''} onChange={e => setStaffDetailModal({...staffDetailModal, data: {...staffDetailModal.data, ngay_sinh: e.target.value}})} /></div>
-                  <div><label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">SĐT</label><input required type="text" value={staffDetailModal.data.so_dien_thoai} onChange={e => setStaffDetailModal({...staffDetailModal, data: {...staffDetailModal.data, so_dien_thoai: e.target.value}})} /></div>
+              <form onSubmit={handleUpdateStaff} className="space-y-3 mt-4">
+                <div>
+                  <label className="block text-sm font-semibold text-on-surface mb-1">Họ và tên</label>
+                  <input required type="text" className="input-field" value={staffDetailModal.data.ten} onChange={e => setStaffDetailModal({...staffDetailModal, data: {...staffDetailModal.data, ten: e.target.value}})} />
                 </div>
-                <div><label className="text-[9px] font-black uppercase text-on-surface opacity-50 ml-1 tracking-widest">Địa chỉ</label><input type="text" value={staffDetailModal.data.dia_chi || ''} onChange={e => setStaffDetailModal({...staffDetailModal, data: {...staffDetailModal.data, dia_chi: e.target.value}})} /></div>
-                <div className="flex gap-2 mt-5">
-                  <button type="button" onClick={() => setStaffDetailModal({...staffDetailModal, isEditing: false})} className="flex-1 py-2 font-bold text-xs bg-primary/5 rounded-lg uppercase">HỦY</button>
-                  <button type="submit" className="btn-primary flex-1 !py-2 !text-xs uppercase">LƯU CẬP NHẬT</button>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-on-surface mb-1">Ngày sinh</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="dd/MM/yyyy"
+                      className="input-field"
+                      style={editBirth && !isValidBirth(editBirth) ? { borderColor: "var(--color-error)" } : undefined}
+                      value={editBirth}
+                      onChange={e => setEditBirth(maskDateInput(e.target.value))}
+                    />
+                    {editBirth && !isValidBirth(editBirth) && (
+                      <p className="text-xs text-error mt-1">Ngày sinh không hợp lệ</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-on-surface mb-1">SĐT</label>
+                    <input
+                      required
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="0xxxxxxxxx"
+                      className="input-field"
+                      style={staffDetailModal.data.so_dien_thoai && !isValidPhone(staffDetailModal.data.so_dien_thoai) ? { borderColor: "var(--color-error)" } : undefined}
+                      value={staffDetailModal.data.so_dien_thoai}
+                      onChange={e => setStaffDetailModal({...staffDetailModal, data: {...staffDetailModal.data, so_dien_thoai: onlyDigits(e.target.value).slice(0, 10)}})}
+                    />
+                    {staffDetailModal.data.so_dien_thoai && !isValidPhone(staffDetailModal.data.so_dien_thoai) && (
+                      <p className="text-xs text-error mt-1">SĐT phải đủ 10 số và bắt đầu bằng 0</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-on-surface mb-1">Địa chỉ</label>
+                  <input type="text" className="input-field" value={staffDetailModal.data.dia_chi || ''} onChange={e => setStaffDetailModal({...staffDetailModal, data: {...staffDetailModal.data, dia_chi: e.target.value}})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-on-surface mb-1">Trạng thái</label>
+                  <select className="input-field" value={statusDraft} onChange={(e) => setStatusDraft(e.target.value)}>
+                    <option value="dang_lam">Đang làm</option>
+                    <option value="tam_nghi">Tạm nghỉ</option>
+                    <option value="da_nghi">Đã nghỉ</option>
+                  </select>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setStaffDetailModal({...staffDetailModal, isEditing: false})} className="btn-outline flex-1">Hủy</button>
+                  <button
+                    type="submit"
+                    disabled={statusSaving || !staffDetailModal.data.ten?.trim() || !isValidPhone(staffDetailModal.data.so_dien_thoai) || !isValidBirth(editBirth)}
+                    className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {statusSaving ? "Đang lưu..." : "Lưu thay đổi"}
+                  </button>
                 </div>
               </form>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 border-b border-outline/10 pb-4">
-                  <div className={`w-14 h-14 rounded-lg flex items-center justify-center text-2xl font-black uppercase ${!isDangLam(staffDetailModal.data.trang_thai) ? 'bg-on-surface/10 text-on-surface' : 'bg-primary/20 text-primary'}`}>
-                    {staffDetailModal.data.ten.charAt(0)}
+              <div className="space-y-4 mt-4">
+                <div className="flex items-center gap-4 border-b border-outline pb-4">
+                  <div className={`w-14 h-14 rounded-lg flex items-center justify-center text-2xl font-bold ${!isDangLam(staffDetailModal.data.trang_thai) ? 'bg-on-surface/10 text-on-surface' : 'bg-primary/20 text-primary'}`}>
+                    {staffDetailModal.data.ten.charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <p className="font-bold text-on-surface uppercase">{staffDetailModal.data.ten}</p>
-                    <p className="text-xs text-on-surface opacity-50 tracking-widest">Mã NV: #{staffDetailModal.data.ma_nhan_vien}</p>
+                  <div className="min-w-0">
+                    <p className="font-bold text-on-surface truncate">{staffDetailModal.data.ten}</p>
+                    <p className="text-xs text-muted">Mã NV: #{staffDetailModal.data.ma_nhan_vien}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-y-3">
-                  <div><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Số điện thoại</p><p className="text-sm font-medium mt-0.5 tabular-nums tracking-wide">{formatPhoneDisplay(staffDetailModal.data.so_dien_thoai)}</p></div>
-                  <div><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Ngày sinh</p><p className="text-sm font-medium mt-0.5">{formatDateString(staffDetailModal.data.ngay_sinh) ? formatDateString(staffDetailModal.data.ngay_sinh).split('-').reverse().join('/') : '---'}</p></div>
-                  <div className="col-span-2">
-                    <p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Trạng thái</p>
-                    <select
-                      className="input-field !py-1.5 !text-[11px] mt-1 font-black uppercase w-full"
-                      value={statusDraft}
-                      onChange={(e) => setStatusDraft(e.target.value)}
-                      disabled={statusSaving}
-                    >
-                      <option value="dang_lam">Đang làm</option>
-                      <option value="tam_nghi">Tạm nghỉ</option>
-                      <option value="da_nghi">Đã nghỉ</option>
-                    </select>
-                    <button
-                      type="button"
-                      disabled={
-                        statusSaving ||
-                        statusDraft === normalizeTrangThai(staffDetailModal.data.trang_thai)
-                      }
-                      onClick={async () => {
-                        const ok = await changeStaffStatus(
-                          staffDetailModal.data.ma_nhan_vien,
-                          statusDraft
-                        );
-                        if (ok) alert("Đã cập nhật trạng thái nhân viên");
-                      }}
-                      className="btn-outline w-full mt-2 !py-2 !text-[10px] uppercase disabled:opacity-40"
-                    >
-                      {statusSaving ? "Đang lưu..." : "Lưu trạng thái"}
-                    </button>
+                  <div>
+                    <p className="text-[11px] font-medium text-muted">Số điện thoại</p>
+                    <p className="text-sm font-medium mt-0.5 tabular-nums">{formatPhoneDisplay(staffDetailModal.data.so_dien_thoai)}</p>
                   </div>
-                  <div className="col-span-2"><p className="text-[9px] font-black uppercase text-on-surface opacity-40 tracking-widest">Địa chỉ</p><p className="text-sm font-medium mt-0.5">{staffDetailModal.data.dia_chi || '---'}</p></div>
+                  <div>
+                    <p className="text-[11px] font-medium text-muted">Ngày sinh</p>
+                    <p className="text-sm font-medium mt-0.5">{formatDateString(staffDetailModal.data.ngay_sinh) ? formatDateString(staffDetailModal.data.ngay_sinh).split('-').reverse().join('/') : '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium text-muted mb-1">Trạng thái</p>
+                    <StaffStatusBadge status={staffDetailModal.data.trang_thai} />
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[11px] font-medium text-muted">Địa chỉ</p>
+                    <p className="text-sm font-medium mt-0.5">{staffDetailModal.data.dia_chi || '—'}</p>
+                  </div>
                 </div>
-                
-                <div className="flex flex-col gap-2 mt-6">
-                  <button
-                    onClick={() => setStaffDetailModal({ ...staffDetailModal, isEditing: true })}
-                    className="btn-primary w-full !py-3 !text-[11px] !rounded-xl uppercase"
-                  >
-                    Sửa hồ sơ
-                  </button>
-                </div>
+
+                <button
+                  onClick={() => {
+                    setEditBirth(ymdToDmy(staffDetailModal.data.ngay_sinh));
+                    setStatusDraft(normalizeTrangThai(staffDetailModal.data.trang_thai));
+                    setStaffDetailModal({ ...staffDetailModal, isEditing: true });
+                  }}
+                  className="btn-primary w-full !py-3"
+                >
+                  Sửa hồ sơ
+                </button>
               </div>
             )}
           </div>
@@ -946,23 +970,53 @@ const NhanVien = () => {
             <form onSubmit={handleAddStaff} className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-muted">Họ và tên</label>
-                <input required type="text" className="mt-1" value={formData.ten} onChange={(e) => setFormData({ ...formData, ten: e.target.value })} />
+                <input required type="text" className="input-field mt-1" value={formData.ten} onChange={(e) => setFormData({ ...formData, ten: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-muted">Ngày sinh</label>
-                  <input type="date" className="mt-1" value={formData.ngay_sinh} onChange={(e) => setFormData({ ...formData, ngay_sinh: e.target.value })} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="dd/MM/yyyy"
+                    className="input-field mt-1"
+                    style={formData.ngay_sinh && !isValidBirth(formData.ngay_sinh) ? { borderColor: "var(--color-error)" } : undefined}
+                    value={formData.ngay_sinh}
+                    onChange={(e) => setFormData({ ...formData, ngay_sinh: maskDateInput(e.target.value) })}
+                  />
+                  {formData.ngay_sinh && !isValidBirth(formData.ngay_sinh) && (
+                    <p className="text-xs text-error mt-1">Ngày sinh không hợp lệ</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted">Số điện thoại</label>
-                  <input required type="text" className="mt-1" value={formData.so_dien_thoai} onChange={(e) => setFormData({ ...formData, so_dien_thoai: e.target.value })} />
+                  <input
+                    required
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="0xxxxxxxxx"
+                    className="input-field mt-1"
+                    style={formData.so_dien_thoai && !isValidPhone(formData.so_dien_thoai) ? { borderColor: "var(--color-error)" } : undefined}
+                    value={formData.so_dien_thoai}
+                    onChange={(e) => setFormData({ ...formData, so_dien_thoai: onlyDigits(e.target.value).slice(0, 10) })}
+                  />
+                  {formData.so_dien_thoai && !isValidPhone(formData.so_dien_thoai) && (
+                    <p className="text-xs text-error mt-1">SĐT phải đủ 10 số và bắt đầu bằng 0</p>
+                  )}
                 </div>
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted">Địa chỉ</label>
-                <input type="text" className="mt-1" value={formData.dia_chi} onChange={(e) => setFormData({ ...formData, dia_chi: e.target.value })} />
+                <input type="text" className="input-field mt-1" value={formData.dia_chi} onChange={(e) => setFormData({ ...formData, dia_chi: e.target.value })} />
               </div>
-              <button type="submit" className="btn-primary w-full !py-3">Lưu hồ sơ</button>
+              <button
+                type="submit"
+                disabled={addSaving || !formData.ten.trim() || !isValidPhone(formData.so_dien_thoai) || !isValidBirth(formData.ngay_sinh)}
+                className="btn-primary w-full !py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {addSaving ? "Đang lưu..." : "Lưu hồ sơ"}
+              </button>
             </form>
           </div>
         </div>
@@ -980,7 +1034,7 @@ const NhanVien = () => {
             <form onSubmit={handleAssignStaff} className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-muted">Ngày làm việc</label>
-                <input type="date" required className="mt-1" value={assignForm.ngay} onChange={(e) => setAssignForm({ ...assignForm, ngay: e.target.value })} />
+                <input type="date" required className="input-field mt-1" value={assignForm.ngay} onChange={(e) => setAssignForm({ ...assignForm, ngay: e.target.value })} />
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted">Ca làm</label>
@@ -992,104 +1046,54 @@ const NhanVien = () => {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-muted">Nhân viên</label>
-                <select required className="input-field mt-1" value={assignForm.ma_nhan_vien} onChange={(e) => setAssignForm({ ...assignForm, ma_nhan_vien: e.target.value })}>
-                  <option value="" disabled>Chọn nhân viên</option>
-                  {staffList.filter((nv) => canSelectInAssignModal(nv.trang_thai, assignForm.ngay, today)).map((nv) => (
-                    <option key={nv.ma_nhan_vien} value={nv.ma_nhan_vien}>{nv.ten}</option>
-                  ))}
-                </select>
-              </div>
-              <button type="submit" className="btn-primary w-full !py-3">Xác nhận phân công</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal ca linh hoạt (thêm/sửa) */}
-      {isFlexModalOpen && (
-        <div
-          className="print:hidden modal-overlay"
-          onClick={() => { setIsFlexModalOpen(false); setFlexForm(emptyFlexForm); }}
-        >
-          <div className="modal-panel max-w-md p-5 md:p-6 relative" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => { setIsFlexModalOpen(false); setFlexForm(emptyFlexForm); }}
-              className="absolute top-4 right-4 btn-ghost !p-2"
-            >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-            <h3 className="text-lg font-bold text-primary mb-1">
-              {flexForm.id ? "Sửa ca linh hoạt" : "Thêm ca linh hoạt"}
-            </h3>
-            <p className="text-sm text-muted mb-4">Phân công theo khung giờ tùy chỉnh</p>
-            <form onSubmit={handleSaveFlex} className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-muted">Ngày làm việc</label>
-                <input
-                  type="date"
-                  required
-                  className="mt-1"
-                  value={flexForm.ngay}
-                  onChange={(e) => setFlexForm({ ...flexForm, ngay: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-muted">Giờ bắt đầu</label>
-                  <select
-                    required
-                    className="input-field mt-1"
-                    value={flexForm.gio_bat_dau}
-                    onChange={(e) => setFlexForm({ ...flexForm, gio_bat_dau: e.target.value })}
-                  >
-                    <option value="" disabled>Chọn giờ</option>
-                    {HOUR_OPTIONS.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-muted">
+                    Nhân viên{assignStaffIds.length > 0 ? ` — đã chọn ${assignStaffIds.length}` : ""}
+                  </label>
+                  {assignCandidates.length > 0 && (
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-primary hover:underline"
+                      onClick={() =>
+                        setAssignStaffIds((prev) =>
+                          prev.length === assignCandidates.length
+                            ? []
+                            : assignCandidates.map((nv) => String(nv.ma_nhan_vien))
+                        )
+                      }
+                    >
+                      {assignStaffIds.length === assignCandidates.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                    </button>
+                  )}
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted">Giờ kết thúc</label>
-                  <select
-                    required
-                    className="input-field mt-1"
-                    value={flexForm.gio_ket_thuc}
-                    onChange={(e) => setFlexForm({ ...flexForm, gio_ket_thuc: e.target.value })}
-                  >
-                    <option value="" disabled>Chọn giờ</option>
-                    {HOUR_OPTIONS.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
+                <div className="max-h-56 overflow-y-auto rounded-lg border border-outline/40 divide-y divide-outline/20 custom-scrollbar">
+                  {assignCandidates.length === 0 ? (
+                    <p className="text-sm text-muted p-3 text-center">Không có nhân viên khả dụng cho ca này</p>
+                  ) : (
+                    assignCandidates.map((nv) => {
+                      const id = String(nv.ma_nhan_vien);
+                      const checked = assignStaffIds.includes(id);
+                      return (
+                        <label key={nv.ma_nhan_vien} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-primary/5">
+                          <input
+                            type="checkbox"
+                            className="!w-4 !h-4 accent-primary"
+                            checked={checked}
+                            onChange={() => toggleAssignStaff(id)}
+                          />
+                          <span className="text-sm font-medium">{nv.ten}</span>
+                        </label>
+                      );
+                    })
+                  )}
                 </div>
               </div>
-              <div>
-                <label className="text-xs font-semibold text-muted">Nhân viên</label>
-                <select
-                  required
-                  className="input-field mt-1"
-                  value={flexForm.ma_nhan_vien}
-                  onChange={(e) => setFlexForm({ ...flexForm, ma_nhan_vien: e.target.value })}
-                >
-                  <option value="" disabled>Chọn nhân viên</option>
-                  {staffList.filter((nv) => canSelectInAssignModal(nv.trang_thai, flexForm.ngay, today)).map((nv) => (
-                    <option key={nv.ma_nhan_vien} value={nv.ma_nhan_vien}>{nv.ten}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted">Ghi chú (không bắt buộc)</label>
-                <input
-                  type="text"
-                  className="mt-1"
-                  value={flexForm.ghi_chu}
-                  onChange={(e) => setFlexForm({ ...flexForm, ghi_chu: e.target.value })}
-                />
-              </div>
-              <button type="submit" className="btn-primary w-full !py-3">
-                {flexForm.id ? "Lưu thay đổi" : "Xác nhận phân công"}
+              <button
+                type="submit"
+                disabled={assignSaving || assignStaffIds.length === 0}
+                className="btn-primary w-full !py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {assignSaving ? "Đang phân công..." : "Xác nhận phân công"}
               </button>
             </form>
           </div>

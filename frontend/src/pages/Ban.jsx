@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createBan, deleteBanById, getBanList, updateBanById } from "../services/banService";
+import { ToastContainer, useToast } from "../components/Toast";
+import { useConfirm } from "../context/ConfirmContext";
 
 const removeVietnameseTones = (str) => {
   if (!str) return '';
@@ -12,6 +14,8 @@ const removeVietnameseTones = (str) => {
 };
 
 export default function Ban() {
+  const { toasts, show: toast, dismiss } = useToast();
+  const { confirm } = useConfirm();
   const [list, setList] = useState([]);
   const [tenBan, setTenBan] = useState("");
   const [editId, setEditId] = useState(null);
@@ -24,7 +28,7 @@ export default function Ban() {
       const data = await getBanList("asc");
       setList(data);
     } catch (err) {
-      alert("Không load được dữ liệu");
+      toast("Không load được dữ liệu", "error");
     } finally {
       setLoading(false);
     }
@@ -49,38 +53,45 @@ export default function Ban() {
 
   const addBan = async () => {
     const ten = tenBan.trim();
-    if (!ten) return alert("Nhập tên bàn!");
+    if (!ten) return toast("Nhập tên bàn!", "error");
 
     if (list.some(b => b.ten_ban.toLowerCase() === ten.toLowerCase())) {
-      return alert("Tên bàn đã tồn tại!");
+      return toast("Tên bàn đã tồn tại!", "error");
     }
 
     try {
       await createBan({ ten_ban: ten });
       setTenBan("");
+      toast("Đã thêm bàn mới");
       loadData();
     } catch (err) {
-      alert(err.response?.data?.message || "Lỗi");
+      toast(err.response?.data?.message || "Lỗi", "error");
     }
   };
 
   const deleteBan = async (id) => {
-    if (!window.confirm("Xóa bàn này?")) return;
-    await deleteBanById(id);
-    loadData();
+    if (!(await confirm("Xóa bàn này?", { danger: true, confirmLabel: "Xóa" }))) return;
+    try {
+      await deleteBanById(id);
+      toast("Đã xóa bàn");
+      loadData();
+    } catch (err) {
+      toast(err.response?.data?.message || "Không thể xóa bàn", "error");
+    }
   };
 
   const updateBan = async () => {
     const ten = tenBan.trim();
-    if (!ten) return alert("Nhập tên bàn!");
+    if (!ten) return toast("Nhập tên bàn!", "error");
 
     try {
       await updateBanById(editId, { ten_ban: ten });
       setEditId(null);
       setTenBan("");
+      toast("Đã cập nhật bàn");
       loadData();
     } catch (err) {
-      alert(err.response?.data?.message || "Lỗi");
+      toast(err.response?.data?.message || "Lỗi", "error");
     }
   };
 
@@ -91,9 +102,10 @@ export default function Ban() {
 
   return (
     <div className="space-y-4 text-on-surface pb-8">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-on-surface">Quản lý bàn</h2>
+          <h2 className="text-3xl font-bold text-on-surface">Quản lý bàn</h2>
           <p className="text-sm text-muted">Danh sách bàn phục vụ tại quán</p>
         </div>
       </div>

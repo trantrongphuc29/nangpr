@@ -119,7 +119,7 @@ function buildPrintBill(order, loaiDonLabel, hinhThucThanhToanLabel) {
         <span>TỔNG CỘNG:</span><span>${dinhDangTien(tien + phi)}</span>
       </div>
       <div class="line"></div>
-      <div class="center small mt8">Cảm ơn quý khách!</div>
+      <div class="center small mt8">Cảm ơn quý khách. Hẹn gặp lại!</div>
       <div class="center xsmall">${new Date().toLocaleString("vi-VN")}</div>
     </div>
   `);
@@ -467,11 +467,11 @@ export default function DoanhThu() {
       {/* ── Header + Bộ lọc thời gian ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-on-surface">Doanh thu</h2>
+          <h2 className="text-3xl font-bold text-on-surface">Doanh thu</h2>
           <p className="text-sm text-muted">Tổng hợp doanh thu bán hàng</p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-fit">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-fit">
           <div className="flex bg-surface-container-high p-0.5 rounded-lg items-center">
             {CAC_KHOANG_THOI_GIAN.map((k) => (
               <NutKhoangThoiGian key={k.key} active={!tuNgay && khoangThoiGian === k.key}

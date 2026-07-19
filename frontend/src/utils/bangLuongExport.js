@@ -73,9 +73,40 @@ function formatRowForDisplay(cells) {
   });
 }
 
+function slugifyName(str) {
+  return String(str || "nhan_vien")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toLowerCase() || "nhan_vien";
+}
+
+// Các dòng của phiếu lương cá nhân — chỉ những khoản nhân viên cần biết,
+// không có trạng thái kỳ / tổng tiền phải trả / tổng cộng toàn quán.
+function payslipLines(r) {
+  return [
+    ["Tổng ca làm", String(moneyNum(r.tong_ca)), false],
+    ["Tổng giờ làm", hoursText(r.tong_gio), false],
+    ["Lương/giờ", `${moneyText(r.luong_gio)} đ`, false],
+    ["Lương cơ bản", `${moneyText(r.luong_co_ban)} đ`, false],
+    ["Phụ cấp", `${moneyText(r.phu_cap)} đ`, false],
+    ["Thưởng", `${moneyText(r.thuong)} đ`, false],
+    ["Khấu trừ", `${moneyText(r.khau_tru)} đ`, false],
+    ["Tạm ứng", `${moneyText(r.tam_ung)} đ`, false],
+    ["Lương thực nhận", `${moneyText(r.luong_thuc_nhan)} đ`, true],
+  ];
+}
+
 export function exportBangLuongExcel({ rows, totals, thang, nam, kyLabel }) {
   if (!rows?.length) {
     throw new Error("Không có dữ liệu để xuất");
+  }
+
+  // Xuất cho 1 nhân viên -> phiếu lương cá nhân để đưa cho họ.
+  if (rows.length === 1) {
+    return exportPhieuLuongExcel({ row: rows[0], thang, nam });
   }
 
   const sheetData = [
@@ -106,6 +137,28 @@ export function exportBangLuongExcel({ rows, totals, thang, nam, kyLabel }) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Bảng lương");
   XLSX.writeFile(wb, `bang_luong_${nam}-${pad2(thang)}.xlsx`);
+}
+
+export function exportPhieuLuongExcel({ row, thang, nam }) {
+  if (!row) {
+    throw new Error("Không có dữ liệu để xuất");
+  }
+
+  const sheetData = [
+    [`PHIẾU LƯƠNG THÁNG ${pad2(thang)}/${nam}`],
+    [`Nhân viên: ${row.ten || ""}`],
+    [`Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`],
+    [],
+    ["Khoản mục", "Giá trị"],
+    ...payslipLines(row).map(([label, value]) => [label, value]),
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws["!cols"] = [{ wch: 22 }, { wch: 22 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Phiếu lương");
+  XLSX.writeFile(wb, `phieu_luong_${slugifyName(row.ten)}_${nam}-${pad2(thang)}.xlsx`);
 }
 
 export function exportPhieuNhapExcel({ rows, tuNgay, denNgay }) {
@@ -274,6 +327,11 @@ export async function exportBangLuongPDF({ rows, totals, thang, nam, kyLabel }) 
     throw new Error("Không có dữ liệu để xuất");
   }
 
+  // Xuất cho 1 nhân viên -> phiếu lương cá nhân để đưa cho họ.
+  if (rows.length === 1) {
+    return exportPhieuLuongPDF({ row: rows[0], thang, nam });
+  }
+
   const theme = getPdfTheme();
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   await registerPdfFonts(doc);
@@ -361,4 +419,79 @@ export async function exportBangLuongPDF({ rows, totals, thang, nam, kyLabel }) 
   });
 
   doc.save(`bang_luong_${nam}-${pad2(thang)}.pdf`);
+}
+
+export async function exportPhieuLuongPDF({ row, thang, nam }) {
+  if (!row) {
+    throw new Error("Không có dữ liệu để xuất");
+  }
+
+  const theme = getPdfTheme();
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  await registerPdfFonts(doc);
+
+  const pageW = doc.internal.pageSize.getWidth();
+
+  doc.setFont(PDF_FONT, "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(...theme.primary);
+  doc.text(`PHIẾU LƯƠNG THÁNG ${pad2(thang)}/${nam}`, pageW / 2, 20, { align: "center" });
+
+  doc.setFont(PDF_FONT, "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(...theme.text);
+  doc.text(`Nhân viên: ${row.ten || ""}`, 16, 32);
+
+  doc.setFont(PDF_FONT, "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...theme.muted);
+  doc.text(`Ngày xuất: ${new Date().toLocaleDateString("vi-VN")}`, 16, 39);
+
+  const lines = payslipLines(row);
+  const body = lines.filter(([, , highlight]) => !highlight).map(([label, value]) => [label, value]);
+  const foot = lines.filter(([, , highlight]) => highlight).map(([label, value]) => [label, value]);
+
+  autoTable(doc, {
+    startY: 46,
+    head: [["Khoản mục", "Giá trị"]],
+    body,
+    foot,
+    theme: "grid",
+    styles: {
+      font: PDF_FONT,
+      fontSize: 11,
+      cellPadding: 3.5,
+      overflow: "linebreak",
+      textColor: theme.text,
+      lineColor: theme.border,
+      lineWidth: 0.15,
+      fillColor: theme.surface,
+    },
+    headStyles: {
+      font: PDF_FONT,
+      fillColor: theme.primary,
+      textColor: theme.onPrimary,
+      fontStyle: "bold",
+      halign: "left",
+      valign: "middle",
+      minCellHeight: 9,
+    },
+    footStyles: {
+      font: PDF_FONT,
+      fillColor: theme.primaryContainer,
+      textColor: theme.text,
+      fontStyle: "bold",
+      fontSize: 12,
+    },
+    alternateRowStyles: {
+      fillColor: theme.mainBg,
+    },
+    columnStyles: {
+      0: { halign: "left", cellWidth: 90 },
+      1: { halign: "right", fontStyle: "bold" },
+    },
+    margin: { left: 16, right: 16 },
+  });
+
+  doc.save(`phieu_luong_${slugifyName(row.ten)}_${nam}-${pad2(thang)}.pdf`);
 }

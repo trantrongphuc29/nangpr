@@ -2,12 +2,68 @@ import { useEffect, useMemo, useState } from "react";
 import { getBangCong, getBangCongChiTiet } from "../services/payrollService";
 import { getNhanVienList } from "../services/nhanVienService";
 import ModalPortal from "../components/ModalPortal";
+import { ToastContainer, useToast } from "../components/Toast";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
 
+/* ── In phiếu công cá nhân ── */
+function buildCongPrintHTML({ employee, rows, thang, nam }) {
+  const now = new Date().toLocaleString("vi-VN");
+  const list = rows || [];
+  const tongCa = list.length;
+  const tongGio = list.reduce((s, r) => s + Number(r.so_gio || 0), 0);
+  const soNgay = new Set(list.map((r) => String(r.ngay).slice(0, 10))).size;
+  const gio = (n) => Number(n || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+  const body = list
+    .map(
+      (r) => `
+      <tr>
+        <td>${new Date(r.ngay).toLocaleDateString("vi-VN")}</td>
+        <td>${r.ten_ca || ""}</td>
+        <td>${r.thoi_gian_ca || ""}</td>
+        <td class="right">${gio(r.so_gio)}</td>
+      </tr>`
+    )
+    .join("");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Phiếu công</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Times New Roman',serif;color:#000;font-size:13px;padding:24px}
+    h1{font-size:18px;text-align:center;text-transform:uppercase;letter-spacing:1px}
+    .sub{text-align:center;font-size:12px;margin-top:2px}
+    .info{margin:14px 0;line-height:1.7}
+    table{width:100%;border-collapse:collapse;margin-top:6px}
+    th,td{border:1px solid #000;padding:6px 8px;font-size:12px}
+    th{background:#f0f0f0;text-transform:uppercase;font-size:11px}
+    .right{text-align:right}
+    tfoot td{font-weight:bold;background:#f7f7f7}
+    .foot{margin-top:18px;text-align:right;font-size:11px}
+  </style></head><body>
+    <h1>Phiếu công nhân viên</h1>
+    <div class="sub">Tháng ${pad2(thang)}/${nam}</div>
+    <div class="info">
+      <div><b>Nhân viên:</b> ${employee?.ten || ""}</div>
+      <div><b>Số ngày làm:</b> ${soNgay}&nbsp;&nbsp;|&nbsp;&nbsp;<b>Tổng ca:</b> ${tongCa}&nbsp;&nbsp;|&nbsp;&nbsp;<b>Tổng giờ:</b> ${gio(tongGio)} giờ</div>
+    </div>
+    <table>
+      <thead><tr><th>Ngày</th><th>Ca</th><th>Thời gian</th><th class="right">Số giờ</th></tr></thead>
+      <tbody>${body || '<tr><td colspan="4" style="text-align:center;padding:16px">Không có dữ liệu</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="3" class="right">TỔNG CỘNG</td><td class="right">${gio(tongGio)} giờ</td></tr></tfoot>
+    </table>
+    <div class="foot">Ngày in: ${now}</div>
+  </body></html>`;
+}
+
+const CAC_BUOI = [
+  { key: "so_ca_sang", label: "Sáng" },
+  { key: "so_ca_chieu", label: "Chiều" },
+  { key: "so_ca_toi", label: "Tối" },
+];
+
 export default function BangCong() {
+  const { toasts, show: toast, dismiss } = useToast();
   const today = new Date();
   const [thang, setThang] = useState(today.getMonth() + 1);
   const [nam, setNam] = useState(today.getFullYear());
@@ -84,18 +140,42 @@ export default function BangCong() {
       setDetailRows(res.rows || []);
     } catch (err) {
       setDetailRows([]);
-      alert(err.response?.data?.message || err.message || "Không tải được chi tiết");
+      toast(err.response?.data?.message || err.message || "Không tải được chi tiết", "error");
     } finally {
       setDetailLoading(false);
     }
+  };
+
+  const detailTotals = useMemo(() => {
+    const rows = detailRows || [];
+    return {
+      tongCa: rows.length,
+      tongGio: rows.reduce((s, r) => s + Number(r.so_gio || 0), 0),
+      soNgay: new Set(rows.map((r) => String(r.ngay).slice(0, 10))).size,
+    };
+  }, [detailRows]);
+
+  const handlePrintCong = () => {
+    if (!detailEmployee) return;
+    const html = buildCongPrintHTML({ employee: detailEmployee, rows: detailRows || [], thang, nam });
+    const w = window.open("", "_blank", "width=820,height=640,menubar=no,toolbar=no,scrollbars=yes");
+    if (!w) {
+      toast("Trình duyệt đã chặn popup. Hãy cho phép popup và thử lại.", "error");
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
   };
 
   const kyTrangThai = data?.ky?.trang_thai;
 
   return (
     <div className="space-y-5 md:space-y-6 text-on-surface pb-8">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div>
-        <h2 className="text-xl font-bold text-on-surface">Bảng công</h2>
+        <h2 className="text-3xl font-bold text-on-surface">Bảng công</h2>
         <p className="text-sm text-muted">Tổng hợp giờ làm từ lịch phân công ca</p>
       </div>
 
@@ -155,7 +235,7 @@ export default function BangCong() {
           </div>
 
           <div className="text-left lg:text-right">
-            <p className="text-xs text-muted uppercase tracking-widest font-semibold">Trạng thái kỳ</p>
+            <p className="text-xs text-muted uppercase tracking-widest font-semibold">Trạng thái kỳ lương</p>
             <p className="text-lg font-bold text-primary tabular-nums mt-1">
               {kyTrangThai === "chua_chot" ? "Chưa chốt" : kyTrangThai === "da_chot" ? "Đã chốt" : "Đã thanh toán"}
             </p>
@@ -189,9 +269,9 @@ export default function BangCong() {
         <div className="card p-4 relative overflow-hidden">
           <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-secondary)" }} />
           <div className="pl-2">
-            <p className="text-xs font-medium text-muted">Ca sáng / chiều / tối / linh hoạt</p>
+            <p className="text-xs font-medium text-muted">Ca sáng / chiều / tối</p>
             <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">
-              {(totals.tong_ca_sang || 0)} / {(totals.tong_ca_chieu || 0)} / {(totals.tong_ca_toi || 0)} / {(totals.tong_ca_linh_hoat || 0)}
+              {(totals.tong_ca_sang || 0)} / {(totals.tong_ca_chieu || 0)} / {(totals.tong_ca_toi || 0)}
             </p>
           </div>
         </div>
@@ -209,15 +289,14 @@ export default function BangCong() {
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left text-sm min-w-[1020px]">
+            <table className="w-full text-left text-sm min-w-[760px]">
               <thead className="table-head">
                 <tr>
                   <th className="px-4 py-3">Tên nhân viên</th>
                   <th className="px-4 py-3 text-center">Ngày làm</th>
-                  <th className="px-4 py-3 text-center">Ca sáng</th>
-                  <th className="px-4 py-3 text-center">Ca chiều</th>
-                  <th className="px-4 py-3 text-center">Ca tối</th>
-                  <th className="px-4 py-3 text-center">Ca linh hoạt</th>
+                  {CAC_BUOI.map((buoi) => (
+                    <th key={buoi.key} className="px-3 py-3 text-center">{buoi.label}</th>
+                  ))}
                   <th className="px-4 py-3 text-center">Tổng số ca</th>
                   <th className="px-4 py-3 text-center">Tổng giờ làm</th>
                   <th className="px-4 py-3 text-center">Thao tác</th>
@@ -226,7 +305,7 @@ export default function BangCong() {
               <tbody className="divide-y divide-outline">
                 {sortedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-12 text-center text-muted">
+                    <td colSpan={5 + CAC_BUOI.length} className="px-4 py-12 text-center text-muted">
                       Không có dữ liệu cho bộ lọc này.
                     </td>
                   </tr>
@@ -235,10 +314,14 @@ export default function BangCong() {
                     <tr key={row.ma_nhan_vien} className="hover:bg-primary/5 transition-colors">
                       <td className="px-4 py-3 font-semibold">{row.ten}</td>
                       <td className="px-4 py-3 text-center font-bold tabular-nums">{row.so_ngay_lam ?? 0}</td>
-                      <td className="px-4 py-3 text-center text-muted">{row.so_ca_sang}</td>
-                      <td className="px-4 py-3 text-center text-muted">{row.so_ca_chieu}</td>
-                      <td className="px-4 py-3 text-center text-muted">{row.so_ca_toi}</td>
-                      <td className="px-4 py-3 text-center text-muted">{row.so_ca_linh_hoat}</td>
+                      {CAC_BUOI.map((buoi) => {
+                        const n = Number(row[buoi.key] ?? 0);
+                        return (
+                          <td key={buoi.key} className={`px-3 py-3 text-center tabular-nums ${n > 0 ? "font-semibold text-on-surface" : "text-muted/30"}`}>
+                            {n}
+                          </td>
+                        );
+                      })}
                       <td className="px-4 py-3 text-center font-bold">{row.tong_ca}</td>
                       <td className="px-4 py-3 text-center font-bold">
                         {Number(row.tong_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}{" "}
@@ -277,12 +360,26 @@ export default function BangCong() {
                     Chi tiết công - {detailEmployee?.ten || ""}
                   </h2>
                   <p className="text-muted text-sm mt-1">
-                    {pad2(thang)}/{nam}
+                    {pad2(thang)}/{nam} · {detailTotals.soNgay} ngày · {detailTotals.tongCa} ca ·{" "}
+                    <span className="font-semibold text-on-surface">
+                      {detailTotals.tongGio.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} giờ
+                    </span>
                   </p>
                 </div>
-                <button type="button" className="btn-ghost !p-2 shrink-0" onClick={() => setDetailOpen(false)} aria-label="Đóng">
-                  <span className="material-symbols-outlined">close</span>
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    className="btn-outline !py-2 !px-3 !text-xs"
+                    onClick={handlePrintCong}
+                    disabled={detailLoading || (detailRows || []).length === 0}
+                  >
+                    <span className="material-symbols-outlined text-base">print</span>
+                    In phiếu công
+                  </button>
+                  <button type="button" className="btn-ghost !p-2" onClick={() => setDetailOpen(false)} aria-label="Đóng">
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 md:p-6 pt-4">
@@ -311,7 +408,14 @@ export default function BangCong() {
                         ) : (
                           (detailRows || []).map((r, idx) => (
                             <tr key={`${r.ngay}-${r.ma_ca}-${idx}`} className="hover:bg-primary/5 transition-colors">
-                              <td className="px-4 py-3">{new Date(r.ngay).toLocaleDateString("vi-VN")}</td>
+                              <td className="px-4 py-3">
+                                {new Date(r.ngay).toLocaleDateString("vi-VN")}
+                                {Number(r.he_so || 1) > 1 && (
+                                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold text-warning" style={{ backgroundColor: "color-mix(in srgb, var(--color-warning) 15%, transparent)" }}>
+                                    Lễ ×{Number(r.he_so)}
+                                  </span>
+                                )}
+                              </td>
                               <td className="px-4 py-3 font-semibold text-primary">{r.ten_ca}</td>
                               <td className="px-4 py-3 text-muted">{r.thoi_gian_ca}</td>
                               <td className="px-4 py-3 text-right font-bold">
@@ -322,6 +426,18 @@ export default function BangCong() {
                           ))
                         )}
                       </tbody>
+                      {(detailRows || []).length > 0 && (
+                        <tfoot>
+                          <tr className="border-t-2 border-outline bg-primary/5 font-bold">
+                            <td className="px-4 py-3" colSpan={3}>
+                              TỔNG CỘNG · {detailTotals.soNgay} ngày · {detailTotals.tongCa} ca
+                            </td>
+                            <td className="px-4 py-3 text-right text-primary">
+                              {detailTotals.tongGio.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} giờ
+                            </td>
+                          </tr>
+                        </tfoot>
+                      )}
                     </table>
                   </div>
                 )}

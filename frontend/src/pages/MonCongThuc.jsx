@@ -8,6 +8,7 @@ import * as nguyenlieuService from "../services/nguyenlieuService";
 import * as congThucService from "../services/congThucService";
 import { dishImage } from "../utils/shared";
 import { ToastContainer, useToast } from "../components/Toast";
+import { useConfirm } from "../context/ConfirmContext";
 import PriceInput from "../components/PriceInput";
 
 const removeVietnameseTones = (str) => {
@@ -27,7 +28,7 @@ const removeVietnameseTones = (str) => {
 };
 
 /* ──────── Modal: Thêm / Sửa món ──────── */
-function MonFormModal({ mon, categories, onClose, onSaved }) {
+function MonFormModal({ mon, categories, onClose, onSaved, toast }) {
   const isEdit = Boolean(mon?.ma_mon);
 
   const [form, setForm] = useState({
@@ -64,12 +65,12 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
     e.preventDefault();
 
     if (!form.ten_mon.trim()) {
-      alert("Vui lòng nhập tên món");
+      toast("Vui lòng nhập tên món", "error");
       return;
     }
 
     if (!form.gia_ban || Number(form.gia_ban) < 0) {
-      alert("Giá bán không hợp lệ");
+      toast("Giá bán không hợp lệ", "error");
       return;
     }
 
@@ -101,7 +102,7 @@ function MonFormModal({ mon, categories, onClose, onSaved }) {
       onSaved?.(isEdit ? "Cập nhật món thành công!" : "Thêm món mới thành công!");
       onClose();
     } catch (err) {
-      alert(err.response?.data?.message || err.message || "Lỗi lưu món");
+      toast(err.response?.data?.message || err.message || "Lỗi lưu món", "error");
     } finally {
       setBusy(false);
     }
@@ -500,6 +501,7 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
 /* ──────── Trang chính: Quản lý món & công thức ──────── */
 export default function MonCongThuc() {
   const { toasts, show: toast, dismiss } = useToast();
+  const { confirm } = useConfirm();
   const [monList, setMonList] = useState([]);
   const [nguyenLieuList, setNguyenLieuList] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -559,7 +561,7 @@ export default function MonCongThuc() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Xóa món "${name}"?`)) return;
+    if (!(await confirm(`Xóa món "${name}"?`, { danger: true, confirmLabel: "Xóa" }))) return;
     try {
       await monService.deleteMonCu(id);
       toast(`Đã xóa món "${name}"`);
@@ -624,7 +626,7 @@ export default function MonCongThuc() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-on-surface">Quản lý món & công thức</h2>
+          <h2 className="text-3xl font-bold text-on-surface">Quản lý món & công thức</h2>
           <p className="text-sm text-muted">Danh sách món ăn và đồ uống</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -804,6 +806,7 @@ export default function MonCongThuc() {
         <MonFormModal
           mon={editMon}
           categories={categories}
+          toast={toast}
           onClose={() => {
             setShowMonModal(false);
             setEditMon(null);
