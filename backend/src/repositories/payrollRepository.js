@@ -41,12 +41,12 @@ async function recalculateBangCong({ ky_luong_id, thang, nam }) {
         ELSE ''
       END AS thoi_gian_ca,
       COALESCE(
-        TIMESTAMPDIFF(MINUTE, STR_TO_DATE(cl.gio_bat_dau, '%H:%i'), STR_TO_DATE(cl.gio_ket_thuc, '%H:%i')) / 60.0,
+        (TIME_TO_SEC(cl.gio_ket_thuc) - TIME_TO_SEC(cl.gio_bat_dau)) / 3600.0,
         0
       ) AS so_gio,
       COALESCE(nl.he_so, 1) AS he_so,
       COALESCE(
-        TIMESTAMPDIFF(MINUTE, STR_TO_DATE(cl.gio_bat_dau, '%H:%i'), STR_TO_DATE(cl.gio_ket_thuc, '%H:%i')) / 60.0,
+        (TIME_TO_SEC(cl.gio_ket_thuc) - TIME_TO_SEC(cl.gio_bat_dau)) / 3600.0,
         0
       ) * COALESCE(nl.he_so, 1) AS so_gio_quy_doi
     FROM phancong pc
