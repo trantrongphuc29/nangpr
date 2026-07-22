@@ -1,28 +1,151 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createBan, deleteBanById, getBanList, updateBanById } from "../services/banService";
 import { ToastContainer, useToast } from "../components/Toast";
 import { useConfirm } from "../context/ConfirmContext";
+import ModalPortal from "../components/ModalPortal";
 
 const removeVietnameseTones = (str) => {
   if (!str) return '';
   return str
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/g, 'd')
     .trim();
 };
 
+/* ────────────── Modal thêm / sửa bàn ────────────── */
+function BanFormModal({ open, editBan, onClose, onSave, loading }) {
+  const [tenBan, setTenBan] = useState("");
+  const [error, setError] = useState("");
+
+  // Reset form khi mở modal
+  useEffect(() => {
+    if (open) {
+      setTenBan(editBan ? editBan.ten_ban : "");
+      setError("");
+    }
+  }, [open, editBan]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const ten = tenBan.trim();
+    if (!ten) {
+      setError("Vui lòng nhập tên bàn");
+      return;
+    }
+    setError("");
+    await onSave(ten);
+  };
+
+  if (!open) return null;
+
+  const title = editBan ? "Sửa tên bàn" : "Thêm bàn mới";
+
+  return (
+    <ModalPortal>
+      <div className="modal-overlay" onClick={onClose}>
+        <div
+          className="modal-panel max-w-sm w-full p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-2xl text-primary">
+                {editBan ? "edit" : "add"}
+              </span>
+              <h3 className="text-lg font-semibold text-on-surface">{title}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-lg
+                         text-muted hover:text-on-surface hover:bg-surface/60
+                         transition-colors"
+            >
+              <span className="material-symbols-outlined text-xl">close</span>
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1.5">
+                Tên bàn
+              </label>
+              <input
+                value={tenBan}
+                onChange={(e) => {
+                  setTenBan(e.target.value);
+                  if (error) setError("");
+                }}
+                placeholder="VD: Bàn 01, Bàn 02..."
+                className="input-field w-full"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") onClose();
+                }}
+              />
+              {error && (
+                <p className="mt-1.5 text-xs text-error flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">error</span>
+                  {error}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-outline flex-1"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !tenBan.trim()}
+                className="btn-primary flex-1 disabled:opacity-50"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-dashed rounded-full animate-spin" />
+                    Đang xử lý...
+                  </span>
+                ) : editBan ? (
+                  <>
+                    <span className="material-symbols-outlined text-lg">check</span>
+                    Cập nhật
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-lg">add</span>
+                    Thêm bàn
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+}
+
+/* ────────────── Component chính ────────────── */
 export default function Ban() {
   const { toasts, show: toast, dismiss } = useToast();
   const { confirm } = useConfirm();
   const [list, setList] = useState([]);
-  const [tenBan, setTenBan] = useState("");
-  const [editId, setEditId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const loadData = async () => {
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editBan, setEditBan] = useState(null);
+
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getBanList("asc");
@@ -32,7 +155,11 @@ export default function Ban() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Sắp xếp tăng dần theo tên bàn — dùng so sánh tự nhiên (numeric) để "Bàn 2" đứng trước "Bàn 10"
   const sortedList = useMemo(() => {
@@ -47,150 +174,216 @@ export default function Ban() {
     return sortedList.filter((b) => removeVietnameseTones(b.ten_ban || '').includes(q));
   }, [sortedList, searchTerm]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  /* ─── Mở modal thêm ─── */
+  const openAddModal = () => {
+    setEditBan(null);
+    setModalOpen(true);
+  };
 
-  const addBan = async () => {
-    const ten = tenBan.trim();
-    if (!ten) return toast("Nhập tên bàn!", "error");
+  /* ─── Mở modal sửa ─── */
+  const openEditModal = (ban) => {
+    setEditBan(ban);
+    setModalOpen(true);
+  };
 
-    if (list.some(b => b.ten_ban.toLowerCase() === ten.toLowerCase())) {
-      return toast("Tên bàn đã tồn tại!", "error");
+  /* ─── Đóng modal ─── */
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditBan(null);
+  };
+
+  /* ─── Thêm bàn ─── */
+  const addBan = async (ten) => {
+    // Kiểm tra trùng tên trên client
+    if (list.some((b) => b.ten_ban.toLowerCase() === ten.toLowerCase())) {
+      return toast(`Tên bàn "${ten}" đã tồn tại!`, "error");
     }
 
     try {
+      setActionLoading(true);
       await createBan({ ten_ban: ten });
-      setTenBan("");
-      toast("Đã thêm bàn mới");
+      toast(`Đã thêm bàn "${ten}"`);
+      closeModal();
       loadData();
     } catch (err) {
-      toast(err.response?.data?.message || "Lỗi", "error");
+      toast(err.response?.data?.message || "Lỗi khi thêm bàn", "error");
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const deleteBan = async (id) => {
-    if (!(await confirm("Xóa bàn này?", { danger: true, confirmLabel: "Xóa" }))) return;
+  /* ─── Sửa bàn ─── */
+  const updateBan = async (ten) => {
+    // Kiểm tra trùng tên trên client (loại trừ bàn hiện tại)
+    const duplicate = list.some(
+      (b) => b.ma_ban !== editBan.ma_ban && b.ten_ban.toLowerCase() === ten.toLowerCase()
+    );
+    if (duplicate) {
+      return toast(`Tên bàn "${ten}" đã tồn tại!`, "error");
+    }
+
     try {
-      await deleteBanById(id);
-      toast("Đã xóa bàn");
+      setActionLoading(true);
+      await updateBanById(editBan.ma_ban, { ten_ban: ten });
+      toast(`Đã cập nhật bàn thành "${ten}"`);
+      closeModal();
+      loadData();
+    } catch (err) {
+      toast(err.response?.data?.message || "Lỗi khi cập nhật bàn", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  /* ─── Xóa bàn ─── */
+  const deleteBan = async (ban) => {
+    if (!(await confirm(`Xóa bàn "${ban.ten_ban}"?\nHành động này không thể hoàn tác.`, { danger: true, confirmLabel: "Xóa" }))) return;
+    try {
+      await deleteBanById(ban.ma_ban);
+      toast(`Đã xóa bàn "${ban.ten_ban}"`);
       loadData();
     } catch (err) {
       toast(err.response?.data?.message || "Không thể xóa bàn", "error");
     }
   };
 
-  const updateBan = async () => {
-    const ten = tenBan.trim();
-    if (!ten) return toast("Nhập tên bàn!", "error");
-
-    try {
-      await updateBanById(editId, { ten_ban: ten });
-      setEditId(null);
-      setTenBan("");
-      toast("Đã cập nhật bàn");
-      loadData();
-    } catch (err) {
-      toast(err.response?.data?.message || "Lỗi", "error");
-    }
-  };
-
-  const handleEdit = (ban) => {
-    setEditId(ban.ma_ban);
-    setTenBan(ban.ten_ban);
-  };
-
   return (
-    <div className="space-y-4 text-on-surface pb-8">
+    <div className="space-y-5 text-on-surface pb-8">
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-3xl font-bold text-on-surface">Quản lý bàn</h2>
-          <p className="text-sm text-muted">Danh sách bàn phục vụ tại quán</p>
+          <p className="text-sm text-muted mt-0.5">
+            Quản lý danh sách bàn phục vụ tại quán
+          </p>
         </div>
+        <button onClick={openAddModal} className="btn-primary shrink-0">
+          <span className="material-symbols-outlined text-lg">add</span>
+          Thêm bàn mới
+        </button>
       </div>
 
-      <div className="card p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+      {/* Thanh tìm kiếm */}
+      <div className="relative">
+        <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-muted text-xl pointer-events-none">
+          search
+        </span>
         <input
-          value={tenBan}
-          onChange={(e) => setTenBan(e.target.value)}
-          placeholder="Nhập tên bàn (VD: Bàn 01)..."
-          className="input-field flex-1 min-w-0"
+          type="text"
+          placeholder="Tìm kiếm bàn..."
+          className="input-field !pl-10 !py-2.5"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-
-        {editId ? (
-          <button onClick={updateBan} className="btn-secondary shrink-0">
-            <span className="material-symbols-outlined text-lg">check</span>
-            Cập nhật
-          </button>
-        ) : (
-          <button onClick={addBan} className="btn-primary shrink-0">
-            <span className="material-symbols-outlined text-lg">add</span>
-            Thêm bàn
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center
+                       text-muted hover:text-on-surface transition-colors"
+          >
+            <span className="material-symbols-outlined text-lg">close</span>
           </button>
         )}
       </div>
 
-      <div className="relative">
-        <input
-          type="text"
-          placeholder="Tìm kiếm bàn..."
-          className="peer input-field !pr-10 !py-2.5"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xl pointer-events-none peer-focus:opacity-0 peer-[:not(:placeholder-shown)]:opacity-0 transition-opacity">
-          search
-        </span>
-      </div>
-
+      {/* Danh sách bàn */}
       {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-3 border-primary border-dashed rounded-full animate-spin" />
+        <div className="flex justify-center py-20">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-3 border-primary border-dashed rounded-full animate-spin" />
+            <p className="text-sm text-muted">Đang tải dữ liệu...</p>
+          </div>
         </div>
       ) : list.length === 0 ? (
-        <div className="card flex flex-col items-center py-16 text-muted">
-          <span className="material-symbols-outlined text-4xl text-muted/30 mb-2">table_restaurant</span>
-          <p className="text-sm">Chưa có bàn nào</p>
+        <div className="card flex flex-col items-center py-20 text-muted">
+          <span className="material-symbols-outlined text-5xl text-muted/20 mb-3">
+            table_restaurant
+          </span>
+          <p className="text-sm font-medium">Chưa có bàn nào</p>
+          <p className="text-xs text-muted/60 mt-1">Nhấn "Thêm bàn mới" để bắt đầu</p>
+        </div>
+      ) : filteredList.length === 0 ? (
+        <div className="card flex flex-col items-center py-20 text-muted">
+          <span className="material-symbols-outlined text-4xl text-muted/20 mb-2">
+            search_off
+          </span>
+          <p className="text-sm font-medium">Không tìm thấy bàn</p>
+          <p className="text-xs text-muted/60 mt-1">
+            Thử tìm kiếm với từ khóa khác
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-          {filteredList.length === 0 ? (
-            <div className="col-span-full flex flex-col items-center py-16 text-muted">
-              <span className="material-symbols-outlined text-3xl mb-2">search_off</span>
-              <p className="text-sm">Không tìm thấy bàn</p>
-            </div>
-          ) : (
-            filteredList.map((ban) => (
-              <div key={ban.ma_ban} className="card p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-semibold text-on-surface">
-                    {ban.ten_ban}
-                  </h2>
-                  <span className="material-symbols-outlined text-xl text-muted/20">table_restaurant</span>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(ban)}
-                    className="flex-1 btn-outline !py-1.5 !text-xs"
-                  >
-                    <span className="material-symbols-outlined text-sm">edit</span>
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => deleteBan(ban.ma_ban)}
-                    className="flex-1 btn-outline !py-1.5 !text-xs !border-error/30 !text-error hover:!bg-error/5"
-                  >
-                    <span className="material-symbols-outlined text-sm">delete</span>
-                    Xóa
-                  </button>
+          {filteredList.map((ban) => (
+            <div
+              key={ban.ma_ban}
+              className="card p-4 group hover:shadow-md transition-shadow duration-200"
+            >
+              {/* Thông tin bàn */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-xl text-primary">
+                      table_restaurant
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-on-surface leading-tight">
+                      {ban.ten_ban}
+                    </h3>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] font-medium mt-0.5 ${
+                        ban.trang_thai === "Co khach"
+                          ? "text-error"
+                          : "text-success"
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          ban.trang_thai === "Co khach"
+                            ? "bg-error"
+                            : "bg-success"
+                        }`}
+                      />
+                      {ban.trang_thai === "Co khach" ? "Có khách" : "Trống"}
+                    </span>
+                  </div>
                 </div>
               </div>
-            ))
-          )}
+
+              {/* Nút thao tác */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => openEditModal(ban)}
+                  className="flex-1 btn-outline !py-1.5 !text-xs flex items-center justify-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[15px]">edit</span>
+                  Sửa
+                </button>
+                <button
+                  onClick={() => deleteBan(ban)}
+                  className="flex-1 btn-outline !py-1.5 !text-xs flex items-center justify-center gap-1
+                             !border-error/30 !text-error hover:!bg-error/5"
+                >
+                  <span className="material-symbols-outlined text-[15px]">delete</span>
+                  Xóa
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
+
+      {/* Modal thêm / sửa */}
+      <BanFormModal
+        open={modalOpen}
+        editBan={editBan}
+        onClose={closeModal}
+        onSave={editBan ? updateBan : addBan}
+        loading={actionLoading}
+      />
     </div>
   );
 }

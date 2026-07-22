@@ -40,7 +40,7 @@ const remove = async (req, res) => {
     await banService.remove(req.params.id);
     return res.json({ message: "Xoá bàn thành công" });
   } catch (err) {
-    return res.status(500).json({ message: "Lỗi server khi xóa bàn", error: err.message });
+    return res.status(err.status || 500).json({ message: err.message });
   }
 };
 
