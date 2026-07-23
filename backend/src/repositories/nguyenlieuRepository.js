@@ -199,6 +199,17 @@ const NguyenLieuRepository = {
   },
 
   //  LẤY LỊCH SỬ HỦY HÀNG
+  findByName: async (name, excludeId = null) => {
+    let sql = "SELECT ma_nguyen_lieu FROM nguyenlieu WHERE ten_nguyen_lieu = ?";
+    const params = [name];
+    if (excludeId !== null) {
+      sql += " AND ma_nguyen_lieu != ?";
+      params.push(parseInt(excludeId, 10));
+    }
+    const [rows] = await db.execute(sql, params);
+    return rows.length > 0 ? rows[0] : null;
+  },
+
   getDiscardHistory: async () => {
     const [rows] = await db.execute(
       `SELECT id, ma_nguyen_lieu, ten_nguyen_lieu, han_su_dung, 

@@ -129,6 +129,18 @@ const MonRepository = {
     }
   },
 
+  /** Kiểm tra tên món đã tồn tại chưa */
+  findByName: async (name, excludeId = null) => {
+    let sql = "SELECT ma_mon FROM mon WHERE ten_mon = ?";
+    const params = [name];
+    if (excludeId !== null) {
+      sql += " AND ma_mon != ?";
+      params.push(parseInt(excludeId, 10));
+    }
+    const [rows] = await db.execute(sql, params);
+    return rows.length > 0 ? rows[0] : null;
+  },
+
   /** Tạo món mới */
   create: async (data) => {
     const [result] = await db.execute(

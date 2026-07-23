@@ -11,6 +11,11 @@ const MonService = {
     if (!data.ten_mon || data.gia_ban == null || data.gia_ban < 0) {
       throw new Error("Thông tin tên món và giá bán không hợp lệ!");
     }
+    
+    const name = String(data.ten_mon).trim();
+    const existing = await MonRepository.findByName(name);
+    if (existing) throw new Error(`Tên món "${name}" đã tồn tại!`);
+    
     return await MonRepository.create(data);
   },
 
@@ -18,6 +23,11 @@ const MonService = {
     if (!id || !data.ten_mon || data.gia_ban == null || data.gia_ban < 0) {
       throw new Error("Dữ liệu cập nhật món nước không hợp lệ!");
     }
+    
+    const name = String(data.ten_mon).trim();
+    const existing = await MonRepository.findByName(name, id);
+    if (existing) throw new Error(`Tên món "${name}" đã tồn tại!`);
+    
     return await MonRepository.update(id, data);
   },
 

@@ -74,12 +74,22 @@ const NguyenLieuService = {
   themMoi: async (data) => {
     if (!data.ten_nguyen_lieu?.trim()) throw new Error("Tên nguyên liệu không được để trống.");
     if (Number(data.nguong_canh_bao) < 0) throw new Error("Ngưỡng cảnh báo phải >= 0.");
+    
+    const name = data.ten_nguyen_lieu.trim();
+    const existing = await NguyenLieuRepository.findByName(name);
+    if (existing) throw new Error(`Tên nguyên liệu "${name}" đã tồn tại!`);
+    
     return await NguyenLieuRepository.create(data);
   },
 
   capNhat: async (id, data) => {
     if (!data.ten_nguyen_lieu?.trim()) throw new Error("Tên nguyên liệu không được để trống.");
     if (Number(data.nguong_canh_bao) < 0) throw new Error("Ngưỡng cảnh báo phải >= 0.");
+    
+    const name = data.ten_nguyen_lieu.trim();
+    const existing = await NguyenLieuRepository.findByName(name, id);
+    if (existing) throw new Error(`Tên nguyên liệu "${name}" đã tồn tại!`);
+    
     return await NguyenLieuRepository.update(id, data);
   },
 
