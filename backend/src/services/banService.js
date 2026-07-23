@@ -38,12 +38,11 @@ const update = async (id, ten_ban) => {
 };
 
 const remove = async (id) => {
-  // Kiểm tra bàn có đơn đang phục vụ không
-  const hasOrders = await banRepository.hasActiveOrders(id);
-  if (hasOrders) {
+  // Không cho xóa bàn đang phục vụ (còn đơn hàng chưa thanh toán)
+  if (await banRepository.hasActiveOrder(id)) {
     throw {
-      status: 400,
-      message: "Không thể xóa bàn này vì đang có khách. Vui lòng thanh toán trước khi xóa.",
+      status: 409,
+      message: "Bàn đang phục vụ, không thể xóa. Vui lòng thanh toán hoặc hủy đơn trước.",
     };
   }
   return await banRepository.removeById(id);

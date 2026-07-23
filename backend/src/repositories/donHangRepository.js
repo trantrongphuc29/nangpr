@@ -560,3 +560,5 @@ const DonHangRepository = {
 };
 
 module.exports = DonHangRepository;
+// Điều kiện "đơn còn hiệu lực" — dùng chung cho các module khác (vd: chặn xóa bàn đang phục vụ)
+module.exports.ACTIVE_ORDER = ACTIVE_ORDER;

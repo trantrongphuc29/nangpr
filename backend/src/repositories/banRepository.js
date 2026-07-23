@@ -2,12 +2,38 @@
  * Thao tác SQL với bảng ban
  * ========================================= */
 const db = require("../config/database");
+const { ACTIVE_ORDER } = require("./donHangRepository");
+
+/* Bàn "đang phục vụ" = còn đơn chưa thanh toán VÀ đơn đó đã có món.
+ * Phải có thêm điều kiện "đã có món" để khớp với màn hình POS (co_khach):
+ * đơn mở ra nhưng chưa gọi món nào thì bàn vẫn được xem là trống. */
+const DANG_PHUC_VU = `
+  EXISTS (
+    SELECT 1 FROM donhang dh
+    WHERE dh.ma_ban = b.ma_ban AND ${ACTIVE_ORDER}
+      AND EXISTS (SELECT 1 FROM chitiethoadon ct WHERE ct.ma_don_hang = dh.ma_don_hang)
+  )
+`;
 
 const getAll = async (sort) => {
   const orderBy = sort === "desc" ? "DESC" : "ASC";
-  const sql = `SELECT * FROM ban ORDER BY ten_ban ${orderBy}`;
+  const sql = `SELECT b.*, ${DANG_PHUC_VU} AS dang_phuc_vu
+               FROM ban b
+               ORDER BY b.ten_ban ${orderBy}`;
   const [rows] = await db.execute(sql);
-  return rows;
+  return rows.map((r) => ({ ...r, dang_phuc_vu: Boolean(r.dang_phuc_vu) }));
+};
+
+/** Kiểm tra bàn có đang phục vụ khách hay không (dùng chung định nghĩa với DANG_PHUC_VU) */
+const hasActiveOrder = async (id) => {
+  const [rows] = await db.execute(
+    `SELECT 1 FROM donhang dh
+     WHERE dh.ma_ban = ? AND ${ACTIVE_ORDER}
+       AND EXISTS (SELECT 1 FROM chitiethoadon ct WHERE ct.ma_don_hang = dh.ma_don_hang)
+     LIMIT 1`,
+    [id]
+  );
+  return rows.length > 0;
 };
 
 const create = async (tenBan) => {
@@ -37,22 +63,11 @@ const findByName = async (tenBan, excludeId = null) => {
   return rows[0] || null;
 };
 
-/** Kiểm tra bàn có đơn đang phục vụ không */
-const hasActiveOrders = async (id) => {
-  const sql = `SELECT ma_don_hang FROM donhang
-    WHERE ma_ban = ?
-      AND trang_thai_thanh_toan = 'Chua thanh toan'
-      AND COALESCE(trang_thai_don, '') NOT IN ('Da huy', 'Hoan thanh')
-    LIMIT 1`;
-  const [rows] = await db.execute(sql, [id]);
-  return rows.length > 0;
-};
-
 module.exports = {
   getAll,
+  hasActiveOrder,
   create,
   removeById,
   updateById,
   findByName,
-  hasActiveOrders,
 };

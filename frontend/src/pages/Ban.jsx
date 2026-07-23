@@ -4,6 +4,10 @@ import { ToastContainer, useToast } from "../components/Toast";
 import { useConfirm } from "../context/ConfirmContext";
 import ModalPortal from "../components/ModalPortal";
 
+// Tên bàn chỉ cho phép chữ (kể cả tiếng Việt có dấu), số và khoảng trắng
+const INVALID_CHARS = /[^\p{L}\p{N} ]/gu;
+const sanitizeTenBan = (str) => (str || '').replace(INVALID_CHARS, '');
+
 const removeVietnameseTones = (str) => {
   if (!str) return '';
   return str
@@ -27,6 +31,10 @@ function BanFormModal({ open, editBan, onClose, onSave, loading }) {
     }
   }, [open, editBan]);
 
+  // Khi sửa: chỉ bật nút Cập nhật nếu tên đã thực sự thay đổi
+  const isDirty = !editBan || tenBan.trim() !== (editBan.ten_ban || "").trim();
+  const canSubmit = tenBan.trim().length > 0 && isDirty;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const ten = tenBan.trim();
@@ -34,6 +42,7 @@ function BanFormModal({ open, editBan, onClose, onSave, loading }) {
       setError("Vui lòng nhập tên bàn");
       return;
     }
+    if (!isDirty) return;
     setError("");
     await onSave(ten);
   };
@@ -76,8 +85,10 @@ function BanFormModal({ open, editBan, onClose, onSave, loading }) {
               <input
                 value={tenBan}
                 onChange={(e) => {
-                  setTenBan(e.target.value);
-                  if (error) setError("");
+                  const raw = e.target.value;
+                  const clean = sanitizeTenBan(raw);
+                  setError(clean !== raw ? "Tên bàn không được chứa ký tự đặc biệt" : "");
+                  setTenBan(clean);
                 }}
                 placeholder="VD: Bàn 01, Bàn 02..."
                 className="input-field w-full"
@@ -104,7 +115,7 @@ function BanFormModal({ open, editBan, onClose, onSave, loading }) {
               </button>
               <button
                 type="submit"
-                disabled={loading || !tenBan.trim()}
+                disabled={loading || !canSubmit}
                 className="btn-primary flex-1 disabled:opacity-50"
               >
                 {loading ? (
@@ -237,6 +248,9 @@ export default function Ban() {
 
   /* ─── Xóa bàn ─── */
   const deleteBan = async (ban) => {
+    if (ban.dang_phuc_vu) {
+      return toast("Bàn đang phục vụ, không thể xóa!", "error");
+    }
     if (!(await confirm(`Xóa bàn "${ban.ten_ban}"?\nHành động này không thể hoàn tác.`, { danger: true, confirmLabel: "Xóa" }))) return;
     try {
       await deleteBanById(ban.ma_ban);
@@ -244,6 +258,7 @@ export default function Ban() {
       loadData();
     } catch (err) {
       toast(err.response?.data?.message || "Không thể xóa bàn", "error");
+      loadData(); // đồng bộ lại trạng thái nếu server từ chối
     }
   };
 
@@ -335,19 +350,15 @@ export default function Ban() {
                     </h3>
                     <span
                       className={`inline-flex items-center gap-1 text-[11px] font-medium mt-0.5 ${
-                        ban.trang_thai === "Co khach"
-                          ? "text-error"
-                          : "text-success"
+                        ban.dang_phuc_vu ? "text-error" : "text-success"
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          ban.trang_thai === "Co khach"
-                            ? "bg-error"
-                            : "bg-success"
+                          ban.dang_phuc_vu ? "bg-error" : "bg-success"
                         }`}
                       />
-                      {ban.trang_thai === "Co khach" ? "Có khách" : "Trống"}
+                      {ban.dang_phuc_vu ? "Đang phục vụ" : "Trống"}
                     </span>
                   </div>
                 </div>
@@ -364,8 +375,12 @@ export default function Ban() {
                 </button>
                 <button
                   onClick={() => deleteBan(ban)}
+                  disabled={ban.dang_phuc_vu}
+                  title={ban.dang_phuc_vu ? "Bàn đang phục vụ, không thể xóa" : "Xóa bàn"}
                   className="flex-1 btn-outline !py-1.5 !text-xs flex items-center justify-center gap-1
-                             !border-error/30 !text-error hover:!bg-error/5"
+                             !border-error/30 !text-error hover:!bg-error/5
+                             disabled:opacity-40 disabled:cursor-not-allowed
+                             disabled:hover:!bg-transparent disabled:active:scale-100"
                 >
                   <span className="material-symbols-outlined text-[15px]">delete</span>
                   Xóa
