@@ -723,7 +723,7 @@ export default function BangLuong() {
                     </div>
                     <div className="rounded-xl bg-primary/5 px-3 py-2.5">
                       <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Tổng giờ</p>
-                      <p className="text-base font-bold text-primary tabular-nums mt-0.5">{Number(detailEmployee.tong_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}</p>
+                      <p className="text-base font-bold text-primary tabular-nums mt-0.5">{detailRows.reduce((sum, r) => sum + Number(r.so_gio_quy_doi || 0), 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}</p>
                     </div>
                     <div className="rounded-xl bg-primary/5 px-3 py-2.5">
                       <p className="text-[10px] font-semibold uppercase text-muted tracking-wide">Lương cơ bản</p>

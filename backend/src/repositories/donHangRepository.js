@@ -352,10 +352,48 @@ const DonHangRepository = {
       params
     );
 
+    // Xác định cách gom nhóm theo thời gian cho biểu đồ
+    let bucketExpr, bucketType;
+    if (from_date && to_date) {
+      bucketExpr = `DATE_FORMAT(dh.ngay_tao + INTERVAL 7 HOUR, '%Y-%m-%d')`; bucketType = 'date';
+    } else if (period === 'day') {
+      bucketExpr = `DATE_FORMAT(dh.ngay_tao + INTERVAL 7 HOUR, '%H')`; bucketType = 'hour';
+    } else if (period === 'year') {
+      bucketExpr = `DATE_FORMAT(dh.ngay_tao + INTERVAL 7 HOUR, '%Y-%m')`; bucketType = 'month';
+    } else {
+      // week, month (và mặc định): gom theo ngày
+      bucketExpr = `DATE_FORMAT(dh.ngay_tao + INTERVAL 7 HOUR, '%Y-%m-%d')`; bucketType = 'date';
+    }
+
+    // Chuỗi doanh thu theo thời gian (không phân trang) cho biểu đồ
+    const [seriesRows] = await db.execute(
+      `SELECT sub.bucket AS bucket,
+              COALESCE(SUM(sub.tong_tien), 0) AS revenue,
+              COUNT(*) AS orders
+       FROM (
+         SELECT dh.ma_don_hang, ${bucketExpr} AS bucket,
+                COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien
+         FROM donhang dh
+         LEFT JOIN chitiethoadon ct ON dh.ma_don_hang = ct.ma_don_hang
+         WHERE ${where}
+         GROUP BY dh.ma_don_hang
+       ) sub
+       GROUP BY sub.bucket
+       ORDER BY sub.bucket`,
+      params
+    );
+    const series = seriesRows.map(r => ({
+      bucket: String(r.bucket),
+      revenue: Number(r.revenue),
+      orders: Number(r.orders),
+    }));
+
     if (!total_count) {
       return {
         orders: [],
         summary: { total_orders: 0, total_revenue: 0, total_phi_gh: 0 },
+        series: [],
+        bucket_type: bucketType,
         pagination: { total: 0, limit, offset, page: Math.floor(offset / limit) + 1, total_pages: 0 },
       };
     }
@@ -414,6 +452,8 @@ const DonHangRepository = {
         total_revenue: Number(totalRows[0].total_revenue),
         total_phi_gh: Number(totalRows[0].total_phi_gh),
       },
+      series,
+      bucket_type: bucketType,
       pagination: {
         total: total_count,
         limit,

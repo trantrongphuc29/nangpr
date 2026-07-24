@@ -194,7 +194,8 @@ async function getBangCongSummary({ ky_luong_id, ma_nhan_vien }) {
         COALESCE(bc.so_ca_6, 0) AS so_ca_6,
         COALESCE(bc.so_ngay_lam, 0) AS so_ngay_lam,
         COALESCE(bc.tong_ca, 0) AS tong_ca,
-        COALESCE(bc.tong_gio, 0) AS tong_gio
+        COALESCE(bc.tong_gio, 0) AS tong_gio,
+        COALESCE(bc.tong_gio_quy_doi, bc.tong_gio, 0) AS tong_gio_quy_doi
       FROM nhanvien nv
       LEFT JOIN bang_cong_thang bc
         ON bc.ky_luong_id = ? AND bc.ma_nhan_vien = nv.ma_nhan_vien

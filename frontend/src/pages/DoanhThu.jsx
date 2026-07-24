@@ -155,6 +155,141 @@ function SummaryCard({ nhan, giaTri, sub, icon, accent, borderColor }) {
   );
 }
 
+/* ── Xây dữ liệu biểu đồ doanh thu theo thời gian (liên tục, lấp khoảng trống) ── */
+const pad2So = (n) => String(n).padStart(2, "0");
+const fmtNgayKey = (d) => `${d.getFullYear()}-${pad2So(d.getMonth() + 1)}-${pad2So(d.getDate())}`;
+
+function xayDuLieuBieuDo({ series, khoangThoiGian, tuNgay, denNgay }) {
+  const map = new Map((series || []).map((s) => [String(s.bucket), s]));
+  const lay = (key) => map.get(String(key)) || { revenue: 0, orders: 0 };
+  const cot = [];
+
+  if (tuNgay && denNgay) {
+    const [y1, m1, d1] = tuNgay.split("-").map(Number);
+    const [y2, m2, d2] = denNgay.split("-").map(Number);
+    const cur = new Date(y1, m1 - 1, d1);
+    const end = new Date(y2, m2 - 1, d2);
+    let guard = 0;
+    while (cur <= end && guard < 370) {
+      const key = fmtNgayKey(cur);
+      const v = lay(key);
+      cot.push({ key, label: `${cur.getDate()}/${cur.getMonth() + 1}`, revenue: v.revenue, orders: v.orders });
+      cur.setDate(cur.getDate() + 1);
+      guard++;
+    }
+  } else if (khoangThoiGian === "day") {
+    for (let h = 0; h < 24; h++) {
+      const v = lay(pad2So(h));
+      cot.push({ key: pad2So(h), label: `${h}h`, revenue: v.revenue, orders: v.orders });
+    }
+  } else if (khoangThoiGian === "week") {
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const thu = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const key = fmtNgayKey(d);
+      const v = lay(key);
+      cot.push({ key, label: thu[i], sub: `${d.getDate()}/${d.getMonth() + 1}`, revenue: v.revenue, orders: v.orders });
+    }
+  } else if (khoangThoiGian === "month") {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const soNgay = new Date(y, m + 1, 0).getDate();
+    for (let dd = 1; dd <= soNgay; dd++) {
+      const key = `${y}-${pad2So(m + 1)}-${pad2So(dd)}`;
+      const v = lay(key);
+      cot.push({ key, label: String(dd), revenue: v.revenue, orders: v.orders });
+    }
+  } else if (khoangThoiGian === "year") {
+    const y = new Date().getFullYear();
+    for (let mm = 1; mm <= 12; mm++) {
+      const key = `${y}-${pad2So(mm)}`;
+      const v = lay(key);
+      cot.push({ key, label: `T${mm}`, revenue: v.revenue, orders: v.orders });
+    }
+  } else {
+    (series || []).forEach((s) => cot.push({ key: String(s.bucket), label: String(s.bucket), revenue: Number(s.revenue), orders: Number(s.orders) }));
+  }
+  return cot;
+}
+
+/* ── Biểu đồ doanh thu ── */
+function BieuDoDoanhThu({ data, nhanKhoang }) {
+  const [hover, setHover] = useState(null);
+  const maxVal = useMemo(() => Math.max(...data.map((d) => d.revenue), 1), [data]);
+  const tong = useMemo(() => data.reduce((s, d) => s + d.revenue, 0), [data]);
+  const coDuLieu = data.some((d) => d.revenue > 0);
+  const dinhCao = data.reduce((best, d) => (d.revenue > (best?.revenue || 0) ? d : best), null);
+  // Cột đang hover (khớp theo key để không giữ tham chiếu cũ khi data đổi)
+  const active = hover ? data.find((d) => d.key === hover) : null;
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-start justify-between mb-4 gap-3 flex-wrap">
+        <div>
+          <h3 className="text-sm font-bold text-on-surface">Biểu đồ doanh thu</h3>
+          <p className="text-xs text-muted mt-0.5">{nhanKhoang}</p>
+        </div>
+        {/* Chi tiết cột đang hover hiện ở đây thay cho tooltip nổi (không bị cắt) */}
+        <div className="text-xs text-right min-h-[2.25rem]">
+          {active ? (
+            <>
+              <p className="font-bold text-on-surface tabular-nums">{dinhDangTien(active.revenue)}</p>
+              <p className="text-muted mt-0.5">
+                {active.label}{active.sub ? ` · ${active.sub}` : ""} · {active.orders} đơn
+              </p>
+            </>
+          ) : (
+            <div className="flex items-center gap-3 justify-end">
+              <span className="text-muted">Tổng: <span className="font-bold text-on-surface tabular-nums">{dinhDangTien(tong)}</span></span>
+              {dinhCao && dinhCao.revenue > 0 && (
+                <>
+                  <span className="text-outline">|</span>
+                  <span className="text-muted">Cao nhất: <span className="font-bold tabular-nums" style={{ color: "var(--color-primary)" }}>{dinhCao.label}</span></span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {!coDuLieu ? (
+        <div className="h-52 flex flex-col items-center justify-center text-muted">
+          <span className="material-symbols-outlined text-4xl mb-2 opacity-30">bar_chart</span>
+          <p className="text-sm">Chưa có doanh thu trong khoảng này</p>
+        </div>
+      ) : (
+        <div className="flex items-end gap-1 h-52 overflow-x-auto pb-1 custom-scrollbar" onMouseLeave={() => setHover(null)}>
+          {data.map((d) => {
+            const pct = maxVal > 0 ? (d.revenue / maxVal) * 100 : 0;
+            const laDinhCao = dinhCao && d.key === dinhCao.key && d.revenue > 0;
+            const laHover = active && active.key === d.key;
+            const noiBat = laHover || (!active && laDinhCao);
+            return (
+              <div key={d.key}
+                onMouseEnter={() => setHover(d.key)}
+                className="flex-1 min-w-[26px] h-full flex flex-col items-center gap-1 cursor-default">
+                <div className="flex-1 w-full flex items-end">
+                  <div className="w-full rounded-t-sm transition-all"
+                    style={{
+                      height: `${Math.max(pct, d.revenue > 0 ? 3 : 0)}%`,
+                      backgroundColor: noiBat ? "var(--color-primary)" : "color-mix(in srgb, var(--color-primary) 30%, transparent)",
+                      opacity: active && !laHover ? 0.5 : 1,
+                    }} />
+                </div>
+                <span className={`text-[9px] leading-none whitespace-nowrap ${laHover ? "text-primary font-semibold" : "text-muted"}`}>{d.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Nút chọn khoảng thời gian ── */  function NutKhoangThoiGian({ active, onClick, label }) {
   return (
     <button
@@ -406,6 +541,7 @@ export default function DoanhThu() {
   const [duLieu, setDuLieu] = useState({
     orders: [],
     summary: {},
+    series: [],
     pagination: { total: 0, total_pages: 0, page: 1 },
   });
   const [thongKeCongNo, setThongKeCongNo] = useState({
@@ -439,7 +575,7 @@ export default function DoanhThu() {
       setDanhSachHuy(resHuy || []);
     } catch (e) {
       setLoi(e?.message || "Lỗi tải dữ liệu doanh thu");
-      setDuLieu({ orders: [], summary: {}, pagination: { total: 0, total_pages: 0, page: 1 } });
+      setDuLieu({ orders: [], summary: {}, series: [], pagination: { total: 0, total_pages: 0, page: 1 } });
     } finally { setDangTai(false); }
   }, [khoangThoiGian, tuNgay, denNgay, trangHienTai, loaiDonFilter, hinhThucThanhToanFilter]);
 
@@ -501,6 +637,15 @@ export default function DoanhThu() {
   }, [danhSachHuy, khoangThoiGian, tuNgay, denNgay]);
 
   const tongMonDaHuy = monDaHuy.reduce((s, x) => s + Number(x.so_luong_huy || 0), 0);
+
+  // Dữ liệu + nhãn cho biểu đồ doanh thu
+  const duLieuBieuDo = useMemo(
+    () => xayDuLieuBieuDo({ series: duLieu.series, khoangThoiGian, tuNgay, denNgay }),
+    [duLieu.series, khoangThoiGian, tuNgay, denNgay]
+  );
+  const nhanKhoangBieuDo = tuNgay && denNgay
+    ? "Khoảng đã chọn · theo ngày"
+    : ({ day: "Hôm nay · theo giờ", week: "Tuần này · theo ngày", month: "Tháng này · theo ngày", year: "Năm nay · theo tháng" }[khoangThoiGian] || "");
 
   return (
     <div className="transition-colors duration-500 space-y-3">
@@ -601,6 +746,9 @@ export default function DoanhThu() {
               </div>
             </div>
           </div>
+
+          {/* ── Biểu đồ doanh thu ── */}
+          <BieuDoDoanhThu data={duLieuBieuDo} nhanKhoang={nhanKhoangBieuDo} />
 
           {/* ── Main Table ── */}
           <div className="card overflow-hidden">

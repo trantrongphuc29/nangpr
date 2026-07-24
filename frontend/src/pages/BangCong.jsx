@@ -13,7 +13,7 @@ function buildCongPrintHTML({ employee, rows, thang, nam }) {
   const now = new Date().toLocaleString("vi-VN");
   const list = rows || [];
   const tongCa = list.length;
-  const tongGio = list.reduce((s, r) => s + Number(r.so_gio || 0), 0);
+  const tongGio = list.reduce((s, r) => s + Number(r.so_gio_quy_doi ?? r.so_gio ?? 0), 0);
   const soNgay = new Set(list.map((r) => String(r.ngay).slice(0, 10))).size;
   const gio = (n) => Number(n || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
   const body = list
@@ -23,7 +23,7 @@ function buildCongPrintHTML({ employee, rows, thang, nam }) {
         <td>${new Date(r.ngay).toLocaleDateString("vi-VN")}</td>
         <td>${r.ten_ca || ""}</td>
         <td>${r.thoi_gian_ca || ""}</td>
-        <td class="right">${gio(r.so_gio)}</td>
+        <td class="right">${gio(r.so_gio)}${Number(r.he_so || 1) > 1 ? `<br><span style="font-size:10px;color:#b45309">=${gio(r.so_gio_quy_doi)} quy đổi</span>` : ""}</td>
       </tr>`
     )
     .join("");
@@ -150,7 +150,7 @@ export default function BangCong() {
     const rows = detailRows || [];
     return {
       tongCa: rows.length,
-      tongGio: rows.reduce((s, r) => s + Number(r.so_gio || 0), 0),
+      tongGio: rows.reduce((s, r) => s + Number(r.so_gio_quy_doi ?? r.so_gio ?? 0), 0),
       soNgay: new Set(rows.map((r) => String(r.ngay).slice(0, 10))).size,
     };
   }, [detailRows]);
@@ -326,6 +326,11 @@ export default function BangCong() {
                       <td className="px-4 py-3 text-center font-bold">
                         {Number(row.tong_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}{" "}
                         <span className="text-muted text-xs">giờ</span>
+                        {Number(row.tong_gio_quy_doi ?? row.tong_gio ?? 0) > Number(row.tong_gio || 0) && (
+                          <span className="block text-[10px] font-medium text-warning">
+                            ={Number(row.tong_gio_quy_doi || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} giờ quy đổi
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center">
@@ -421,6 +426,11 @@ export default function BangCong() {
                               <td className="px-4 py-3 text-right font-bold">
                                 {Number(r.so_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}{" "}
                                 <span className="text-muted text-xs">giờ</span>
+                                {Number(r.he_so || 1) > 1 && (
+                                  <span className="block text-[10px] font-medium text-warning">
+                                    ={Number(r.so_gio_quy_doi || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} giờ quy đổi
+                                  </span>
+                                )}
                               </td>
                             </tr>
                           ))
