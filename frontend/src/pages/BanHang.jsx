@@ -153,8 +153,8 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
           ${i.ten_mon}
           ${i.ghi_chu_mon ? `<br><span class="xsmall">(Ghi chú: ${i.ghi_chu_mon})</span>` : ''}
         </td>
-        <td class="center" style="width:24px">${i.so_luong}</td>
         <td class="right" style="width:58px">${fmtMoney(i.don_gia)}</td>
+        <td class="center" style="width:24px">${i.so_luong}</td>
         <td class="right" style="width:66px">${fmtMoney(i.so_luong * i.don_gia)}</td>
       </tr>`
     )
