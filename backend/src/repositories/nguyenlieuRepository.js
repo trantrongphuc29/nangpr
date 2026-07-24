@@ -13,9 +13,10 @@ const NguyenLieuRepository = {
       // 1. Chèn thông tin tổng quan hóa đơn vào bảng `phieunhap`
       // Lưu giờ UTC để MySQL không bị lệch múi giờ, trình duyệt tự chuyển về giờ VN
       const utcStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
-      // Nếu có ngày từ form thì chuyển ngày đó thành UTC (0h VN = 17h UTC-1)
+      // Chuyển ngày giờ từ form (giờ VN) thành UTC để lưu MySQL
+      // Hỗ trợ cả datetime-local (YYYY-MM-DDTHH:MM) và date (YYYY-MM-DD)
       const ngayNhapStr = data.ngay_nhap
-        ? new Date(data.ngay_nhap + 'T00:00:00+07:00').toISOString().replace('T', ' ').slice(0, 19)
+        ? new Date((data.ngay_nhap.includes('T') ? data.ngay_nhap : data.ngay_nhap + 'T00:00') + ':00+07:00').toISOString().replace('T', ' ').slice(0, 19)
         : utcStr;
 
       const [resPhieu] = await conn.execute(

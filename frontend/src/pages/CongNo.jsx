@@ -290,7 +290,7 @@ function inPhieuNhap(phieu) {
                 <th style="width:36px">STT</th>
                 <th style="text-align:left">Nguyên liệu</th>
                 <th style="width:70px">Số lượng</th>
-                <th style="width:60px">ĐVT</th>
+                <th style="width:60px">Đơn vị tính</th>
                 <th style="width:100px">Đơn giá</th>
                 <th style="width:120px">Thành tiền</th>
               </tr>

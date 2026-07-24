@@ -40,13 +40,15 @@ const EMPTY_CRUD = {
   ghi_chu: '',
 };
 
-/* Lấy ngày hôm nay theo giờ Việt Nam (không dùng toISOString vì bị lệch UTC) */
+/* Lấy ngày giờ hôm nay theo giờ Việt Nam cho datetime-local (YYYY-MM-DDTHH:MM) */
 const getHomNay = () => {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day}T${h}:${min}`;
 };
 
 const EMPTY_IMPORT = {
@@ -1094,8 +1096,8 @@ const categories = useMemo(() => {
                     <input className="input-field" value={importData.nha_cung_cap} onChange={(e) => setImportData({ ...importData, nha_cung_cap: e.target.value })} placeholder="Tên nhà cung cấp" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1">Ngày nhập</label>
-                    <input type="date" className="input-field" value={importData.ngay_nhap} onChange={(e) => setImportData({ ...importData, ngay_nhap: e.target.value })} />
+                    <label className="block text-sm font-semibold mb-1">Ngày giờ nhập</label>
+                    <input type="datetime-local" className="input-field" value={importData.ngay_nhap} onChange={(e) => setImportData({ ...importData, ngay_nhap: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
