@@ -68,6 +68,7 @@ function buildPrintBill(order, loaiDonLabel, hinhThucThanhToanLabel) {
   const items = order?.items || [];
   const tien = Number(order.tong_tien || 0);
   const phi = Number(order.phi_giao_hang || 0);
+  const isGiaoHang = order.loai_don === "giao_hang";
   const rows = items.map((item) => `
     <tr>
       <td>${item.ten_mon}${item.ghi_chu_mon ? `<br><span class="xsmall">(Ghi chú: ${item.ghi_chu_mon})</span>` : ''}</td>
@@ -81,7 +82,7 @@ function buildPrintBill(order, loaiDonLabel, hinhThucThanhToanLabel) {
     <div style="padding:16px;max-width:360px;margin:0 auto">
       <div class="center mb8">
         <div style="font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:1px">NANG PR</div>
-        <div class="xsmall mt4">CHI TIẾT ĐƠN HÀNG</div>
+        <div class="xsmall mt4">${isGiaoHang ? 'HÓA ĐƠN GIAO HÀNG' : 'CHI TIẾT ĐƠN HÀNG'}</div>
       </div>
       <div class="line"></div>
       <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0">
@@ -92,6 +93,15 @@ function buildPrintBill(order, loaiDonLabel, hinhThucThanhToanLabel) {
         <span>${loaiDonLabel[order.loai_don] || "Tại chỗ"}${order.ten_ban ? " - " + order.ten_ban : ""}</span>
         <span>${hinhThucThanhToanLabel[order.hinh_thuc_thanh_toan] || "Tiền mặt"}</span>
       </div>
+
+      ${isGiaoHang && (order.ten_khach || order.so_dien_thoai_giao || order.dia_chi_giao) ? `
+      <div class="line"></div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px">Thông tin giao hàng</div>
+      ${order.ten_khach ? `<div style="font-size:12px;padding:2px 0">Người nhận: ${order.ten_khach}</div>` : ''}
+      ${order.so_dien_thoai_giao ? `<div style="font-size:12px;padding:2px 0">SĐT: ${order.so_dien_thoai_giao}</div>` : ''}
+      ${order.dia_chi_giao ? `<div style="font-size:12px;padding:2px 0">Địa chỉ: ${order.dia_chi_giao}</div>` : ''}
+      ` : ''}
+
       <div class="line"></div>
       <table>
         <thead>
@@ -107,10 +117,10 @@ function buildPrintBill(order, loaiDonLabel, hinhThucThanhToanLabel) {
         </tbody>
       </table>
       <div class="line"></div>
-      ${order.loai_don === "giao_hang" && phi > 0 ? `
       <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 6px">
         <span>Tiền món:</span><span>${dinhDangTien(tien)}</span>
       </div>
+      ${isGiaoHang ? `
       <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 6px">
         <span>Phí giao hàng:</span><span>${dinhDangTien(phi)}</span>
       </div>
@@ -229,6 +239,36 @@ function ModalChiTietDon({ donHang, onDong }) {
               <Badge label={donHang.ten_ban} color="var(--color-warning)" bg="color-mix(in srgb, var(--color-warning) 12%, transparent)" />
             )}
           </div>
+
+          {/* Thông tin giao hàng */}
+          {donHang.loai_don === "giao_hang" && (donHang.ten_khach || donHang.so_dien_thoai_giao || donHang.dia_chi_giao) && (
+            <div className="px-6 py-4 border-b" style={{ borderColor: "var(--color-border)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="material-symbols-outlined text-sm" style={{ color: "var(--color-primary)" }}>local_shipping</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-muted">Thông tin giao hàng</span>
+              </div>
+              <div className="space-y-1.5 text-sm">
+                {donHang.ten_khach && (
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[16px] text-muted">person</span>
+                    <span className="font-medium text-on-surface">{donHang.ten_khach}</span>
+                  </div>
+                )}
+                {donHang.so_dien_thoai_giao && (
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[16px] text-muted">phone</span>
+                    <span className="text-on-surface">{donHang.so_dien_thoai_giao}</span>
+                  </div>
+                )}
+                {donHang.dia_chi_giao && (
+                  <div className="flex items-start gap-2">
+                    <span className="material-symbols-outlined text-[16px] text-muted mt-0.5">location_on</span>
+                    <span className="text-on-surface">{donHang.dia_chi_giao}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Items table */}
           <div className="px-6 py-4">
@@ -740,7 +780,7 @@ export default function DoanhThu() {
 
           {/* ── Bottom Summary ── */}
           <div className="flex justify-end text-xs text-muted px-1">
-            <span>Công nợ NCC: <strong style={{ color: "var(--color-error)" }}>{dinhDangTien(tongCongNo)}</strong></span>
+            <span>Công nợ nhà cung cấp: <strong style={{ color: "var(--color-error)" }}>{dinhDangTien(tongCongNo)}</strong></span>
           </div>
         </>
       )}
