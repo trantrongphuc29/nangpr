@@ -8,7 +8,13 @@ function normalizeTrangThai(value) {
 }
 
 function isValidTrangThai(value) {
-  return TRANG_THAI_VALUES.includes(normalizeTrangThai(value));
+  return (
+    value === 1 ||
+    value === "1" ||
+    value === 0 ||
+    value === "0" ||
+    TRANG_THAI_VALUES.includes(value)
+  );
 }
 
 module.exports = { TRANG_THAI_VALUES, normalizeTrangThai, isValidTrangThai };

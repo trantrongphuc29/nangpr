@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Jul 19, 2026 at 08:04 AM
+-- Generation Time: Jul 24, 2026 at 02:51 PM
 -- Server version: 9.1.0
 -- PHP Version: 8.3.14
 
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `ban` (
   `ten_ban` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `trang_thai` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`ma_ban`)
-) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `ban`
@@ -41,8 +41,6 @@ CREATE TABLE IF NOT EXISTS `ban` (
 
 INSERT INTO `ban` (`ma_ban`, `ten_ban`, `trang_thai`) VALUES
 (1, 'Bàn 1', 'Trong'),
-(2, 'Bàn 2', 'Trong'),
-(3, 'Bàn 3', 'Co khach'),
 (4, 'Bàn 4', 'Trong'),
 (5, 'Bàn 5', 'Trong'),
 (6, 'Bàn 6', 'Trong'),
@@ -75,7 +73,13 @@ INSERT INTO `ban` (`ma_ban`, `ten_ban`, `trang_thai`) VALUES
 (33, 'Bàn 33', 'Trong'),
 (34, 'Bàn 34', 'Trong'),
 (35, 'Bàn 35', 'Trong'),
-(36, 'Bàn 36', 'Trong');
+(41, 'Bàn 3', NULL),
+(42, 'Bàn 2', 'Co khach'),
+(43, 'Bàn Test 99', NULL),
+(44, 'Bàn Test 99', NULL),
+(45, 'Bàn Test 99', NULL),
+(46, 'Bàn Test 99', NULL),
+(48, 'Bàn Test 99', NULL);
 
 -- --------------------------------------------------------
 
@@ -100,7 +104,7 @@ CREATE TABLE IF NOT EXISTS `bang_cong_chi_tiet` (
   UNIQUE KEY `uq_bcc` (`ky_luong_id`,`ma_nhan_vien`,`ngay`,`ma_ca`),
   KEY `idx_bcc_nv` (`ma_nhan_vien`,`ky_luong_id`),
   KEY `fk_bcc_calam` (`ma_ca`)
-) ENGINE=InnoDB AUTO_INCREMENT=6101 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6455 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `bang_cong_chi_tiet`
@@ -139,19 +143,20 @@ INSERT INTO `bang_cong_chi_tiet` (`id`, `ky_luong_id`, `ma_nhan_vien`, `ngay`, `
 (4847, 1, 7, '2026-06-05', 3, 'Ca Chiều 1', '12:00-15:00', 3.00, 1.00, 0.00, '2026-07-17 16:05:06'),
 (4848, 1, 11, '2026-06-03', 3, 'Ca Chiều 1', '12:00-15:00', 3.00, 1.00, 0.00, '2026-07-17 16:05:06'),
 (4849, 1, 16, '2026-06-04', 3, 'Ca Chiều 1', '12:00-15:00', 3.00, 1.00, 0.00, '2026-07-17 16:05:06'),
-(6086, 405, 3, '2026-07-13', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 3.00, 9.00, '2026-07-19 08:00:09'),
-(6087, 405, 4, '2026-07-14', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6088, 405, 6, '2026-07-15', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6089, 405, 17, '2026-07-05', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6090, 405, 18, '2026-07-06', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6091, 405, 16, '2026-07-09', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6092, 405, 17, '2026-07-05', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6093, 405, 18, '2026-07-06', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6094, 405, 19, '2026-07-16', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6095, 405, 19, '2026-07-17', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6096, 405, 17, '2026-07-05', 3, 'Ca Chiều 1', '12:00-15:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6097, 405, 18, '2026-07-06', 3, 'Ca Chiều 1', '12:00-15:00', 3.00, 1.00, 3.00, '2026-07-19 08:00:09'),
-(6098, 405, 5, '2026-07-13', 5, 'Ca Tối 1', '18:00-20:30', 2.50, 3.00, 7.50, '2026-07-19 08:00:09');
+(6441, 405, 3, '2026-07-13', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 3.00, 9.00, '2026-07-23 17:47:40'),
+(6442, 405, 4, '2026-07-14', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6443, 405, 6, '2026-07-15', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6444, 405, 17, '2026-07-05', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6445, 405, 18, '2026-07-06', 1, 'Ca Sáng 1', '06:00-09:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6446, 405, 16, '2026-07-09', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6447, 405, 17, '2026-07-05', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6448, 405, 18, '2026-07-06', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6449, 405, 19, '2026-07-16', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6450, 405, 19, '2026-07-17', 2, 'Ca Sáng 2', '09:00-12:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6451, 405, 17, '2026-07-05', 3, 'Ca Chiều 1', '12:00-15:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6452, 405, 18, '2026-07-06', 3, 'Ca Chiều 1', '12:00-15:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6453, 405, 18, '2026-07-19', 3, 'Ca Chiều 1', '12:00-15:00', 3.00, 1.00, 3.00, '2026-07-23 17:47:40'),
+(6454, 405, 5, '2026-07-13', 5, 'Ca Tối 1', '18:00-20:30', 2.50, 3.00, 7.50, '2026-07-23 17:47:40');
 
 -- --------------------------------------------------------
 
@@ -180,7 +185,7 @@ CREATE TABLE IF NOT EXISTS `bang_cong_thang` (
   PRIMARY KEY (`ky_luong_id`,`ma_nhan_vien`),
   KEY `idx_bc_ky` (`ky_luong_id`),
   KEY `fk_bc_nv` (`ma_nhan_vien`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `bang_cong_thang`
@@ -201,14 +206,14 @@ INSERT INTO `bang_cong_thang` (`ky_luong_id`, `ma_nhan_vien`, `so_ca_sang`, `so_
 (146, 7, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 6.00, 0.00, '2026-06-04 21:44:57'),
 (146, 12, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 11.00, 0.00, '2026-06-04 21:44:57'),
 (146, 14, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 6.00, 0.00, '2026-06-04 21:44:57'),
-(405, 3, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 3.00, 9.00, '2026-07-19 08:00:09'),
-(405, 4, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 3.00, 3.00, '2026-07-19 08:00:09'),
-(405, 5, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 2.50, 7.50, '2026-07-19 08:00:09'),
-(405, 6, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 3.00, 3.00, '2026-07-19 08:00:09'),
-(405, 16, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 3.00, 3.00, '2026-07-19 08:00:09'),
-(405, 17, 2, 1, 0, 1, 1, 1, 1, 0, 0, 0, 3, 9.00, 9.00, '2026-07-19 08:00:09'),
-(405, 18, 2, 1, 0, 1, 1, 1, 1, 0, 0, 0, 3, 9.00, 9.00, '2026-07-19 08:00:09'),
-(405, 19, 2, 0, 0, 2, 0, 2, 0, 0, 0, 0, 2, 6.00, 6.00, '2026-07-19 08:00:09');
+(405, 3, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 3.00, 9.00, '2026-07-23 17:47:40'),
+(405, 4, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 3.00, 3.00, '2026-07-23 17:47:40'),
+(405, 5, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 2.50, 7.50, '2026-07-23 17:47:40'),
+(405, 6, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 3.00, 3.00, '2026-07-23 17:47:40'),
+(405, 16, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 3.00, 3.00, '2026-07-23 17:47:40'),
+(405, 17, 2, 1, 0, 1, 1, 1, 1, 0, 0, 0, 3, 9.00, 9.00, '2026-07-23 17:47:40'),
+(405, 18, 2, 2, 0, 2, 1, 1, 2, 0, 0, 0, 4, 12.00, 12.00, '2026-07-23 17:47:40'),
+(405, 19, 2, 0, 0, 2, 0, 2, 0, 0, 0, 0, 2, 6.00, 6.00, '2026-07-23 17:47:40');
 
 -- --------------------------------------------------------
 
@@ -235,7 +240,7 @@ CREATE TABLE IF NOT EXISTS `bang_luong_thang` (
   PRIMARY KEY (`ky_luong_id`,`ma_nhan_vien`),
   KEY `idx_bl_ky` (`ky_luong_id`),
   KEY `fk_bl_nv` (`ma_nhan_vien`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `bang_luong_thang`
@@ -256,14 +261,14 @@ INSERT INTO `bang_luong_thang` (`ky_luong_id`, `ma_nhan_vien`, `tong_ca`, `tong_
 (146, 7, 1, 6.00, 36000.00, 216000.00, 350000.00, 0.00, 0.00, 0.00, 566000.00, '2026-07-17 20:16:23', '2026-06-04 21:44:57', '2026-07-17 20:16:23'),
 (146, 12, 2, 11.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, '2026-07-17 20:16:23', '2026-06-04 21:44:57', '2026-07-17 20:16:23'),
 (146, 14, 1, 6.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, '2026-07-17 20:16:23', '2026-06-04 21:44:57', '2026-07-17 20:16:23'),
-(405, 3, 1, 3.00, 27000.00, 243000.00, 150000.00, 0.00, 0.00, 0.00, 393000.00, '2026-07-19 08:00:09', '2026-07-17 16:16:07', '2026-07-19 08:00:09'),
-(405, 4, 1, 3.00, 30000.00, 90000.00, 200000.00, 0.00, 0.00, 0.00, 290000.00, '2026-07-19 08:00:09', '2026-07-17 16:16:07', '2026-07-19 08:00:09'),
-(405, 5, 1, 2.50, 32000.00, 240000.00, 250000.00, 0.00, 0.00, 0.00, 490000.00, '2026-07-19 08:00:09', '2026-07-17 16:19:35', '2026-07-19 08:00:09'),
-(405, 6, 1, 3.00, 35000.00, 105000.00, 250000.00, 0.00, 0.00, 0.00, 355000.00, '2026-07-19 08:00:09', '2026-07-17 16:16:07', '2026-07-19 08:00:09'),
-(405, 16, 1, 3.00, 36000.00, 108000.00, 320000.00, 0.00, 0.00, 0.00, 428000.00, '2026-07-19 08:00:09', '2026-07-13 07:58:57', '2026-07-19 08:00:09'),
-(405, 17, 3, 9.00, 40000.00, 360000.00, 500000.00, 0.00, 0.00, 0.00, 860000.00, '2026-07-19 08:00:09', '2026-07-06 14:09:15', '2026-07-19 08:00:09'),
-(405, 18, 3, 9.00, 26000.00, 234000.00, 200000.00, 0.00, 0.00, 0.00, 434000.00, '2026-07-19 08:00:09', '2026-07-07 08:37:37', '2026-07-19 08:00:09'),
-(405, 19, 2, 6.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, '2026-07-19 08:00:09', '2026-07-18 18:50:17', '2026-07-19 08:00:09');
+(405, 3, 1, 3.00, 27000.00, 243000.00, 150000.00, 0.00, 0.00, 0.00, 393000.00, '2026-07-23 17:47:40', '2026-07-17 16:16:07', '2026-07-23 17:47:40'),
+(405, 4, 1, 3.00, 30000.00, 90000.00, 200000.00, 0.00, 0.00, 0.00, 290000.00, '2026-07-23 17:47:40', '2026-07-17 16:16:07', '2026-07-23 17:47:40'),
+(405, 5, 1, 2.50, 32000.00, 240000.00, 250000.00, 0.00, 0.00, 0.00, 490000.00, '2026-07-23 17:47:40', '2026-07-17 16:19:35', '2026-07-23 17:47:40'),
+(405, 6, 1, 3.00, 35000.00, 105000.00, 250000.00, 0.00, 0.00, 0.00, 355000.00, '2026-07-23 17:47:40', '2026-07-17 16:16:07', '2026-07-23 17:47:40'),
+(405, 16, 1, 3.00, 36000.00, 108000.00, 320000.00, 0.00, 0.00, 0.00, 428000.00, '2026-07-23 17:47:40', '2026-07-13 07:58:57', '2026-07-23 17:47:40'),
+(405, 17, 3, 9.00, 40000.00, 360000.00, 500000.00, 0.00, 0.00, 0.00, 860000.00, '2026-07-23 17:47:40', '2026-07-06 14:09:15', '2026-07-23 17:47:40'),
+(405, 18, 4, 12.00, 26000.00, 312000.00, 200000.00, 0.00, 0.00, 0.00, 512000.00, '2026-07-23 17:47:40', '2026-07-07 08:37:37', '2026-07-23 17:47:40'),
+(405, 19, 2, 6.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, '2026-07-23 17:47:40', '2026-07-18 18:50:17', '2026-07-23 17:47:40');
 
 -- --------------------------------------------------------
 
@@ -278,7 +283,7 @@ CREATE TABLE IF NOT EXISTS `calam` (
   `gio_bat_dau` varchar(5) DEFAULT NULL,
   `gio_ket_thuc` varchar(5) DEFAULT NULL,
   PRIMARY KEY (`ma_ca`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `calam`
@@ -304,7 +309,7 @@ CREATE TABLE IF NOT EXISTS `chitiethoadon` (
   `ma_mon` int NOT NULL,
   `so_luong` int NOT NULL,
   `so_luong_da_gui_bar` int NOT NULL DEFAULT '0',
-  `ghi_chu_mon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ghi_chu_mon` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `trang_thai_mon` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Dang cho',
   `don_gia` decimal(10,2) NOT NULL,
   PRIMARY KEY (`ma_don_hang`,`ma_mon`),
@@ -375,7 +380,10 @@ INSERT INTO `chitiethoadon` (`ma_don_hang`, `ma_mon`, `so_luong`, `so_luong_da_g
 (31, 26, 2, 2, NULL, 'Dang lam', 20000.00),
 (31, 30, 1, 1, NULL, 'Dang lam', 40000.00),
 (32, 26, 1, 1, NULL, 'Dang lam', 20000.00),
-(33, 30, 1, 1, NULL, 'Dang lam', 40000.00);
+(33, 30, 1, 1, NULL, 'Dang lam', 40000.00),
+(34, 26, 1, 1, NULL, 'Dang lam', 20000.00),
+(35, 26, 1, 1, NULL, 'Dang lam', 20000.00),
+(36, 29, 1, 1, NULL, 'Dang lam', 20000.00);
 
 -- --------------------------------------------------------
 
@@ -427,7 +435,7 @@ CREATE TABLE IF NOT EXISTS `chuquan` (
   `role` varchar(20) DEFAULT 'admin',
   PRIMARY KEY (`ma_admin`),
   UNIQUE KEY `ten_dang_nhap` (`ten_dang_nhap`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `chuquan`
@@ -527,7 +535,7 @@ CREATE TABLE IF NOT EXISTS `donhang` (
   `trang_thai_thanh_toan` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`ma_don_hang`),
   KEY `ma_ban` (`ma_ban`)
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `donhang`
@@ -543,30 +551,33 @@ INSERT INTO `donhang` (`ma_don_hang`, `ma_ban`, `loai_don`, `ten_khach`, `phi_gi
 (7, 1, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-07 19:13:09', 'Hoan thanh', 'Da thanh toan'),
 (8, 1, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-07 19:19:46', 'Hoan thanh', 'Da thanh toan'),
 (9, 1, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-08 16:19:42', 'Hoan thanh', 'Da thanh toan'),
-(10, 2, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-08 16:20:10', 'Hoan thanh', 'Da thanh toan'),
-(11, 3, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-08 16:27:53', 'Hoan thanh', 'Da thanh toan'),
+(10, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-08 16:20:10', 'Hoan thanh', 'Da thanh toan'),
+(11, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-08 16:27:53', 'Hoan thanh', 'Da thanh toan'),
 (12, 1, 'tai_cho', NULL, 0.00, 'chuyen_khoan', NULL, NULL, '2026-07-08 16:32:33', 'Hoan thanh', 'Da thanh toan'),
 (13, 1, 'tai_cho', NULL, 0.00, 'chuyen_khoan', NULL, NULL, '2026-07-08 17:12:49', 'Hoan thanh', 'Da thanh toan'),
-(14, 2, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-13 07:41:31', 'Hoan thanh', 'Da thanh toan'),
+(14, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-13 07:41:31', 'Hoan thanh', 'Da thanh toan'),
 (15, 1, 'tai_cho', NULL, 0.00, NULL, NULL, NULL, '2026-07-13 07:41:37', 'Dang phuc vu', 'Chua thanh toan'),
 (16, NULL, 'giao_hang', 'phuc', 10000.00, NULL, '0929459370', 'cao lỗ', '2026-07-16 18:30:52', 'Dang phuc vu', 'Chua thanh toan'),
 (17, NULL, 'giao_hang', 'phuc', 10000.00, 'tien_mat', '0929459370', 'cao lỗ', '2026-07-16 18:30:54', 'Hoan thanh', 'Da thanh toan'),
 (18, NULL, 'mang_ve', NULL, 0.00, NULL, NULL, NULL, '2026-07-16 18:36:23', 'Dang phuc vu', 'Chua thanh toan'),
 (19, NULL, 'mang_ve', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-16 18:36:25', 'Hoan thanh', 'Da thanh toan'),
 (20, 9, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 20:24:47', 'Hoan thanh', 'Da thanh toan'),
-(21, 2, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 20:32:38', 'Hoan thanh', 'Da thanh toan'),
-(22, 3, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 20:33:55', 'Hoan thanh', 'Da thanh toan'),
-(23, 3, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 20:40:56', 'Hoan thanh', 'Da thanh toan'),
+(21, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 20:32:38', 'Hoan thanh', 'Da thanh toan'),
+(22, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 20:33:55', 'Hoan thanh', 'Da thanh toan'),
+(23, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 20:40:56', 'Hoan thanh', 'Da thanh toan'),
 (24, 4, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:13:03', 'Hoan thanh', 'Da thanh toan'),
 (25, 4, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:15:34', 'Hoan thanh', 'Da thanh toan'),
-(26, 2, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:22:29', 'Hoan thanh', 'Da thanh toan'),
-(27, 2, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:33:41', 'Hoan thanh', 'Da thanh toan'),
-(28, 3, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:39:19', 'Hoan thanh', 'Da thanh toan'),
-(29, 3, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:40:20', 'Hoan thanh', 'Da thanh toan'),
-(30, 2, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:43:21', 'Hoan thanh', 'Da thanh toan'),
-(31, 2, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-18 17:48:17', 'Hoan thanh', 'Da thanh toan'),
-(32, 3, 'tai_cho', NULL, 0.00, NULL, NULL, NULL, '2026-07-18 17:49:30', 'Dang phuc vu', 'Chua thanh toan'),
-(33, 4, 'tai_cho', NULL, 0.00, 'chuyen_khoan', NULL, NULL, '2026-07-18 17:54:00', 'Hoan thanh', 'Da thanh toan');
+(26, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:22:29', 'Hoan thanh', 'Da thanh toan'),
+(27, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:33:41', 'Hoan thanh', 'Da thanh toan'),
+(28, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:39:19', 'Hoan thanh', 'Da thanh toan'),
+(29, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:40:20', 'Hoan thanh', 'Da thanh toan'),
+(30, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-17 21:43:21', 'Hoan thanh', 'Da thanh toan'),
+(31, NULL, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-18 17:48:17', 'Hoan thanh', 'Da thanh toan'),
+(32, NULL, 'tai_cho', NULL, 0.00, NULL, NULL, NULL, '2026-07-18 17:49:30', 'Dang phuc vu', 'Chua thanh toan'),
+(33, 4, 'tai_cho', NULL, 0.00, 'chuyen_khoan', NULL, NULL, '2026-07-18 17:54:00', 'Hoan thanh', 'Da thanh toan'),
+(34, 4, 'tai_cho', NULL, 0.00, 'tien_mat', NULL, NULL, '2026-07-22 08:52:15', 'Hoan thanh', 'Da thanh toan'),
+(35, NULL, 'tai_cho', NULL, 0.00, NULL, NULL, NULL, '2026-07-23 10:51:03', 'Dang phuc vu', 'Chua thanh toan'),
+(36, 42, 'tai_cho', NULL, 0.00, NULL, NULL, NULL, '2026-07-23 11:03:50', 'Dang phuc vu', 'Chua thanh toan');
 
 -- --------------------------------------------------------
 
@@ -617,7 +628,7 @@ CREATE TABLE IF NOT EXISTS `ky_luong` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_thang_nam` (`thang`,`nam`),
   KEY `idx_ky_luong_trang_thai` (`trang_thai`)
-) ENGINE=InnoDB AUTO_INCREMENT=682 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=706 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `ky_luong`
@@ -705,7 +716,7 @@ CREATE TABLE IF NOT EXISTS `mon` (
   `trang_thai_ban` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1: Đang bán, 0: Tạm ngưng',
   PRIMARY KEY (`ma_mon`),
   KEY `fk_mon_danhmucmon` (`ma_danh_muc`)
-) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `mon`
@@ -723,7 +734,10 @@ INSERT INTO `mon` (`ma_mon`, `ma_danh_muc`, `ten_mon`, `gia_ban`, `hinh_anh`, `m
 (32, 2, 'Soda', 20000.00, '/uploads/anh-mon/mon-1783072082762.png', NULL, 1),
 (33, 4, 'Sữa chua dâu', 30000.00, '/uploads/anh-mon/mon-1783091944696.png', NULL, 1),
 (34, 3, 'Trà Đào', 35000.00, '/uploads/anh-mon/mon-1783347335276.png', NULL, 1),
-(35, 3, 'Trà tắc', 30000.00, '/uploads/anh-mon/mon-1783412873649.png', NULL, 1);
+(35, 3, 'Trà tắc', 30000.00, '/uploads/anh-mon/mon-1783412873649.png', NULL, 1),
+(36, NULL, 'Món test', 20000.00, NULL, NULL, 1),
+(37, NULL, 'Món test', 20000.00, NULL, NULL, 1),
+(38, NULL, 'Món test', 20000.00, NULL, NULL, 1);
 
 --
 -- Triggers `mon`
@@ -774,7 +788,7 @@ CREATE TABLE IF NOT EXISTS `ngay_le` (
   `he_so` decimal(4,2) NOT NULL DEFAULT '1.00',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`ngay`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `ngay_le`
@@ -816,8 +830,8 @@ INSERT INTO `nguyenlieu` (`ma_nguyen_lieu`, `ten_nguyen_lieu`, `danh_muc`, `don_
 (4, 'Nước Suối', 'Nước uống đóng chai', 'chai', 'chai', 1.00, 0.00, 1.00, NULL, 1, NULL),
 (5, 'Bột Cafe Sữa', 'Nguyên liệu pha chế', 'g', 'gói', 1000.00, 20000.00, 1000.00, NULL, 1, '2027-12-07'),
 (6, 'Sữa Đặc', 'Nguyên liệu pha chế', 'ml', 'lon', 300.00, 0.00, 100.00, NULL, 1, NULL),
-(7, 'Pepsi', 'Nước uống đóng chai', 'lon', 'lon', 1.00, 3.00, 10.00, NULL, 1, '2026-07-14'),
-(8, 'Revive', 'Nước uống đóng chai', 'chai', 'chai', 1.00, 4.00, 10.00, NULL, 1, '2026-07-09'),
+(7, 'Pepsi', 'Nước uống đóng chai', 'lon', 'lon', 1.00, 1.00, 10.00, NULL, 1, '2026-07-14'),
+(8, 'Revive', 'Nước uống đóng chai', 'chai', 'chai', 1.00, 3.00, 10.00, NULL, 1, '2026-07-09'),
 (9, 'Bột Matcha', 'Nguyên liệu pha chế', 'g', 'gói', 1000.00, 1130.00, 200.00, NULL, 1, '2026-07-17'),
 (10, 'Sữa Gấu', 'Nước uống đóng chai', 'lon', 'lon', 1.00, 1.00, 10.00, NULL, 1, '2026-07-18'),
 (11, 'Đường', 'Nguyên liệu pha chế', 'g', 'gói', 500.00, 540.00, 200.00, NULL, 1, NULL),
@@ -849,7 +863,7 @@ CREATE TABLE IF NOT EXISTS `nhanvien` (
   `dia_chi` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `trang_thai` enum('dang_lam','tam_nghi','da_nghi') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'dang_lam' COMMENT 'Trạng thái làm việc',
   PRIMARY KEY (`ma_nhan_vien`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `nhanvien`
@@ -885,7 +899,7 @@ CREATE TABLE IF NOT EXISTS `nhanvien_luong` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`ma_nhan_vien`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `nhanvien_luong`
