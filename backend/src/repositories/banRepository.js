@@ -53,7 +53,8 @@ const updateById = async (id, tenBan) => {
 
 /** Kiểm tra tên bàn đã tồn tại chưa (có thể loại trừ id hiện tại khi sửa) */
 const findByName = async (tenBan, excludeId = null) => {
-  let sql = "SELECT * FROM ban WHERE ten_ban = ?";
+  // So sánh không phân biệt hoa/thường và ignore khoảng trắng đầu cuối
+  let sql = "SELECT * FROM ban WHERE LOWER(TRIM(ten_ban)) = LOWER(TRIM(?))";
   const params = [tenBan];
   if (excludeId !== null) {
     sql += " AND ma_ban != ?";

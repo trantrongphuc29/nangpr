@@ -6,7 +6,6 @@ import ModalPortal from "../components/ModalPortal";
 
 // Tên bàn chỉ cho phép chữ (kể cả tiếng Việt có dấu), số và khoảng trắng
 const INVALID_CHARS = /[^\p{L}\p{N} ]/gu;
-const sanitizeTenBan = (str) => (str || '').replace(INVALID_CHARS, '');
 
 const removeVietnameseTones = (str) => {
   if (!str) return '';
@@ -35,11 +34,19 @@ function BanFormModal({ open, editBan, onClose, onSave, loading }) {
   const isDirty = !editBan || tenBan.trim() !== (editBan.ten_ban || "").trim();
   const canSubmit = tenBan.trim().length > 0 && isDirty;
 
+  const validateName = (name) => {
+    if (!name || name.trim() === "") return "Vui lòng nhập tên bàn";
+    // Chuẩn hóa NFC trước để dấu thanh tiếng Việt dạng decomposed không bị báo lỗi
+    if (INVALID_CHARS.test(name.normalize('NFC'))) return "Tên bàn không được chứa ký tự đặc biệt";
+    return "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const ten = tenBan.trim();
-    if (!ten) {
-      setError("Vui lòng nhập tên bàn");
+    const validationError = validateName(ten);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     if (!isDirty) return;
@@ -85,10 +92,8 @@ function BanFormModal({ open, editBan, onClose, onSave, loading }) {
               <input
                 value={tenBan}
                 onChange={(e) => {
-                  const raw = e.target.value;
-                  const clean = sanitizeTenBan(raw);
-                  setError(clean !== raw ? "Tên bàn không được chứa ký tự đặc biệt" : "");
-                  setTenBan(clean);
+                  setTenBan(e.target.value);
+                  if (error) setError("");
                 }}
                 placeholder="VD: Bàn 01, Bàn 02..."
                 className="input-field w-full"
@@ -203,11 +208,15 @@ export default function Ban() {
     setEditBan(null);
   };
 
+  /* Chuẩn hóa tên bàn: trim + gộp nhiều space thành 1 */
+  const normalizeName = (str) => str.trim().replace(/\s+/g, ' ');
+
   /* ─── Thêm bàn ─── */
   const addBan = async (ten) => {
-    // Kiểm tra trùng tên trên client
-    if (list.some((b) => b.ten_ban.toLowerCase() === ten.toLowerCase())) {
-      return toast(`Tên bàn "${ten}" đã tồn tại!`, "error");
+    const tenNorm = normalizeName(ten);
+    // Kiểm tra trùng tên trên client (không phân biệt hoa/thường, ignore space thừa)
+    if (list.some((b) => normalizeName(b.ten_ban).toLowerCase() === tenNorm.toLowerCase())) {
+      return toast(`Tên bàn "${tenNorm}" đã tồn tại!`, "error");
     }
 
     try {
@@ -225,12 +234,13 @@ export default function Ban() {
 
   /* ─── Sửa bàn ─── */
   const updateBan = async (ten) => {
+    const tenNorm = normalizeName(ten);
     // Kiểm tra trùng tên trên client (loại trừ bàn hiện tại)
     const duplicate = list.some(
-      (b) => b.ma_ban !== editBan.ma_ban && b.ten_ban.toLowerCase() === ten.toLowerCase()
+      (b) => b.ma_ban !== editBan.ma_ban && normalizeName(b.ten_ban).toLowerCase() === tenNorm.toLowerCase()
     );
     if (duplicate) {
-      return toast(`Tên bàn "${ten}" đã tồn tại!`, "error");
+      return toast(`Tên bàn "${tenNorm}" đã tồn tại!`, "error");
     }
 
     try {
@@ -326,7 +336,7 @@ export default function Ban() {
           </span>
           <p className="text-sm font-medium">Không tìm thấy bàn</p>
           <p className="text-xs text-muted/60 mt-1">
-            Thử tìm kiếm với từ khóa khác
+            Thử tìm kiếm với từ khác khác
           </p>
         </div>
       ) : (

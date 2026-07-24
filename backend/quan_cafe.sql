@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS `ban` (
   `ma_ban` int NOT NULL AUTO_INCREMENT,
   `ten_ban` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `trang_thai` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`ma_ban`)
+  PRIMARY KEY (`ma_ban`),
+  UNIQUE KEY `uq_ban_ten` (`ten_ban`)
 ) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -75,11 +76,7 @@ INSERT INTO `ban` (`ma_ban`, `ten_ban`, `trang_thai`) VALUES
 (35, 'Bàn 35', 'Trong'),
 (41, 'Bàn 3', NULL),
 (42, 'Bàn 2', 'Co khach'),
-(43, 'Bàn Test 99', NULL),
-(44, 'Bàn Test 99', NULL),
-(45, 'Bàn Test 99', NULL),
-(46, 'Bàn Test 99', NULL),
-(48, 'Bàn Test 99', NULL);
+(43, 'Bàn Test 99', NULL);
 
 -- --------------------------------------------------------
 

@@ -31,6 +31,11 @@ const update = async (req, res) => {
     await banService.update(req.params.id, req.body.ten_ban);
     return res.json({ message: "Cập nhật thành công" });
   } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({
+        message: `Tên bàn "${req.body.ten_ban?.trim()}" đã tồn tại. Vui lòng chọn tên khác.`,
+      });
+    }
     return res.status(err.status || 500).json({ message: err.message });
   }
 };

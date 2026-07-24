@@ -7,11 +7,13 @@ const DonHangRepository = require("../repositories/donHangRepository");
 
 const getList = async (sort) => await banRepository.getAll(sort);
 
+const normalizeTenBan = (str) => str.trim().replace(/\s+/g, ' ');
+
 const create = async (ten_ban) => {
   if (!ten_ban || ten_ban.trim() === "") {
     throw { status: 400, message: "Tên bàn không được để trống" };
   }
-  const trimmed = ten_ban.trim();
+  const trimmed = normalizeTenBan(ten_ban);
 
   // Kiểm tra trùng tên bàn
   const existing = await banRepository.findByName(trimmed);
@@ -26,7 +28,7 @@ const update = async (id, ten_ban) => {
   if (!ten_ban || ten_ban.trim() === "") {
     throw { status: 400, message: "Tên bàn không được để trống" };
   }
-  const trimmed = ten_ban.trim();
+  const trimmed = normalizeTenBan(ten_ban);
 
   // Kiểm tra trùng tên bàn (loại trừ bàn hiện tại)
   const existing = await banRepository.findByName(trimmed, id);
