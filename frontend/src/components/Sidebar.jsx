@@ -99,10 +99,7 @@ export default function Sidebar({ open, setOpen }) {
 
         {/* Footer */}
         <div className="p-3 border-t border-outline space-y-0.5">
-          <button className="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-primary/[0.04] rounded-lg w-full transition-colors duration-150">
-            <span className="material-symbols-outlined text-[20px]">help</span>
-            <span className="text-[13px] font-medium">Hỗ trợ</span>
-          </button>
+          
 
           <button
             onClick={handleLogout}

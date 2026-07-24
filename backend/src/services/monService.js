@@ -44,15 +44,21 @@ const MonService = {
     return await MonRepository.deductStockByOrder(ma_mon, so_luong);
   },
 
-  /** POS: lấy danh sách món với trạng thái hết hàng */
+  /** POS: lấy danh sách món với trạng thái hết hàng & hết hạn */
   getMenuPos: async () => {
     const all = await MonRepository.getAllWithEstimation();
-    return all.map((m) => ({
-      ...m,
-      so_luong_nguyen_lieu: Number(m.so_luong_nguyen_lieu || 0),
-      so_luong_co_the_lam: Number(m.so_luong_co_the_lam || 0),
-      het_hang: Number(m.so_luong_nguyen_lieu) > 0 && Number(m.so_luong_co_the_lam) <= 0,
-    }));
+    return all.map((m) => {
+      const het_han = Number(m.co_nguyen_lieu_het_han || 0) === 1;
+      const het_hang = Number(m.so_luong_nguyen_lieu) > 0 && Number(m.so_luong_co_the_lam) <= 0;
+      return {
+        ...m,
+        so_luong_nguyen_lieu: Number(m.so_luong_nguyen_lieu || 0),
+        so_luong_co_the_lam: Number(m.so_luong_co_the_lam || 0),
+        het_hang,
+        het_han,
+        bi_khoa: het_hang || het_han,
+      };
+    });
   },
 
   /* ───── Công thức ───── */

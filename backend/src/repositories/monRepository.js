@@ -46,6 +46,10 @@ const MonRepository = {
           0
         ) AS so_luong_co_the_lam,
 
+        MAX(
+          IF(nl.han_su_dung IS NOT NULL AND nl.han_su_dung < CURDATE(), 1, 0)
+        ) AS co_nguyen_lieu_het_han,
+
         IF(
           COUNT(ct.ma_nguyen_lieu) > 0,
           JSON_ARRAYAGG(
@@ -53,7 +57,8 @@ const MonRepository = {
               'ma_nguyen_lieu', ct.ma_nguyen_lieu,
               'ten_nguyen_lieu', IFNULL(nl.ten_nguyen_lieu, 'Vật tư đã xóa'),
               'dinh_luong', ct.dinh_luong,
-              'don_vi_tinh_chi_tiet', ct.don_vi_tinh_chi_tiet
+              'don_vi_tinh_chi_tiet', ct.don_vi_tinh_chi_tiet,
+              'han_su_dung', nl.han_su_dung
             )
           ),
           '[]'
@@ -263,6 +268,21 @@ const MonRepository = {
     );
 
     if (formulaItems.length === 0) return;
+
+    // Kiểm tra nguyên liệu hết hạn — dùng MySQL CURDATE() để đồng bộ với SQL check
+    const [expiredRows] = await db.execute(
+      `SELECT nl.ten_nguyen_lieu, nl.han_su_dung
+       FROM congthuc ct
+       JOIN nguyenlieu nl ON ct.ma_nguyen_lieu = nl.ma_nguyen_lieu
+       WHERE ct.ma_mon = ? AND nl.han_su_dung IS NOT NULL AND nl.han_su_dung < CURDATE()
+       LIMIT 1`,
+      [ma_mon]
+    );
+    if (expiredRows.length > 0) {
+      throw new Error(
+        `Nguyên liệu "${expiredRows[0].ten_nguyen_lieu}" đã hết hạn (${expiredRows[0].han_su_dung}). Vui lòng nhập kho nguyên liệu mới trước.`
+      );
+    }
 
     for (const item of formulaItems) {
       const canBo = Number(item.ton_kho || 0);

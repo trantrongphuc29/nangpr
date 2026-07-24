@@ -66,9 +66,12 @@ export default function PosMenu({ menu, busy, onAdd }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 overflow-y-auto flex-1 pb-4 custom-scrollbar pr-1">
         {list.map((mon) => {
           const img = dishImage(mon.hinh_anh);
-          const locked = mon.het_hang;
+          const locked = mon.bi_khoa ?? mon.het_hang;
+          const hetHan = mon.het_han;
           const stockText =
-            Number(mon.so_luong_co_the_lam) > 5
+            hetHan
+              ? "Nguyên liệu hết hạn"
+              : Number(mon.so_luong_co_the_lam) > 5
               ? `Còn: ${mon.so_luong_co_the_lam} phần`
               : Number(mon.so_luong_co_the_lam) > 0
               ? `Sắp hết: ${mon.so_luong_co_the_lam} phần`
@@ -80,7 +83,7 @@ export default function PosMenu({ menu, busy, onAdd }) {
               type="button"
               disabled={busy || locked}
               onClick={() => onAdd(mon)}
-              title={locked ? "Hết kho — tạm khóa" : mon.ten_mon}
+              title={locked ? (hetHan ? "Nguyên liệu hết hạn — tạm khóa" : "Hết kho — tạm khóa") : mon.ten_mon}
               className="group bg-surface-container-lowest rounded-2xl border border-outline/15 hover:border-primary/40 hover:shadow-md transition-all duration-150 p-2.5 text-left cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {/* Image */}
@@ -104,7 +107,7 @@ export default function PosMenu({ menu, busy, onAdd }) {
                     </div>
                     {locked && (
                       <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-[10px] font-black uppercase tracking-widest backdrop-blur-[2px]">
-                        Hết hàng
+                        {hetHan ? "Hết hạn" : "Hết hàng"}
                       </span>
                     )}
                   </div>

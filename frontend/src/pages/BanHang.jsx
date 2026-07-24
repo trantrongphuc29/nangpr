@@ -802,8 +802,9 @@ function useBanHang() {
       setError("Vui lòng chọn bàn hoặc chọn loại đơn trước");
       return Promise.resolve();
     }
-    if (mon.het_hang) {
-      setError(`"${mon.ten_mon}" hết kho — tạm khóa`);
+    if (mon.bi_khoa ?? mon.het_hang) {
+      const reason = mon.het_han ? "nguyên liệu hết hạn" : "hết kho";
+      setError(`"${mon.ten_mon}" ${reason} — tạm khóa`);
       return Promise.resolve();
     }
     // Nếu đã persist → thêm qua API
@@ -1249,10 +1250,7 @@ export default function BanHang() {
               {/* Cart - Desktop */}
               <section className="hidden lg:flex lg:col-span-3 flex-col min-h-0 card p-4">
                 <div className="flex items-center justify-between mb-3 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-lg">shopping_cart</span>
-                    <h3 className="font-bold text-on-surface text-sm">Giỏ hàng</h3>
-                  </div>
+                  
                   {cartItemCount > 0 && (
                     <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)", color: "var(--color-primary)" }}>
                       {cartItemCount} món
@@ -1398,7 +1396,7 @@ export default function BanHang() {
               >
                 <span className="material-symbols-outlined text-on-surface">arrow_back</span>
               </button>
-              <h2 className="font-bold text-on-surface text-sm"><span className="material-symbols-outlined">shopping_cart</span> Giỏ hàng</h2>
+            
             </div>
             {cartItemCount > 0 && (
               <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)", color: "var(--color-primary)" }}>
