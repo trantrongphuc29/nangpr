@@ -41,8 +41,9 @@ const MonRepository = {
         COUNT(ct.ma_nguyen_lieu) AS so_luong_nguyen_lieu,
 
         IF(
-          COUNT(ct.ma_nguyen_lieu) > 0, 
-          IFNULL(FLOOR(MIN(nl.ton_kho / ct.dinh_luong)), 0), 
+          COUNT(ct.ma_nguyen_lieu) > 0
+          AND MAX(IF(nl.han_su_dung IS NOT NULL AND nl.han_su_dung < CURDATE(), 1, 0)) = 0,
+          IFNULL(FLOOR(MIN(nl.ton_kho / ct.dinh_luong)), 0),
           0
         ) AS so_luong_co_the_lam,
 
@@ -58,7 +59,8 @@ const MonRepository = {
               'ten_nguyen_lieu', IFNULL(nl.ten_nguyen_lieu, 'Vật tư đã xóa'),
               'dinh_luong', ct.dinh_luong,
               'don_vi_tinh_chi_tiet', ct.don_vi_tinh_chi_tiet,
-              'han_su_dung', nl.han_su_dung
+              'han_su_dung', nl.han_su_dung,
+              'ton_kho', nl.ton_kho
             )
           ),
           '[]'

@@ -697,29 +697,76 @@ export default function MonCongThuc() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="badge-primary">{mon.ten_danh_muc || 'Chưa phân nhóm'}</span>
+                    {hasFormula && mon.bi_khoa && (
+                      <span className="badge-error flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[10px]">block</span> Tạm khóa
+                      </span>
+                    )}
                     {!hasFormula && (
-                      <span className="badge-error">Chưa có công thức</span>
+                      <span className="badge-error flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[10px]">warning</span> Chưa có công thức
+                      </span>
                     )}
                   </div>
                   <h4 className="text-base font-bold text-on-surface group-hover:text-primary transition-colors mt-1 truncate">{mon.ten_mon}</h4>
 
-                  <p className="text-xs text-muted mt-0.5 flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasFormula && mon.so_luong_co_the_lam > 0 ? 'bg-success' : 'bg-warning'}`}></span>
-                    {hasFormula ? `Ước lượng làm được: ${mon.so_luong_co_the_lam} phần` : 'Vui lòng gán nguyên liệu cho món này'}
+                  <p className="text-xs mt-0.5 flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      !hasFormula ? 'bg-warning' :
+                      mon.het_han ? 'bg-error' :
+                      mon.het_hang ? 'bg-error' :
+                      mon.so_luong_co_the_lam > 0 ? 'bg-success' : 'bg-warning'
+                    }`}></span>
+                    <span className={mon.het_han || mon.het_hang ? 'text-error font-semibold' : 'text-muted'}>
+                      {!hasFormula ? 'Vui lòng gán nguyên liệu cho món này' :
+                       mon.het_han ? 'Nguyên liệu hết hạn — tạm khóa' :
+                       mon.het_hang ? 'Hết kho — tạm khóa' :
+                       `Ước lượng làm được: ${mon.so_luong_co_the_lam} phần`}
+                    </span>
                   </p>
 
                   {hasFormula && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {formulaItems.map((item, idx) => (
-                        <span
-                          key={item.ma_nguyen_lieu ?? idx}
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-muted px-2 py-0.5 rounded-md bg-surface-container-high"
-                          title={`${item.ten_nguyen_lieu}: ${item.dinh_luong} ${item.don_vi_tinh_chi_tiet}`}
-                        >
-                          {item.ten_nguyen_lieu}
-                          <span className="font-semibold text-on-surface-variant">{item.dinh_luong}{item.don_vi_tinh_chi_tiet}</span>
-                        </span>
-                      ))}
+                      {formulaItems.map((item, idx) => {
+                        // Trạng thái từng nguyên liệu
+                        const itemHetHan = item.het_han;
+                        const itemHetHang = item.het_hang;
+                        const hasIssue = itemHetHan || itemHetHang;
+
+                        let chipStyle = 'bg-surface-container-high text-muted';
+                        let statusDetail = '';
+                        let statusIcon = null;
+
+                        if (itemHetHan) {
+                          chipStyle = 'bg-error-container/30 text-error border border-error/20';
+                          statusDetail = `Hết hạn — HSD: ${item.han_su_dung ? new Date(item.han_su_dung).toLocaleDateString('vi-VN') : 'N/A'}`;
+                          statusIcon = 'block';
+                        } else if (itemHetHang) {
+                          chipStyle = 'bg-surface-container-high text-error border border-error/30';
+                          statusDetail = `Hết kho — tồn: ${item.ton_kho ?? 0} / cần: ${item.dinh_luong}${item.don_vi_tinh_chi_tiet}`;
+                          statusIcon = 'inventory_2';
+                        }
+
+                        return (
+                          <span
+                            key={item.ma_nguyen_lieu ?? idx}
+                            className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md transition-all ${chipStyle} ${hasIssue ? 'shadow-sm' : ''}`}
+                            title={
+                              hasIssue
+                                ? `${statusDetail}`
+                                : `${item.ten_nguyen_lieu}: ${item.dinh_luong} ${item.don_vi_tinh_chi_tiet}`
+                            }
+                          >
+                            {statusIcon && (
+                              <span className="material-symbols-outlined text-[10px]">{statusIcon}</span>
+                            )}
+                            {item.ten_nguyen_lieu}
+                            <span className={`font-semibold ${hasIssue ? 'opacity-80' : 'text-on-surface-variant'}`}>
+                              {item.dinh_luong}{item.don_vi_tinh_chi_tiet}
+                            </span>
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

@@ -4,8 +4,57 @@
  * ========================================== */
 const MonRepository = require('../repositories/monRepository');
 
+/** Gán trạng thái cho từng nguyên liệu trong công thức */
+function enrichIngredientStatus(formulaItems) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return (formulaItems || []).map((item) => {
+    const tonKho = Number(item.ton_kho ?? 0);
+    const dinhLuong = Number(item.dinh_luong || 1);
+    let het_han = false;
+    if (item.han_su_dung) {
+      const hsd = new Date(item.han_su_dung);
+      hsd.setHours(0, 0, 0, 0);
+      het_han = hsd < today;
+    }
+    const het_hang = tonKho <= 0 || tonKho < dinhLuong;
+    return {
+      ...item,
+      ton_kho: tonKho,
+      het_han,
+      het_hang,
+    };
+  });
+}
+
+/** Enrich món với trạng thái khóa */
+function enrichMonStatus(m) {
+  const formulaItems = Array.isArray(m.chi_tiet_cong_thuc) ? m.chi_tiet_cong_thuc : [];
+  const enrichedFormula = enrichIngredientStatus(formulaItems);
+  const het_han = enrichedFormula.some((i) => i.het_han);
+  const het_hang =
+    Number(m.so_luong_nguyen_lieu) > 0 && Number(m.so_luong_co_the_lam) <= 0;
+  return {
+    ...m,
+    chi_tiet_cong_thuc: enrichedFormula,
+    so_luong_nguyen_lieu: Number(m.so_luong_nguyen_lieu || 0),
+    so_luong_co_the_lam: Number(m.so_luong_co_the_lam || 0),
+    het_hang,
+    het_han,
+    bi_khoa: het_hang || het_han,
+  };
+}
+
 const MonService = {
-  getDanhSachMon: async () => MonRepository.getAllWithEstimation(),
+  getDanhSachMon: async () => {
+    const all = await MonRepository.getAllWithEstimation();
+    return all.map(enrichMonStatus);
+  },
+
+  getMenuPos: async () => {
+    const all = await MonRepository.getAllWithEstimation();
+    return all.map(enrichMonStatus);
+  },
 
   themMonMoi: async (data) => {
     if (!data.ten_mon || data.gia_ban == null || data.gia_ban < 0) {
@@ -42,23 +91,6 @@ const MonService = {
       throw new Error("Mã món nước hoặc số lượng đơn hàng không hợp lệ!");
     }
     return await MonRepository.deductStockByOrder(ma_mon, so_luong);
-  },
-
-  /** POS: lấy danh sách món với trạng thái hết hàng & hết hạn */
-  getMenuPos: async () => {
-    const all = await MonRepository.getAllWithEstimation();
-    return all.map((m) => {
-      const het_han = Number(m.co_nguyen_lieu_het_han || 0) === 1;
-      const het_hang = Number(m.so_luong_nguyen_lieu) > 0 && Number(m.so_luong_co_the_lam) <= 0;
-      return {
-        ...m,
-        so_luong_nguyen_lieu: Number(m.so_luong_nguyen_lieu || 0),
-        so_luong_co_the_lam: Number(m.so_luong_co_the_lam || 0),
-        het_hang,
-        het_han,
-        bi_khoa: het_hang || het_han,
-      };
-    });
   },
 
   /* ───── Công thức ───── */
