@@ -8,6 +8,7 @@ import * as congNoService from "../services/congNoService";
 import { exportPhieuNhapExcel } from "../utils/bangLuongExport";
 import { ToastContainer, useToast } from "../components/Toast";
 import PriceInput from "../components/PriceInput";
+import useScrollLock from "../components/useScrollLock";
 
 function moCuaSoIn(html) {
   const printWindow = window.open("", "_blank");
@@ -385,6 +386,8 @@ function ModalThanhToan({ phieu, onDong, onThanhCong }) {
     }
   };
 
+  useScrollLock(Boolean(phieu));
+
   if (!phieu) return null;
 
   return (
@@ -449,6 +452,8 @@ function ModalThanhToan({ phieu, onDong, onThanhCong }) {
 
 /* ── Modal chi tiết phiếu nhập ── */
 function ModalChiTiet({ phieu, onDong }) {
+  useScrollLock(Boolean(phieu));
+
   if (!phieu) return null;
   const items = (() => {
     try {

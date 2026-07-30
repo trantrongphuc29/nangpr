@@ -10,6 +10,7 @@ import {
 } from "../services/payrollService";
 import { exportBangLuongExcel, exportBangLuongPDF } from "../utils/bangLuongExport";
 import ModalPortal from "../components/ModalPortal";
+import ModalOverlay from "../components/ModalOverlay";
 import { ToastContainer, useToast } from "../components/Toast";
 import { useConfirm } from "../context/ConfirmContext";
 
@@ -648,12 +649,15 @@ export default function BangLuong() {
                       </td>
                       <td className="px-4 py-3 text-right font-bold">{formatMoney(r.luong_thuc_nhan)}</td>
 
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-center">
                         <button
-                          className="btn-outline !py-2 !px-3 !text-xs"
                           onClick={() => handleViewDetail(r)}
+                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center transition-all hover:bg-primary/10"
+                          style={{ color: "var(--color-primary)" }}
+                          title="Xem chi tiết"
+                          aria-label={`Xem chi tiết lương của ${r.ten || ""}`}
                         >
-                          Xem chi tiết
+                          <span className="material-symbols-outlined text-sm">visibility</span>
                         </button>
                       </td>
                     </tr>
@@ -686,7 +690,7 @@ export default function BangLuong() {
       {/* Detail Modal */}
       {detailOpen && (
         <ModalPortal>
-          <div className="modal-overlay print:hidden" onClick={() => setDetailOpen(false)}>
+          <ModalOverlay className="print:hidden" onClick={() => setDetailOpen(false)}>
             <div
               className="modal-panel max-w-5xl w-full max-h-[90vh] flex flex-col min-h-0 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
@@ -812,7 +816,7 @@ export default function BangLuong() {
                 )}
               </div>
             </div>
-          </div>
+          </ModalOverlay>
         </ModalPortal>
       )}
     </div>

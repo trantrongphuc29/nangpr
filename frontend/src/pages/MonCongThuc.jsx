@@ -8,6 +8,7 @@ import * as nguyenlieuService from "../services/nguyenlieuService";
 import * as congThucService from "../services/congThucService";
 import { dishImage } from "../utils/shared";
 import { ToastContainer, useToast } from "../components/Toast";
+import ModalOverlay from "../components/ModalOverlay";
 import { useConfirm } from "../context/ConfirmContext";
 import PriceInput from "../components/PriceInput";
 
@@ -109,7 +110,7 @@ function MonFormModal({ mon, categories, onClose, onSaved, toast }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <ModalOverlay onClick={onClose}>
       <div
         className="modal-panel max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar"
         onClick={(e) => e.stopPropagation()}
@@ -259,7 +260,7 @@ function MonFormModal({ mon, categories, onClose, onSaved, toast }) {
           </div>
         </form>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -342,7 +343,7 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <ModalOverlay onClick={onClose}>
       <div
         className="modal-panel max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -494,7 +495,7 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 

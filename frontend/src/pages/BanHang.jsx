@@ -11,6 +11,7 @@ import * as donHangApi from "../services/donHangService";
 import PosMenu from "../components/PosMenu";
 import PriceInput from "../components/PriceInput";
 import { ToastContainer, useToast } from "../components/Toast";
+import ModalOverlay from "../components/ModalOverlay";
 import { useConfirm } from "../context/ConfirmContext";
 
 /* ───── banhangUtils ───── */
@@ -57,6 +58,8 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
   const tenBan = table?.ten_ban || (loaiDon === "mang_ve" ? "Mang về" : loaiDon === "giao_hang" ? "Giao hàng" : "—");
   const maDon = order?.ma_don_hang || "";
   const deliveryOrder = loaiDon === "giao_hang";
+  // Chỉ đơn tại chỗ mới có khái niệm giờ vào / giờ ra (khách ngồi bàn)
+  const taiCho = loaiDon !== "mang_ve" && loaiDon !== "giao_hang";
 
   if (mode === "mon") {
     const monItems =
@@ -175,12 +178,18 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
       <div class="center bold" style="padding:4px 0">${tenBan}</div>
       ${maDon ? `<div class="center small mb4">Đơn #${maDon}</div>` : ''}
       <div class="line-dashed"></div>
+      ${taiCho ? `
       <div style="display:flex;justify-content:space-between;font-size:11px;padding:1px 6px">
         <span>Giờ vào:</span><span>${gioVao}</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:11px;padding:1px 6px">
         <span>Giờ ra:</span><span>${gioRa}</span>
       </div>
+      ` : `
+      <div style="display:flex;justify-content:space-between;font-size:11px;padding:1px 6px">
+        <span>Thời gian:</span><span>${gioRa}</span>
+      </div>
+      `}
       ${deliveryOrder ? `
       <div class="line-dashed"></div>
       <div class="small bold mb4">THÔNG TIN GIAO HÀNG</div>
@@ -1432,7 +1441,7 @@ export default function BanHang() {
 
       {/* Payment Modal */}
       {showPaymentModal && (
-        <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
+        <ModalOverlay onClick={() => setShowPaymentModal(false)}>
           <div
             className="modal-panel p-6 max-w-sm"
             onClick={(e) => e.stopPropagation()}
@@ -1502,12 +1511,12 @@ export default function BanHang() {
               Huỷ
             </button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Move Ban Modal */}
       {showMoveModal && (
-        <div className="modal-overlay" onClick={() => setShowMoveModal(false)}>
+        <ModalOverlay onClick={() => setShowMoveModal(false)}>
           <div
             className="modal-panel p-6 max-w-md"
             onClick={(e) => e.stopPropagation()}
@@ -1571,7 +1580,7 @@ export default function BanHang() {
               Huỷ
             </button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </>
   );

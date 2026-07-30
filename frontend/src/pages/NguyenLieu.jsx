@@ -6,6 +6,7 @@ import * as nlService from '../services/nguyenlieuService';
 import { ToastContainer, useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
 import ModalPortal from '../components/ModalPortal';
+import ModalOverlay from '../components/ModalOverlay';
 import PriceInput from '../components/PriceInput';
 import { exportDiscardHistoryExcel } from '../utils/bangLuongExport';
 
@@ -682,7 +683,7 @@ const categories = useMemo(() => {
       {/* Modal: Thêm / Sửa nguyên liệu */}
      {showCrudModal && (
   <ModalPortal>
-    <div className="modal-overlay" onClick={() => setShowCrudModal(false)}>
+    <ModalOverlay onClick={() => setShowCrudModal(false)}>
       <div className="modal-panel max-w-lg p-6 md:p-8 h-full w-full overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-6">
           <span className="material-symbols-outlined">inventory_2</span>
@@ -751,13 +752,13 @@ const categories = useMemo(() => {
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   </ModalPortal>
 )}
       {/* Modal: Lịch sử hủy hàng */}
       {showDiscardHistory && (
         <ModalPortal>
-          <div className="modal-overlay" onClick={() => { setShowDiscardHistory(false); setDiscardDetail(null); }}>
+          <ModalOverlay onClick={() => { setShowDiscardHistory(false); setDiscardDetail(null); }}>
             <div className="modal-panel max-w-4xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
@@ -955,14 +956,14 @@ const categories = useMemo(() => {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalOverlay>
         </ModalPortal>
       )}
 
       {/* Modal chi tiết phiếu hủy hàng */}
       {discardDetail && (
         <ModalPortal>
-          <div className="modal-overlay" onClick={() => setDiscardDetail(null)}>
+          <ModalOverlay onClick={() => setDiscardDetail(null)}>
             <div className="modal-panel max-w-md p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg font-bold text-primary flex items-center gap-2">
@@ -1069,14 +1070,14 @@ const categories = useMemo(() => {
                 <button type="button" onClick={() => setDiscardDetail(null)} className="btn-primary !text-sm">Đóng</button>
               </div>
             </div>
-          </div>
+          </ModalOverlay>
         </ModalPortal>
       )}
 
       {/* Modal: Nhập kho */}
       {showImportDrawer && (
         <ModalPortal>
-          <div className="modal-overlay" onClick={() => setShowImportDrawer(false)}>
+          <ModalOverlay onClick={() => setShowImportDrawer(false)}>
             <div className="modal-panel max-w-lg p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-primary flex items-center gap-2"><span className="material-symbols-outlined">add_shopping_cart</span>Nhập kho</h2>
@@ -1147,14 +1148,14 @@ const categories = useMemo(() => {
                 </div>
               </form>
             </div>
-          </div>
+          </ModalOverlay>
         </ModalPortal>
       )}
 
       {/* Modal: Hủy hàng */}
       {showDiscardModal && discardItem && (
         <ModalPortal>
-          <div className="modal-overlay" onClick={() => setShowDiscardModal(false)}>
+          <ModalOverlay onClick={() => setShowDiscardModal(false)}>
             <div className="modal-panel max-w-md p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-error flex items-center gap-2">
@@ -1226,7 +1227,7 @@ const categories = useMemo(() => {
                 </div>
               </form>
             </div>
-          </div>
+          </ModalOverlay>
         </ModalPortal>
       )}
 

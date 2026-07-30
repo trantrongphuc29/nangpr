@@ -84,7 +84,11 @@ function StatCard({ label, value, sub, icon, variant, trend }) {
 function DailyRevenueChart({ data, loading }) {
   const maxVal = useMemo(() => Math.max(...data.map(d => d.total), 1), [data]);
   const hasData = data.some((d) => d.total > 0);
-  const soNgayCoDoanhThu = data.filter((d) => d.total > 0).length;
+  // Ngày có doanh thu cao nhất trong tháng
+  const ngayCaoNhat = useMemo(
+    () => data.reduce((best, d) => (d.total > (best?.total ?? 0) ? d : best), null),
+    [data]
+  );
 
   return (
     <div className="card p-5">
@@ -130,7 +134,10 @@ function DailyRevenueChart({ data, loading }) {
         <div className="flex items-center justify-center gap-3 mt-3 pt-3 border-t border-outline-subtle text-xs text-muted">
           <span>Tổng: <span className="font-semibold text-on-surface">{fmt(data.reduce((s, d) => s + d.total, 0))}</span></span>
           <span className="text-outline">|</span>
-          <span>{soNgayCoDoanhThu} ngày có doanh thu</span>
+          <span>
+            Ngày {ngayCaoNhat.shortLabel} có doanh thu cao nhất:{" "}
+            <span className="font-semibold text-on-surface">{fmt(ngayCaoNhat.total)}</span>
+          </span>
         </div>
       )}
     </div>
@@ -138,10 +145,27 @@ function DailyRevenueChart({ data, loading }) {
 }
 
 /* ── RecentActivity ── */
+const RECENT_PAGE_SIZE = 5;
+
 function RecentActivity({ title, items, loading }) {
+  const [visible, setVisible] = useState(RECENT_PAGE_SIZE);
+
+  // Dữ liệu mới (làm mới / đổi ngày) -> thu gọn lại từ đầu
+  useEffect(() => { setVisible(RECENT_PAGE_SIZE); }, [items]);
+
+  const shown = items.slice(0, visible);
+  const conLai = items.length - shown.length;
+
   return (
     <div className="card p-5">
-      <h3 className="text-sm font-semibold text-on-surface mb-3">{title}</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-on-surface">{title}</h3>
+        {!loading && items.length > 0 && (
+          <span className="text-[11px] text-muted tabular-nums">
+            {fmtN(shown.length)}/{fmtN(items.length)} đơn
+          </span>
+        )}
+      </div>
       {loading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
@@ -154,19 +178,42 @@ function RecentActivity({ title, items, loading }) {
           <p className="text-sm text-muted">Chưa có đơn hàng hôm nay</p>
         </div>
       ) : (
-        <div className="divide-y divide-outline-subtle">
-          {items.map((item, i) => (
-            <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-on-surface truncate">{item.label}</p>
-                <p className="text-[11px] text-muted mt-0.5">{item.time}</p>
+        <>
+          <div className={`divide-y divide-outline-subtle ${visible > RECENT_PAGE_SIZE ? 'max-h-96 overflow-y-auto custom-scrollbar pr-1' : ''}`}>
+            {shown.map((item, i) => (
+              <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-on-surface truncate">{item.label}</p>
+                  <p className="text-[11px] text-muted mt-0.5">{item.time}</p>
+                </div>
+                <span className={`text-sm font-semibold tabular-nums shrink-0 ml-3 ${item.positive ? 'text-success' : item.negative ? 'text-error' : 'text-on-surface'}`}>
+                  {item.value}
+                </span>
               </div>
-              <span className={`text-sm font-semibold tabular-nums shrink-0 ml-3 ${item.positive ? 'text-success' : item.negative ? 'text-error' : 'text-on-surface'}`}>
-                {item.value}
-              </span>
+            ))}
+          </div>
+
+          {(conLai > 0 || visible > RECENT_PAGE_SIZE) && (
+            <div className="mt-3 pt-3 border-t border-outline-subtle flex items-center justify-center gap-2">
+              {conLai > 0 && (
+                <button type="button" onClick={() => setVisible((v) => v + RECENT_PAGE_SIZE)}
+                  className="btn-outline !py-1.5 !px-3 !text-xs"
+                >
+                  <span className="material-symbols-outlined text-base leading-none">expand_more</span>
+                  Xem thêm {fmtN(Math.min(conLai, RECENT_PAGE_SIZE))} đơn
+                </button>
+              )}
+              {visible > RECENT_PAGE_SIZE && (
+                <button type="button" onClick={() => setVisible(RECENT_PAGE_SIZE)}
+                  className="btn-outline !py-1.5 !px-3 !text-xs"
+                >
+                  <span className="material-symbols-outlined text-base leading-none">expand_less</span>
+                  Thu gọn
+                </button>
+              )}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -200,11 +247,11 @@ function OrderTypeBreakdown({ todayRevenue }) {
             </div>
             <div className="w-full h-1.5 rounded-full bg-surface-container-high overflow-hidden flex">
               <div className="h-full rounded-l-full" style={{ width: `${tmPct}%`, backgroundColor: "var(--color-success)" }} />
-              <div className="h-full rounded-r-full" style={{ width: `${ckPct}%`, backgroundColor: "var(--color-primary)" }} />
+              <div className="h-full rounded-r-full" style={{ width: `${ckPct}%`, backgroundColor: "var(--color-info)" }} />
             </div>
             <div className="flex justify-between text-[11px]">
               <span className="text-muted flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-primary" />
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--color-info)" }} />
                 Chuyển khoản ({ckPct}%)
               </span>
               <span className="font-medium tabular-nums">{fmt(todayRevenue.ck)}</span>
@@ -320,7 +367,7 @@ function groupOrdersByDate(orders) {
     const label = `${String(vn.getUTCDate()).padStart(2, '0')}/${String(vn.getUTCMonth() + 1).padStart(2, '0')}`;
     const shortLabel = String(vn.getUTCDate());
     if (!map[key]) map[key] = { date: key, dateLabel: label, shortLabel, total: 0, count: 0 };
-    map[key].total += Number(o.tong_tien || 0);
+    map[key].total += Number(o.tong_thanh_toan ?? o.tong_tien ?? 0);
     map[key].count += 1;
   });
   return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
@@ -393,24 +440,27 @@ export default function Dashboard() {
         month: tinhTrend(dtThang, lastMonthRev.summary?.total_revenue || 0),
       });
 
-      const todayOrdersList = todayRev.orders || [];
-      const tmTotal = todayOrdersList.filter((o) => o.hinh_thuc_thanh_toan !== "chuyen_khoan").reduce((s, o) => s + Number(o.tong_tien || 0), 0);
-      const ckTotal = todayOrdersList.filter((o) => o.hinh_thuc_thanh_toan === "chuyen_khoan").reduce((s, o) => s + Number(o.tong_tien || 0), 0);
-      const taiCho = todayOrdersList.filter(o => o.loai_don === 'tai_cho' || !o.loai_don).length;
-      const mangVe = todayOrdersList.filter(o => o.loai_don === 'mang_ve').length;
-      const giaoHang = todayOrdersList.filter(o => o.loai_don === 'giao_hang').length;
-
-      setTodayRevenue({ total: todayRev.summary?.total_revenue || 0, orders: todayRev.summary?.total_orders || 0, tm: tmTotal, ck: ckTotal, taiCho, mangVe, giaoHang });
+      // Tất cả lấy từ summary (toàn kỳ) thay vì cộng tay từ danh sách đã phân trang
+      const s = todayRev.summary || {};
+      setTodayRevenue({
+        total: s.total_revenue || 0,
+        orders: s.total_orders || 0,
+        tm: s.total_tien_mat || 0,
+        ck: s.total_chuyen_khoan || 0,
+        taiCho: s.count_tai_cho || 0,
+        mangVe: s.count_mang_ve || 0,
+        giaoHang: s.count_giao_hang || 0,
+      });
       setMonthRevenue({ total: monthRev.summary?.total_revenue || 0, orders: monthRev.summary?.total_orders || 0 });
       setMonthOrders(monthRev.orders || []);
       setCostStats({ day: costResult.day || 0, month: costResult.month || 0 });
       setDebt({ tong_con_no: debtResult.tong_con_no || 0, so_phieu_no: debtResult.so_phieu_no || 0, so_ncc_dang_no: debtResult.so_ncc_dang_no || 0 });
 
       setRecentOrders(
-        (todayRev.orders || []).slice(0, 5).map((o) => ({
+        (todayRev.orders || []).map((o) => ({
           label: `#${o.ma_don_hang}${o.ten_ban ? ` · ${o.ten_ban}` : ''}${o.loai_don === 'mang_ve' ? ' · Mang về' : o.loai_don === 'giao_hang' ? ' · Giao hàng' : ''}`,
           time: new Date(o.ngay_tao).toLocaleString("vi-VN"),
-          value: fmt(o.tong_tien),
+          value: fmt(o.tong_thanh_toan ?? o.tong_tien),
           positive: true,
         }))
       );
@@ -497,12 +547,6 @@ export default function Dashboard() {
           <h2 className="text-3xl font-bold text-on-surface tracking-tight">Dashboard</h2>
           <p className="text-[13px] text-muted mt-0.5">{dateStr}</p>
         </div>
-        <button type="button" onClick={loadDashboard} disabled={loading}
-          className="btn-outline !py-2 !px-3.5 !text-xs self-start sm:self-auto"
-        >
-          <span className={`material-symbols-outlined text-base ${loading ? 'animate-spin' : ''}`}>refresh</span>
-          Làm mới
-        </button>
       </div>
 
       {/* Error */}

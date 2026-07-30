@@ -3,6 +3,7 @@ import { createBan, deleteBanById, getBanList, updateBanById } from "../services
 import { ToastContainer, useToast } from "../components/Toast";
 import { useConfirm } from "../context/ConfirmContext";
 import ModalPortal from "../components/ModalPortal";
+import ModalOverlay from "../components/ModalOverlay";
 
 // Tên bàn chỉ cho phép chữ (kể cả tiếng Việt có dấu), số và khoảng trắng
 const INVALID_CHARS = /[^\p{L}\p{N} ]/gu;
@@ -60,7 +61,7 @@ function BanFormModal({ open, editBan, onClose, onSave, loading }) {
 
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onClose}>
+      <ModalOverlay onClick={onClose}>
         <div
           className="modal-panel max-w-sm w-full p-6"
           onClick={(e) => e.stopPropagation()}
@@ -143,7 +144,7 @@ function BanFormModal({ open, editBan, onClose, onSave, loading }) {
             </div>
           </form>
         </div>
-      </div>
+      </ModalOverlay>
     </ModalPortal>
   );
 }

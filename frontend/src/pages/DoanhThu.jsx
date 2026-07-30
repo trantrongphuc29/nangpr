@@ -4,20 +4,22 @@
  * ======================================= */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getAllCancelHistory, getRevenueReport } from "../services/donHangService";
-import { getCongNoStats } from "../services/congNoService";
 import { exportDoanhThuExcel } from "../utils/bangLuongExport";
+import ModalPortal from "../components/ModalPortal";
+import ModalOverlay from "../components/ModalOverlay";
 
 const dinhDangTien = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 const dinhDangNgay = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "—");
 
-const removeVietnameseTones = (str) => {
-  if (!str) return '';
-  return str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .trim();
+// Tổng tiền thực thu của 1 đơn = tiền món + phí giao hàng (backend đã tính sẵn tong_thanh_toan)
+const tongThanhToan = (o) => Number(o?.tong_thanh_toan ?? (Number(o?.tong_tien || 0) + Number(o?.phi_giao_hang || 0)));
+
+/* Kỳ lọc chỉ 1 ngày -> chỉ cần giờ:phút, khỏi lặp lại ngày trên từng dòng */
+const dinhDangGio = (d, chiGio) => {
+  if (!d) return "—";
+  const t = new Date(d);
+  const gio = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
+  return chiGio ? gio : `${t.getDate()}/${t.getMonth() + 1} · ${gio}`;
 };
 
 const loaiDonLabel = {
@@ -164,13 +166,20 @@ function xayDuLieuBieuDo({ series, khoangThoiGian, tuNgay, denNgay }) {
   const lay = (key) => map.get(String(key)) || { revenue: 0, orders: 0 };
   const cot = [];
 
-  if (tuNgay && denNgay) {
+  if (tuNgay && denNgay && tuNgay === denNgay) {
+    // Chọn đúng 1 ngày -> backend gom theo giờ
+    for (let h = 0; h < 24; h++) {
+      const v = lay(pad2So(h));
+      cot.push({ key: pad2So(h), label: `${h}h`, revenue: v.revenue, orders: v.orders });
+    }
+  } else if (tuNgay && denNgay) {
     const [y1, m1, d1] = tuNgay.split("-").map(Number);
     const [y2, m2, d2] = denNgay.split("-").map(Number);
     const cur = new Date(y1, m1 - 1, d1);
     const end = new Date(y2, m2 - 1, d2);
+    // Guard rộng tay: chọn "Từ ngày" xa trong quá khứ vẫn vẽ đủ, không cắt ngang làm sai tổng
     let guard = 0;
-    while (cur <= end && guard < 370) {
+    while (cur <= end && guard < 3700) {
       const key = fmtNgayKey(cur);
       const v = lay(key);
       cot.push({ key, label: `${cur.getDate()}/${cur.getMonth() + 1}`, revenue: v.revenue, orders: v.orders });
@@ -315,6 +324,17 @@ function Badge({ label, color, bg }) {
   );
 }
 
+/* ── In hóa đơn của 1 đơn (dùng chung cho nút in ở bảng và trong modal) ── */
+function inHoaDon(donHang) {
+  const html = buildPrintBill(donHang, loaiDonLabel, hinhThucThanhToanLabel);
+  const w = window.open("", "_blank", "width=380,height=600,menubar=no,toolbar=no,scrollbars=yes");
+  if (!w) { alert("Trình duyệt đã chặn popup. Hãy cho phép popup và thử lại."); return; }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
 /* ── Modal chi tiết đơn hàng (có nút in) ── */
 function ModalChiTietDon({ donHang, onDong }) {
   if (!donHang) return null;
@@ -322,22 +342,13 @@ function ModalChiTietDon({ donHang, onDong }) {
   const phi = Number(donHang.phi_giao_hang || 0);
   const tong = tien + phi;
 
-  /* ── In chi tiết đơn hàng (hóa đơn) ── */
-  const handlePrint = () => {
-    const html = buildPrintBill(donHang, loaiDonLabel, hinhThucThanhToanLabel);
-    const w = window.open("", "_blank", "width=380,height=600,menubar=no,toolbar=no,scrollbars=yes");
-    if (!w) { alert("Trình duyệt đã chặn popup. Hãy cho phép popup và thử lại."); return; }
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    w.print();
-  };
-
   return (
-    <>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onDong} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl shadow-2xl animate-fade-in" style={{ backgroundColor: "var(--color-card-bg)", border: "1px solid var(--color-border)" }}>
+    <ModalPortal>
+      <ModalOverlay onClick={onDong}>
+        <div
+          className="modal-panel max-w-lg max-h-[85vh] overflow-y-auto animate-fade-in"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--color-border)" }}>
             <div className="flex items-center gap-3">
@@ -347,29 +358,27 @@ function ModalChiTietDon({ donHang, onDong }) {
                 <p className="text-xs text-muted mt-0.5">{dinhDangNgay(donHang.ngay_tao)}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePrint}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all hover:scale-105"
-                title="In đơn hàng"
-                style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }}
-              >
-                <span className="material-symbols-outlined text-lg">print</span>
-              </button>
-              <button
-                onClick={onDong}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all"
-                style={{ backgroundColor: "var(--color-surface-container-high)", color: "var(--color-on-surface-variant)" }}
-              >
-                ✕
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onDong}
+              aria-label="Đóng"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all"
+              style={{ backgroundColor: "var(--color-surface-container-high)", color: "var(--color-on-surface-variant)" }}
+            >
+              ✕
+            </button>
           </div>
 
           {/* Info row */}
           <div className="px-6 py-3 border-b flex flex-wrap items-center gap-2 text-sm" style={{ borderColor: "var(--color-border)", color: "var(--color-on-surface-variant)" }}>
             <Badge label={loaiDonLabel[donHang.loai_don] || "Tại chỗ"} color="var(--color-secondary)" bg="color-mix(in srgb, var(--color-secondary) 12%, transparent)" />
-            <Badge label={hinhThucThanhToanLabel[donHang.hinh_thuc_thanh_toan] || "Tiền mặt"} color="var(--color-primary)" bg="color-mix(in srgb, var(--color-primary) 10%, transparent)" />
+            <Badge
+              label={hinhThucThanhToanLabel[donHang.hinh_thuc_thanh_toan] || "Tiền mặt"}
+              color={donHang.hinh_thuc_thanh_toan === "chuyen_khoan" ? "var(--color-info)" : "var(--color-success)"}
+              bg={donHang.hinh_thuc_thanh_toan === "chuyen_khoan"
+                ? "color-mix(in srgb, var(--color-info) 12%, transparent)"
+                : "color-mix(in srgb, var(--color-success) 12%, transparent)"}
+            />
             {donHang.ten_ban && (
               <Badge label={donHang.ten_ban} color="var(--color-warning)" bg="color-mix(in srgb, var(--color-warning) 12%, transparent)" />
             )}
@@ -455,30 +464,24 @@ function ModalChiTietDon({ donHang, onDong }) {
           {/* Footer actions */}
           <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: "var(--color-border)" }}>
             <button
-              onClick={onDong}
-              className="px-4 py-2 rounded-lg text-xs font-bold border transition-all"
-              style={{ borderColor: "var(--color-border)", color: "var(--color-on-surface-variant)" }}
-            >
-              Đóng
-            </button>
-            <button
-              onClick={handlePrint}
-              className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all hover:opacity-90"
+              type="button"
+              onClick={() => inHoaDon(donHang)}
+              className="px-4 py-2 rounded-lg text-xs font-bold text-white transition-all hover:opacity-90 inline-flex items-center gap-1"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
-              <span className="material-symbols-outlined text-sm">print</span> In đơn
+              <span className="material-symbols-outlined text-sm leading-none">print</span> In đơn
             </button>
           </div>
         </div>
-      </div>
-    </>
+      </ModalOverlay>
+    </ModalPortal>
   );
 }
 
 /* ── Phân trang ── */
 const KICH_THUOC_TRANG = 10;
 
-function PhanTrang({ phanTrang, onChangeTrang }) {
+function PhanTrang({ phanTrang, onChangeTrang, nhanDonVi = "đơn hàng" }) {
   if (!phanTrang || phanTrang.total_pages <= 1) return null;
 
   const { page, total_pages, total } = phanTrang;
@@ -490,7 +493,7 @@ function PhanTrang({ phanTrang, onChangeTrang }) {
   return (
     <div className="flex items-center justify-between px-6 py-4 border-t" style={{ borderColor: "var(--color-border)", backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
       <span className="text-xs text-muted font-medium">
-        {total} đơn hàng · Trang {page}/{total_pages}
+        {total.toLocaleString("vi-VN")} {nhanDonVi} · Trang {page}/{total_pages}
       </span>
       <div className="flex items-center gap-1">
         <button
@@ -534,7 +537,6 @@ export default function DoanhThu() {
   const [denNgay, setDenNgay] = useState("");
   const [trangHienTai, setTrangHienTai] = useState(1);
   const [tabHienTai, setTabHienTai] = useState("don_hang");
-  const [timKiem, setTimKiem] = useState("");
   const [loaiDonFilter, setLoaiDonFilter] = useState("");
   const [hinhThucThanhToanFilter, setHinhThucThanhToanFilter] = useState("");
 
@@ -544,67 +546,108 @@ export default function DoanhThu() {
     series: [],
     pagination: { total: 0, total_pages: 0, page: 1 },
   });
-  const [thongKeCongNo, setThongKeCongNo] = useState({
-    tong_con_no: 0,
-    da_tra_trong_thang: 0,
-    chi_trong_thang: 0,
-  });
+  const [doanhThuKyTruoc, setDoanhThuKyTruoc] = useState(null);
   const [danhSachHuy, setDanhSachHuy] = useState([]);
   const [trangHuy, setTrangHuy] = useState(1);
   const [dangTai, setDangTai] = useState(false);
+  const [lanTaiDau, setLanTaiDau] = useState(true);
+  const [dangXuat, setDangXuat] = useState(false);
   const [loi, setLoi] = useState("");
   const [donChon, setDonChon] = useState(null);
+
+  // Khoảng ngày tự chọn — chỉ nhập "Từ ngày" thì tính đúng ngày hôm đó,
+  // nhập thêm "Đến ngày" thì mới kéo dài tới ngày đó.
+  const { rangeTu, rangeDen, dungRange } = useMemo(() => {
+    if (!tuNgay && !denNgay) return { rangeTu: undefined, rangeDen: undefined, dungRange: false };
+    let tu = tuNgay || denNgay;
+    let den = denNgay || tuNgay;
+    if (tu > den) [tu, den] = [den, tu];
+    return { rangeTu: tu, rangeDen: den, dungRange: true };
+  }, [tuNgay, denNgay]);
+
+  const thamSoLoc = useMemo(() => ({
+    period: dungRange ? undefined : khoangThoiGian,
+    from_date: rangeTu,
+    to_date: rangeDen,
+    loai_don: loaiDonFilter || undefined,
+    hinh_thuc_thanh_toan: hinhThucThanhToanFilter || undefined,
+  }), [dungRange, khoangThoiGian, rangeTu, rangeDen, loaiDonFilter, hinhThucThanhToanFilter]);
+
+  // Bộ lọc tương ứng của kỳ liền trước, để tính % tăng/giảm.
+  // Với khoảng tự chọn: lùi lại đúng bằng độ dài khoảng đang xem.
+  const { thamSoKyTruoc, nhanKyTruoc } = useMemo(() => {
+    const chung = { loai_don: loaiDonFilter || undefined, hinh_thuc_thanh_toan: hinhThucThanhToanFilter || undefined };
+
+    if (dungRange) {
+      const tu = new Date(`${rangeTu}T00:00:00`);
+      const den = new Date(`${rangeDen}T00:00:00`);
+      const soNgay = Math.round((den - tu) / 86400000) + 1;
+      const denTruoc = new Date(tu); denTruoc.setDate(tu.getDate() - 1);
+      const tuTruoc = new Date(denTruoc); tuTruoc.setDate(denTruoc.getDate() - (soNgay - 1));
+      return {
+        thamSoKyTruoc: { ...chung, from_date: fmtNgayKey(tuTruoc), to_date: fmtNgayKey(denTruoc) },
+        nhanKyTruoc: soNgay === 1 ? "so với hôm trước" : `so với ${soNgay} ngày trước đó`,
+      };
+    }
+
+    // Mốc tham chiếu lấy giữa kỳ trước để không bị lệch khi server ở múi giờ khác
+    const now = new Date();
+    const moc = {
+      day: () => new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1),
+      week: () => new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7),
+      month: () => new Date(now.getFullYear(), now.getMonth() - 1, 15),
+      year: () => new Date(now.getFullYear() - 1, 6, 1),
+    }[khoangThoiGian];
+    const nhan = { day: "so với hôm qua", week: "so với tuần trước", month: "so với tháng trước", year: "so với năm ngoái" }[khoangThoiGian];
+    if (!moc) return { thamSoKyTruoc: null, nhanKyTruoc: "" };
+    return {
+      thamSoKyTruoc: { ...chung, period: khoangThoiGian, date: fmtNgayKey(moc()) },
+      nhanKyTruoc: nhan,
+    };
+  }, [dungRange, khoangThoiGian, rangeTu, rangeDen, loaiDonFilter, hinhThucThanhToanFilter]);
 
   const taiDuLieu = useCallback(async () => {
     setDangTai(true); setLoi("");
     try {
       const offset = (trangHienTai - 1) * KICH_THUOC_TRANG;
-      const [resDoanhThu, resThongKeNo, resHuy] = await Promise.all([
-        getRevenueReport({
-          period: khoangThoiGian, date: undefined,
-          from_date: tuNgay || undefined, to_date: denNgay || undefined,
-          loai_don: loaiDonFilter || undefined,
-          hinh_thuc_thanh_toan: hinhThucThanhToanFilter || undefined,
-          limit: KICH_THUOC_TRANG, offset,
-        }),
-        getCongNoStats(),
-        getAllCancelHistory(999, 0),
+      const [resDoanhThu, resKyTruoc] = await Promise.all([
+        getRevenueReport({ ...thamSoLoc, limit: KICH_THUOC_TRANG, offset }),
+        // limit 1: chỉ cần summary của kỳ trước để tính %
+        thamSoKyTruoc ? getRevenueReport({ ...thamSoKyTruoc, limit: 1, offset: 0 }) : Promise.resolve(null),
       ]);
       setDuLieu(resDoanhThu);
-      setThongKeCongNo(resThongKeNo || {});
-      setDanhSachHuy(resHuy || []);
+      setDoanhThuKyTruoc(resKyTruoc ? Number(resKyTruoc.summary?.total_revenue || 0) : null);
     } catch (e) {
       setLoi(e?.message || "Lỗi tải dữ liệu doanh thu");
       setDuLieu({ orders: [], summary: {}, series: [], pagination: { total: 0, total_pages: 0, page: 1 } });
-    } finally { setDangTai(false); }
-  }, [khoangThoiGian, tuNgay, denNgay, trangHienTai, loaiDonFilter, hinhThucThanhToanFilter]);
+      setDoanhThuKyTruoc(null);
+    } finally { setDangTai(false); setLanTaiDau(false); }
+  }, [thamSoLoc, thamSoKyTruoc, trangHienTai]);
 
   useEffect(() => { taiDuLieu(); }, [taiDuLieu]);
+
+  // Lịch sử hủy được lọc theo thời gian ở client nên chỉ cần tải 1 lần,
+  // không kéo lại mỗi khi đổi trang / đổi bộ lọc.
+  useEffect(() => {
+    let huy = false;
+    getAllCancelHistory(999, 0)
+      .then((res) => { if (!huy) setDanhSachHuy(res || []); })
+      .catch(() => { if (!huy) setDanhSachHuy([]); });
+    return () => { huy = true; };
+  }, []);
 
   // === Tính toán ===
   const { orders, pagination } = duLieu;
   const doanhThuTong = duLieu.summary?.total_revenue || 0;
   const tongSoDon = duLieu.summary?.total_orders || 0;
-  const chiPhiNhap = Number(thongKeCongNo.chi_trong_thang || 0);
-  const tongCongNo = Number(thongKeCongNo.tong_con_no || 0);
-  const tienMat = orders.filter((o) => o.hinh_thuc_thanh_toan !== "chuyen_khoan").reduce((s, o) => s + Number(o.tong_tien || 0), 0);
-  const chuyenKhoan = orders.filter((o) => o.hinh_thuc_thanh_toan === "chuyen_khoan").reduce((s, o) => s + Number(o.tong_tien || 0), 0);
-
-  // Lọc orders theo từ khóa tìm kiếm (mã đơn, bàn, loại đơn, món, thanh toán) — client-side
-  const ordersFiltered = useMemo(() => {
-    if (!timKiem.trim()) return orders;
-    const q = removeVietnameseTones(timKiem.trim());
-    return orders.filter((o) => {
-      const items = o.items || [];
-      return (
-        String(o.ma_don_hang).includes(q) ||
-        removeVietnameseTones(o.ten_ban || '').includes(q) ||
-        removeVietnameseTones(o.loai_don || '').includes(q) ||
-        removeVietnameseTones(o.hinh_thuc_thanh_toan || '').includes(q) ||
-        items.some(item => removeVietnameseTones(item.ten_mon || '').includes(q))
-      );
-    });
-  }, [orders, timKiem]);
+  const phiGiaoHang = Number(duLieu.summary?.total_phi_gh || 0);
+  // Lấy thẳng từ summary của toàn kỳ — trước đây cộng từ `orders` nên chỉ đúng cho 1 trang
+  const tienMat = Number(duLieu.summary?.total_tien_mat || 0);
+  const chuyenKhoan = Number(duLieu.summary?.total_chuyen_khoan || 0);
+  // Kỳ lọc gói gọn trong 1 ngày -> cột Thời gian chỉ cần giờ:phút
+  const kyMotNgay = dungRange ? rangeTu === rangeDen : khoangThoiGian === "day";
+  // % thay đổi so với kỳ trước — null khi kỳ trước không có doanh thu (chia 0 vô nghĩa)
+  const phanTramThayDoi = doanhThuKyTruoc > 0 ? ((doanhThuTong - doanhThuKyTruoc) / doanhThuKyTruoc) * 100 : null;
 
   // Lọc món hủy
   const monDaHuy = useMemo(() => {
@@ -613,13 +656,13 @@ export default function DoanhThu() {
       const [y, m, d] = str.split('-').map(Number);
       return new Date(y, m - 1, d);
     };
-    const mocTu = tuNgay ? taoLocalDate(tuNgay) : new Date();
-    const mocDen = denNgay
-      ? new Date(taoLocalDate(denNgay).setHours(23, 59, 59, 999))
+    const mocTu = dungRange ? taoLocalDate(rangeTu) : new Date();
+    const mocDen = dungRange
+      ? new Date(taoLocalDate(rangeDen).setHours(23, 59, 59, 999))
       : new Date(mocTu);
     return danhSachHuy.filter((x) => {
       const d = new Date(x.ngay_huy);
-      if (tuNgay && denNgay) return d >= mocTu && d <= mocDen;
+      if (dungRange) return d >= mocTu && d <= mocDen;
       if (khoangThoiGian === "day") return d.toDateString() === mocTu.toDateString();
       if (khoangThoiGian === "week") {
         const tuanCuaNgay = (ngay) => {
@@ -634,18 +677,46 @@ export default function DoanhThu() {
       if (khoangThoiGian === "year") return d.getFullYear() === mocTu.getFullYear();
       return true;
     });
-  }, [danhSachHuy, khoangThoiGian, tuNgay, denNgay]);
+  }, [danhSachHuy, khoangThoiGian, dungRange, rangeTu, rangeDen]);
 
   const tongMonDaHuy = monDaHuy.reduce((s, x) => s + Number(x.so_luong_huy || 0), 0);
 
+  // Phân trang món hủy (client-side, dùng chung component PhanTrang)
+  const phanTrangHuy = useMemo(() => {
+    const total = monDaHuy.length;
+    const total_pages = Math.ceil(total / KICH_THUOC_TRANG);
+    return { total, total_pages, page: Math.min(trangHuy, total_pages || 1) };
+  }, [monDaHuy.length, trangHuy]);
+
+  const monDaHuyTrang = useMemo(() => {
+    const start = (phanTrangHuy.page - 1) * KICH_THUOC_TRANG;
+    return monDaHuy.slice(start, start + KICH_THUOC_TRANG);
+  }, [monDaHuy, phanTrangHuy.page]);
+
   // Dữ liệu + nhãn cho biểu đồ doanh thu
   const duLieuBieuDo = useMemo(
-    () => xayDuLieuBieuDo({ series: duLieu.series, khoangThoiGian, tuNgay, denNgay }),
-    [duLieu.series, khoangThoiGian, tuNgay, denNgay]
+    () => xayDuLieuBieuDo({ series: duLieu.series, khoangThoiGian, tuNgay: rangeTu, denNgay: rangeDen }),
+    [duLieu.series, khoangThoiGian, rangeTu, rangeDen]
   );
-  const nhanKhoangBieuDo = tuNgay && denNgay
-    ? "Khoảng đã chọn · theo ngày"
-    : ({ day: "Hôm nay · theo giờ", week: "Tuần này · theo ngày", month: "Tháng này · theo ngày", year: "Năm nay · theo tháng" }[khoangThoiGian] || "");
+  // Xuất Excel toàn bộ đơn của kỳ đang lọc — trước đây chỉ xuất đúng trang đang xem
+  const xuatExcel = useCallback(async () => {
+    if (dangXuat) return;
+    setDangXuat(true); setLoi("");
+    try {
+      const res = await getRevenueReport({
+        ...thamSoLoc,
+        limit: Math.max(duLieu.summary?.total_orders || 0, KICH_THUOC_TRANG),
+        offset: 0,
+      });
+      exportDoanhThuExcel({ orders: res.orders || [], tuNgay: rangeTu, denNgay: rangeDen });
+    } catch (err) {
+      setLoi(err?.message || "Không thể xuất Excel");
+    } finally { setDangXuat(false); }
+  }, [dangXuat, thamSoLoc, duLieu.summary, rangeTu, rangeDen]);
+
+  const nhanKhoangBieuDo = dungRange
+    ? (rangeTu === rangeDen ? "Ngày đã chọn" : "Khoảng đã chọn")
+    : ({ day: "Hôm nay", week: "Tuần này", month: "Tháng này", year: "Năm nay" }[khoangThoiGian] || "");
 
   return (
     <div className="transition-colors duration-500 space-y-3">
@@ -659,30 +730,31 @@ export default function DoanhThu() {
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-fit">
           <div className="flex bg-surface-container-high p-0.5 rounded-lg items-center">
             {CAC_KHOANG_THOI_GIAN.map((k) => (
-              <NutKhoangThoiGian key={k.key} active={!tuNgay && khoangThoiGian === k.key}
-                onClick={() => { setKhoangThoiGian(k.key); setTuNgay(""); setDenNgay(""); setTrangHienTai(1); }} label={k.label} />
+              <NutKhoangThoiGian key={k.key} active={!dungRange && khoangThoiGian === k.key}
+                onClick={() => { setKhoangThoiGian(k.key); setTuNgay(""); setDenNgay(""); setTrangHienTai(1); setTrangHuy(1); }} label={k.label} />
             ))}
           </div>
           <div className="flex items-center gap-0.5 p-0.5 rounded-lg" style={{ backgroundColor: "var(--color-surface-container-high)" }}>
             <input type="date" value={tuNgay}
-              onChange={(e) => { setTuNgay(e.target.value); setKhoangThoiGian(""); setTrangHienTai(1); }}
+              onChange={(e) => { setTuNgay(e.target.value); setTrangHienTai(1); setTrangHuy(1); }}
               className="flex-1 min-w-0 border-none rounded-md px-1.5 py-1 text-xs font-bold focus:ring-1 transition-all"
               style={{ backgroundColor: "var(--color-surface-lowest)", color: "var(--color-on-surface-variant)" }} />
             <span className="text-xs text-muted font-semibold px-0.5 shrink-0">→</span>
             <input type="date" value={denNgay}
-              onChange={(e) => { setDenNgay(e.target.value); setKhoangThoiGian(""); setTrangHienTai(1); }}
+              onChange={(e) => { setDenNgay(e.target.value); setTrangHienTai(1); setTrangHuy(1); }}
               className="flex-1 min-w-0 border-none rounded-md px-1.5 py-1 text-xs font-bold focus:ring-1 transition-all"
               style={{ backgroundColor: "var(--color-surface-lowest)", color: "var(--color-on-surface-variant)" }} />
-            {(tuNgay || denNgay) && (
-              <button onClick={() => { setTuNgay(""); setDenNgay(""); setTrangHienTai(1); }}
+            {dungRange && (
+              // Xóa ngày -> quay lại tab thời gian đang chọn (trước đây để trống khiến backend lấy toàn bộ lịch sử)
+              <button onClick={() => { setTuNgay(""); setDenNgay(""); setKhoangThoiGian(khoangThoiGian || "day"); setTrangHienTai(1); setTrangHuy(1); }}
                 className="w-5 h-5 flex items-center justify-center rounded text-xs text-muted hover:bg-surface-container-high hover:text-error transition-all shrink-0" title="Xóa">✕</button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Loading */}
-      {dangTai && (
+      {/* Chỉ chặn màn hình ở lần tải đầu; các lần sau giữ nguyên layout để không bị giật */}
+      {lanTaiDau && dangTai && (
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin w-8 h-8 border-[3px] rounded-full"
             style={{ borderColor: "var(--color-primary)", borderTopColor: "transparent", borderRightColor: "transparent" }} />
@@ -698,8 +770,8 @@ export default function DoanhThu() {
         </div>
       )}
 
-      {!dangTai && !loi && (
-        <>
+      {!lanTaiDau && !loi && (
+        <div className={`space-y-3 transition-opacity duration-150 ${dangTai ? "opacity-50 pointer-events-none" : ""}`}>
           {/* ── Summary Cards - Hàng trên: Doanh thu nổi bật + Tiền mặt + Chuyển khoản ── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Doanh thu */}
@@ -710,6 +782,22 @@ export default function DoanhThu() {
                   <p className="text-2xl md:text-3xl font-bold mt-1 truncate tabular-nums" style={{ color: "var(--color-on-primary)" }}>
                     {dinhDangTien(doanhThuTong)}
                   </p>
+                  {phanTramThayDoi !== null && (
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-bold tabular-nums"
+                        style={{ color: "var(--color-on-primary)", backgroundColor: "color-mix(in srgb, var(--color-on-primary) 18%, transparent)" }}>
+                        <span className="material-symbols-outlined text-[13px] leading-none">
+                          {phanTramThayDoi >= 0 ? "arrow_upward" : "arrow_downward"}
+                        </span>
+                        {phanTramThayDoi >= 0 ? "+" : "−"}
+                        {Math.abs(phanTramThayDoi).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}%
+                      </span>
+                      <span className="text-[11px]" style={{ color: "var(--color-on-primary)", opacity: 0.75 }}>{nhanKyTruoc}</span>
+                    </div>
+                  )}
+                  <p className="text-[11px] mt-1 tabular-nums" style={{ color: "var(--color-on-primary)", opacity: 0.7 }}>
+                    Đã gồm phí giao hàng {dinhDangTien(phiGiaoHang)}
+                  </p>
                 </div>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ml-3" style={{ backgroundColor: "color-mix(in srgb, var(--color-on-primary) 15%, transparent)" }}>
                   <span className="material-symbols-outlined text-xl" style={{ color: "var(--color-on-primary)" }}>payments</span>
@@ -718,33 +806,7 @@ export default function DoanhThu() {
             </div>
 
             <SummaryCard nhan="Tiền mặt" giaTri={dinhDangTien(tienMat)} icon="money" borderColor="var(--color-success)" />
-            <SummaryCard nhan="Chuyển khoản" giaTri={dinhDangTien(chuyenKhoan)} icon="account_balance" borderColor="var(--color-primary)" />
-          </div>
-
-          {/* ── Search + Summary Cards: Tìm kiếm 50% | Số đơn hàng + Món hủy 50% ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="relative">
-              <input type="text" placeholder="Tìm đơn hàng..." value={timKiem} onChange={(e) => setTimKiem(e.target.value)}
-                className="w-full border-none rounded-xl pl-3 pr-9 py-1.5 text-sm transition-all h-full focus:ring-1"
-                style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-on-surface)" }} />
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--color-primary)" }}>search</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="card p-3 relative overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-primary)" }} />
-                <div className="pl-2">
-                  <p className="text-[11px] font-medium text-muted">Số đơn hàng</p>
-                  <p className="text-xl font-bold text-on-surface tabular-nums">{tongSoDon.toLocaleString("vi-VN")} <span className="text-xs font-medium text-muted">đơn</span></p>
-                </div>
-              </div>
-              <div className="card p-3 relative overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-error)" }} />
-                <div className="pl-2">
-                  <p className="text-[11px] font-medium text-muted">Món hủy</p>
-                  <p className="text-xl font-bold text-on-surface tabular-nums">{tongMonDaHuy}</p>
-                </div>
-              </div>
-            </div>
+            <SummaryCard nhan="Chuyển khoản" giaTri={dinhDangTien(chuyenKhoan)} icon="account_balance" borderColor="var(--color-info)" />
           </div>
 
           {/* ── Biểu đồ doanh thu ── */}
@@ -784,21 +846,14 @@ export default function DoanhThu() {
               <div className="flex items-center gap-2 px-4">
                 {orders.length > 0 && (
                   <button
-                    onClick={() => {
-                      try {
-                        exportDoanhThuExcel({
-                          orders,
-                          tuNgay: tuNgay || undefined,
-                          denNgay: denNgay || undefined,
-                        });
-                      } catch (err) {
-                        setLoi(err.message || "Không thể xuất Excel");
-                      }
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold transition-all hover:bg-primary/10"
+                    onClick={xuatExcel}
+                    disabled={dangXuat}
+                    title={`Xuất toàn bộ ${tongSoDon.toLocaleString("vi-VN")} đơn của kỳ đang lọc`}
+                    className="flex items-center gap-1 shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: "var(--color-primary)", backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)" }}
                   >
-                    Xuất Excel
+                    <span className="material-symbols-outlined text-sm leading-none">download</span>
+                    {dangXuat ? "Đang xuất..." : "Xuất Excel"}
                   </button>
                 )}
                 <select
@@ -828,53 +883,93 @@ export default function DoanhThu() {
             {/* Tab: Đơn hàng */}
             {tabHienTai === "don_hang" && (
               <>
-                {ordersFiltered.length === 0 ? (
+                {orders.length === 0 ? (
                   <div className="flex flex-col items-center py-16 text-muted">
                     <span className="material-symbols-outlined text-4xl mb-2">receipt_long</span>
-                    <p className="font-medium">Không có đơn hàng phù hợp</p>
-                    <p className="text-xs mt-1">Thử thay đổi bộ lọc thời gian</p>
+                    <p className="font-medium">Không có đơn hàng nào</p>
+                    <p className="text-xs mt-1">
+                      {loaiDonFilter || hinhThucThanhToanFilter
+                        ? "Thử bỏ bớt bộ lọc loại đơn / hình thức thanh toán"
+                        : "Chưa có đơn hàng trong khoảng thời gian này"}
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "700px" }}>
+                    <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "800px" }}>
                       <thead>
                         <tr className="text-[10px] font-bold text-muted uppercase tracking-wider" style={{ backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
-                          <th className="px-5 py-3.5 w-[15%]">Đơn hàng</th>
-                          <th className="px-5 py-3.5 w-[20%]">Thời gian</th>
-                          <th className="px-5 py-3.5 w-[15%]">Bàn</th>
-                          <th className="px-5 py-3.5 text-center w-[12%]">Số lượng</th>
-                          <th className="px-5 py-3.5 text-right w-[15%]">Tổng tiền</th>
-                          <th className="px-5 py-3.5 w-[15%]">Thanh toán</th>
-                          <th className="px-5 py-3.5 text-center w-[8%]"></th>
+                          <th className="px-5 py-3.5 w-[10%]">Đơn hàng</th>
+                          <th className="px-5 py-3.5 w-[14%]">Thời gian</th>
+                          <th className="px-5 py-3.5 w-[20%]">Bàn / Loại</th>
+                          <th className="px-5 py-3.5 text-center w-[10%]">Số món</th>
+                          <th className="px-5 py-3.5 text-right w-[16%]">Tổng tiền</th>
+                          <th className="px-5 py-3.5 w-[18%]">Thanh toán</th>
+                          <th className="px-5 py-3.5 text-center w-[12%]">Thao tác</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
-                        {ordersFiltered.map((o) => {
-                          const soMon = (o.items || []).reduce((s, item) => s + Number(item.so_luong || 0), 0);
+                        {orders.map((o) => {
+                          const soMon = Number(o.so_mon ?? (o.items || []).reduce((s, item) => s + Number(item.so_luong || 0), 0));
+                          const phi = Number(o.phi_giao_hang || 0);
+                          const loai = o.loai_don || "tai_cho";
+                          const mauLoai = { tai_cho: "var(--color-primary)", mang_ve: "var(--color-warning)", giao_hang: "var(--color-info)" }[loai] || "var(--color-primary)";
                           return (
-                            <tr key={o.ma_don_hang} className="hover:bg-surface-container-low/40 transition-colors">
-                              <td className="px-5 py-3.5 w-[15%]">
+                            <tr key={o.ma_don_hang}
+                              onClick={() => setDonChon(o)}
+                              className="hover:bg-surface-container-low/40 transition-colors cursor-pointer">
+                              <td className="px-5 py-3.5">
                                 <span className="font-bold text-xs" style={{ color: "var(--color-primary)" }}>#{o.ma_don_hang}</span>
                               </td>
-                              <td className="px-5 py-3.5 text-xs text-on-surface-variant whitespace-nowrap w-[20%]">{dinhDangNgay(o.ngay_tao)}</td>
-                              <td className="px-5 py-3.5 text-xs w-[15%]">
-                                {o.ten_ban || loaiDonLabel[o.loai_don] || "Tại chỗ"}
+                              <td className="px-5 py-3.5 text-xs text-on-surface-variant whitespace-nowrap"
+                                title={dinhDangNgay(o.ngay_tao)}>
+                                {dinhDangGio(o.ngay_tao, kyMotNgay)}
                               </td>
-                              <td className="px-5 py-3.5 text-center text-xs font-semibold w-[12%]">{soMon}</td>
-                              <td className="px-5 py-3.5 text-right font-bold text-xs w-[15%]" style={{ color: "var(--color-primary)" }}>{dinhDangTien(o.tong_tien)}</td>
-                              <td className="px-5 py-3.5 w-[15%]">
+                              <td className="px-5 py-3.5">
+                                {/* Có tên bàn thì tự hiểu là tại chỗ, khỏi lặp badge */}
+                                {o.ten_ban ? (
+                                  <span className="text-xs text-on-surface">{o.ten_ban}</span>
+                                ) : (
+                                  <Badge
+                                    label={loaiDonLabel[loai] || "Tại chỗ"}
+                                    color={mauLoai}
+                                    bg={`color-mix(in srgb, ${mauLoai} 12%, transparent)`}
+                                  />
+                                )}
+                              </td>
+                              <td className="px-5 py-3.5 text-center text-xs font-semibold">{soMon}</td>
+                              <td className="px-5 py-3.5 text-right font-bold text-xs" style={{ color: "var(--color-primary)" }}>
+                                {dinhDangTien(tongThanhToan(o))}
+                                {phi > 0 && (
+                                  <span className="block text-[10px] font-medium text-muted mt-0.5">gồm ship {dinhDangTien(phi)}</span>
+                                )}
+                              </td>
+                              <td className="px-5 py-3.5">
                                 <Badge
                                   label={hinhThucThanhToanLabel[o.hinh_thuc_thanh_toan] || "Tiền mặt"}
-                                  color={o.hinh_thuc_thanh_toan === "chuyen_khoan" ? "var(--color-secondary)" : "var(--color-on-surface-variant)"}
-                                  bg={o.hinh_thuc_thanh_toan === "chuyen_khoan" ? "color-mix(in srgb, var(--color-secondary) 15%, transparent)" : "var(--color-surface-container-high)"}
+                                  color={o.hinh_thuc_thanh_toan === "chuyen_khoan" ? "var(--color-info)" : "var(--color-success)"}
+                                  bg={o.hinh_thuc_thanh_toan === "chuyen_khoan"
+                                    ? "color-mix(in srgb, var(--color-info) 15%, transparent)"
+                                    : "color-mix(in srgb, var(--color-success) 15%, transparent)"}
                                 />
                               </td>
-                              <td className="px-5 py-3.5 text-center w-[8%]">
-                                <button onClick={() => setDonChon(o)}
-                                  className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all hover:bg-primary/10"
-                                  style={{ color: "var(--color-primary)" }} title="Chi tiết">
-                                  <span className="material-symbols-outlined text-lg">visibility</span>
-                                </button>
+                              {/* stopPropagation: bấm nút In không kéo theo mở modal của dòng */}
+                              <td className="px-5 py-3.5">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button type="button" onClick={() => setDonChon(o)}
+                                    className="w-9 h-9 rounded-lg flex items-center justify-center transition-all hover:bg-primary/10"
+                                    style={{ color: "var(--color-primary)" }}
+                                    title={`Xem chi tiết đơn #${o.ma_don_hang}`}
+                                    aria-label={`Xem chi tiết đơn #${o.ma_don_hang}`}>
+                                    <span className="material-symbols-outlined text-lg">visibility</span>
+                                  </button>
+                                  <button type="button" onClick={(e) => { e.stopPropagation(); inHoaDon(o); }}
+                                    className="w-9 h-9 rounded-lg flex items-center justify-center transition-all hover:bg-primary/10"
+                                    style={{ color: "var(--color-on-surface-variant)" }}
+                                    title={`In hóa đơn #${o.ma_don_hang}`}
+                                    aria-label={`In hóa đơn #${o.ma_don_hang}`}>
+                                    <span className="material-symbols-outlined text-lg">print</span>
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -909,7 +1004,7 @@ export default function DoanhThu() {
                         </tr>
                       </thead>
                       <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
-                        {monDaHuy.map((x) => (
+                        {monDaHuyTrang.map((x) => (
                           <tr key={x.id} className="hover:bg-surface-container-low/40 transition-colors">
                             <td className="px-5 py-3.5 font-mono text-xs font-semibold">#{x.ma_don_hang}</td>
                             <td className="px-5 py-3.5 text-xs text-on-surface-variant whitespace-nowrap">{dinhDangNgay(x.ngay_huy)}</td>
@@ -922,15 +1017,12 @@ export default function DoanhThu() {
                     </table>
                   </div>
                 )}
+                <PhanTrang phanTrang={phanTrangHuy} onChangeTrang={setTrangHuy} nhanDonVi="lượt hủy" />
               </>
             )}
           </div>
 
-          {/* ── Bottom Summary ── */}
-          <div className="flex justify-end text-xs text-muted px-1">
-            <span>Công nợ nhà cung cấp: <strong style={{ color: "var(--color-error)" }}>{dinhDangTien(tongCongNo)}</strong></span>
-          </div>
-        </>
+        </div>
       )}
 
       {/* Modal chi tiết */}

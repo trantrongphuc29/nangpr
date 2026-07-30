@@ -225,12 +225,17 @@ export function exportDoanhThuExcel({ orders, tuNgay, denNgay }) {
     "Thời gian",
     "Bàn / Loại",
     "Số lượng",
-    "Tổng tiền",
+    "Tiền món",
+    "Phí giao hàng",
+    "Tổng thanh toán",
     "Hình thức thanh toán",
   ];
 
   const loaiDonLabel = { tai_cho: "Tại chỗ", mang_ve: "Mang về", giao_hang: "Giao hàng" };
   const hinhThucLabel = { tien_mat: "Tiền mặt", chuyen_khoan: "Chuyển khoản" };
+
+  const tienMon = (r) => Math.round(Number(r.tong_tien) || 0);
+  const phiShip = (r) => Math.round(Number(r.phi_giao_hang) || 0);
 
   function rowToCells(r) {
     const items = r.items || [];
@@ -240,10 +245,15 @@ export function exportDoanhThuExcel({ orders, tuNgay, denNgay }) {
       r.ngay_tao ? new Date(r.ngay_tao).toLocaleString("vi-VN") : "",
       r.ten_ban || loaiDonLabel[r.loai_don] || "",
       soLuong,
-      Math.round(Number(r.tong_tien) || 0),
+      tienMon(r),
+      phiShip(r),
+      tienMon(r) + phiShip(r),
       hinhThucLabel[r.hinh_thuc_thanh_toan] || "Tiền mặt",
     ];
   }
+
+  const tongTienMon = orders.reduce((s, r) => s + tienMon(r), 0);
+  const tongPhi = orders.reduce((s, r) => s + phiShip(r), 0);
 
   const sheetData = [
     ["DANH SÁCH ĐƠN HÀNG"],
@@ -252,6 +262,8 @@ export function exportDoanhThuExcel({ orders, tuNgay, denNgay }) {
     [],
     HEADERS,
     ...orders.map(rowToCells),
+    [],
+    ["TỔNG CỘNG", "", "", "", tongTienMon, tongPhi, tongTienMon + tongPhi, ""],
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
@@ -261,6 +273,8 @@ export function exportDoanhThuExcel({ orders, tuNgay, denNgay }) {
     { wch: 16 },
     { wch: 12 },
     { wch: 16 },
+    { wch: 14 },
+    { wch: 18 },
     { wch: 18 },
   ];
 

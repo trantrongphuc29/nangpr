@@ -29,6 +29,9 @@
   --color-warning: #8B6914;
   --color-warning-bg: #FBF6EA;
   --color-warning-border: rgba(139, 105, 20, 0.15);
+  --color-info: #2E5EAA;
+  --color-info-bg: #EEF3FB;
+  --color-info-border: rgba(46, 94, 170, 0.15);
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -48,8 +51,7 @@
   --sidebar-active-border: var(--color-primary);
 }
 
-/* Dark mode — nền xám than trung tính (sạch, hiện đại), điểm nhấn xanh emerald
-   tươi có sức sống thay vì xám mờ đục hoặc mint neon */
+/* Dark mode  */
 html.dark {
   --color-primary: #4FB478;
   --color-primary-soft: #3E9C64;
@@ -76,6 +78,9 @@ html.dark {
   --color-warning: #E3A83B;
   --color-warning-bg: rgba(227, 168, 59, 0.14);
   --color-warning-border: rgba(227, 168, 59, 0.25);
+  --color-info: #6BA8F0;
+  --color-info-bg: rgba(107, 168, 240, 0.14);
+  --color-info-border: rgba(107, 168, 240, 0.25);
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.28);
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.28);
@@ -269,6 +274,15 @@ html.dark {
   }
   html.dark .btn-action-edit:hover {
     color: var(--color-on-primary);
+  }
+}
+
+/* Khoá cuộn trang nền khi có modal/overlay đang mở (xem components/useScrollLock.js).
+   Chỉ áp dụng khi xem trên màn hình để không cắt nội dung lúc in hoá đơn / phiếu. */
+@media screen {
+  body.scroll-locked {
+    overflow: hidden;
+    padding-right: var(--scrollbar-gap, 0px);
   }
 }
 

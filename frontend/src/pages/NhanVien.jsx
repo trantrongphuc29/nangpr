@@ -19,6 +19,7 @@ import {
 import { getNgayLe } from "../services/payrollService";
 import { formatPhoneDisplay } from "../utils/formatPhone";
 import { ToastContainer, useToast } from "../components/Toast";
+import ModalOverlay from "../components/ModalOverlay";
 import { useConfirm } from "../context/ConfirmContext";
 
 // =====================================================================
@@ -843,7 +844,7 @@ const NhanVien = () => {
 
       {/* Modal Chi tiết / Sửa nhân viên */}
       {staffDetailModal.isOpen && (
-        <div className="print:hidden modal-overlay" onClick={() => setStaffDetailModal({ isOpen: false, data: null, isEditing: false })}>
+        <ModalOverlay className="print:hidden" onClick={() => setStaffDetailModal({ isOpen: false, data: null, isEditing: false })}>
           <div className="modal-panel max-w-md p-5 md:p-6 relative" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => setStaffDetailModal({ isOpen: false, data: null, isEditing: false })} className="absolute top-4 right-4 btn-ghost !p-2">
               <span className="material-symbols-outlined">close</span>
@@ -956,12 +957,12 @@ const NhanVien = () => {
               </div>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Modal thêm nhân viên */}
       {isModalOpen && (
-        <div className="print:hidden modal-overlay" onClick={() => setIsModalOpen(false)}>
+        <ModalOverlay className="print:hidden" onClick={() => setIsModalOpen(false)}>
           <div className="modal-panel max-w-md p-5 md:p-6 relative" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 btn-ghost !p-2">
               <span className="material-symbols-outlined">close</span>
@@ -1019,12 +1020,12 @@ const NhanVien = () => {
               </button>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Modal phân ca */}
       {isAssignModalOpen && (
-        <div className="print:hidden modal-overlay" onClick={() => setIsAssignModalOpen(false)}>
+        <ModalOverlay className="print:hidden" onClick={() => setIsAssignModalOpen(false)}>
           <div className="modal-panel max-w-md p-5 md:p-6 relative" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => setIsAssignModalOpen(false)} className="absolute top-4 right-4 btn-ghost !p-2">
               <span className="material-symbols-outlined">close</span>
@@ -1097,7 +1098,7 @@ const NhanVien = () => {
               </button>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

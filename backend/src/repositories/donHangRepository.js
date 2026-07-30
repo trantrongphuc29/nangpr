@@ -292,9 +292,18 @@ const DonHangRepository = {
     let dateParams = [];
     const fmtLocal = DonHangRepository.fmtLocalDate;
 
-    if (from_date && to_date) {
+    // Khoảng ngày tự chọn: chỉ có 1 đầu mốc -> lọc đúng ngày đó.
+    // Phải chốt sớm để tránh rơi xuống nhánh '1=1' (lấy toàn bộ lịch sử).
+    let rangeTu = null, rangeDen = null;
+    if (from_date || to_date) {
+      rangeTu = from_date || to_date;
+      rangeDen = to_date || from_date;
+      if (rangeTu > rangeDen) [rangeTu, rangeDen] = [rangeDen, rangeTu];
+    }
+
+    if (rangeTu) {
       dateFilter = `dh.ngay_tao + INTERVAL 7 HOUR >= ? AND dh.ngay_tao + INTERVAL 7 HOUR < ? + INTERVAL 1 DAY`;
-      dateParams = [`${from_date} 00:00:00`, to_date];
+      dateParams = [`${rangeTu} 00:00:00`, rangeDen];
     } else {
       const refDate = date ? new Date(date) : new Date();
       if (period === 'day') {
@@ -337,12 +346,23 @@ const DonHangRepository = {
     );
     const total_count = Number(countRows[0].cnt);
 
-    // Tính tổng doanh thu (không phân trang) — dùng subquery để tránh JOIN duplicate
+    // Tính tổng doanh thu (không phân trang) — dùng subquery để tránh JOIN duplicate.
+    // Doanh thu = tiền món + phí giao hàng (khớp với "Tổng cộng" trên hóa đơn).
+    // Tách sẵn theo hình thức thanh toán để client không phải tự cộng từ trang hiện tại.
     const [totalRows] = await db.execute(
-      `SELECT COALESCE(SUM(sub.tong_tien), 0) AS total_revenue,
-              COALESCE(SUM(sub.phi), 0) AS total_phi_gh
+      `SELECT COALESCE(SUM(sub.tong_tien + sub.phi), 0) AS total_revenue,
+              COALESCE(SUM(sub.tong_tien), 0) AS total_tien_mon,
+              COALESCE(SUM(sub.phi), 0) AS total_phi_gh,
+              COALESCE(SUM(CASE WHEN sub.httt = 'chuyen_khoan' THEN sub.tong_tien + sub.phi ELSE 0 END), 0) AS total_chuyen_khoan,
+              COALESCE(SUM(CASE WHEN sub.httt = 'chuyen_khoan' THEN 0 ELSE sub.tong_tien + sub.phi END), 0) AS total_tien_mat,
+              COALESCE(SUM(CASE WHEN sub.loai = 'mang_ve' THEN 1 ELSE 0 END), 0) AS count_mang_ve,
+              COALESCE(SUM(CASE WHEN sub.loai = 'giao_hang' THEN 1 ELSE 0 END), 0) AS count_giao_hang,
+              COALESCE(SUM(CASE WHEN sub.loai = 'mang_ve' OR sub.loai = 'giao_hang' THEN 0 ELSE 1 END), 0) AS count_tai_cho
        FROM (
-         SELECT dh.ma_don_hang, dh.phi_giao_hang AS phi,
+         SELECT dh.ma_don_hang,
+                COALESCE(dh.phi_giao_hang, 0) AS phi,
+                dh.hinh_thuc_thanh_toan AS httt,
+                dh.loai_don AS loai,
                 COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien
          FROM donhang dh
          LEFT JOIN chitiethoadon ct ON dh.ma_don_hang = ct.ma_don_hang
@@ -354,8 +374,13 @@ const DonHangRepository = {
 
     // Xác định cách gom nhóm theo thời gian cho biểu đồ
     let bucketExpr, bucketType;
-    if (from_date && to_date) {
-      bucketExpr = `DATE_FORMAT(dh.ngay_tao + INTERVAL 7 HOUR, '%Y-%m-%d')`; bucketType = 'date';
+    if (rangeTu) {
+      // Chọn đúng 1 ngày -> gom theo giờ cho biểu đồ có ý nghĩa (giống tab "Ngày")
+      const motNgay = rangeTu === rangeDen;
+      bucketExpr = motNgay
+        ? `DATE_FORMAT(dh.ngay_tao + INTERVAL 7 HOUR, '%H')`
+        : `DATE_FORMAT(dh.ngay_tao + INTERVAL 7 HOUR, '%Y-%m-%d')`;
+      bucketType = motNgay ? 'hour' : 'date';
     } else if (period === 'day') {
       bucketExpr = `DATE_FORMAT(dh.ngay_tao + INTERVAL 7 HOUR, '%H')`; bucketType = 'hour';
     } else if (period === 'year') {
@@ -365,13 +390,14 @@ const DonHangRepository = {
       bucketExpr = `DATE_FORMAT(dh.ngay_tao + INTERVAL 7 HOUR, '%Y-%m-%d')`; bucketType = 'date';
     }
 
-    // Chuỗi doanh thu theo thời gian (không phân trang) cho biểu đồ
+    // Chuỗi doanh thu theo thời gian (không phân trang) cho biểu đồ — gồm cả phí giao hàng
     const [seriesRows] = await db.execute(
       `SELECT sub.bucket AS bucket,
-              COALESCE(SUM(sub.tong_tien), 0) AS revenue,
+              COALESCE(SUM(sub.tong_tien + sub.phi), 0) AS revenue,
               COUNT(*) AS orders
        FROM (
          SELECT dh.ma_don_hang, ${bucketExpr} AS bucket,
+                COALESCE(dh.phi_giao_hang, 0) AS phi,
                 COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien
          FROM donhang dh
          LEFT JOIN chitiethoadon ct ON dh.ma_don_hang = ct.ma_don_hang
@@ -391,7 +417,11 @@ const DonHangRepository = {
     if (!total_count) {
       return {
         orders: [],
-        summary: { total_orders: 0, total_revenue: 0, total_phi_gh: 0 },
+        summary: {
+          total_orders: 0, total_revenue: 0, total_tien_mon: 0, total_phi_gh: 0,
+          total_tien_mat: 0, total_chuyen_khoan: 0,
+          count_tai_cho: 0, count_mang_ve: 0, count_giao_hang: 0,
+        },
         series: [],
         bucket_type: bucketType,
         pagination: { total: 0, limit, offset, page: Math.floor(offset / limit) + 1, total_pages: 0 },
@@ -403,13 +433,14 @@ const DonHangRepository = {
     const safeOffset = toSafeInt(offset, 0);
     const [orders] = await db.execute(
       `SELECT dh.*, b.ten_ban,
-              COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien
+              COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS tong_tien,
+              COALESCE(SUM(ct.so_luong), 0) AS so_mon
        FROM donhang dh
        LEFT JOIN ban b ON dh.ma_ban = b.ma_ban
        LEFT JOIN chitiethoadon ct ON dh.ma_don_hang = ct.ma_don_hang
        WHERE ${where}
        GROUP BY dh.ma_don_hang
-       ORDER BY dh.ngay_tao DESC
+       ORDER BY dh.ngay_tao DESC, dh.ma_don_hang DESC
        LIMIT ${safeLimit} OFFSET ${safeOffset}`,
       params
     );
@@ -437,8 +468,10 @@ const DonHangRepository = {
       itemMap[i.ma_don_hang].push(i);
     });
 
+    // tong_thanh_toan = tiền món + phí giao hàng, khớp với total_revenue của summary
     const ordersWithItems = orders.map(o => ({
       ...o,
+      tong_thanh_toan: Number(o.tong_tien || 0) + Number(o.phi_giao_hang || 0),
       items: itemMap[o.ma_don_hang] || [],
     }));
 
@@ -450,7 +483,13 @@ const DonHangRepository = {
       summary: {
         total_orders: total_count,
         total_revenue: Number(totalRows[0].total_revenue),
+        total_tien_mon: Number(totalRows[0].total_tien_mon),
         total_phi_gh: Number(totalRows[0].total_phi_gh),
+        total_tien_mat: Number(totalRows[0].total_tien_mat),
+        total_chuyen_khoan: Number(totalRows[0].total_chuyen_khoan),
+        count_tai_cho: Number(totalRows[0].count_tai_cho),
+        count_mang_ve: Number(totalRows[0].count_mang_ve),
+        count_giao_hang: Number(totalRows[0].count_giao_hang),
       },
       series,
       bucket_type: bucketType,

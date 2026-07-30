@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getBangCong, getBangCongChiTiet } from "../services/payrollService";
 import { getNhanVienList } from "../services/nhanVienService";
 import ModalPortal from "../components/ModalPortal";
+import ModalOverlay from "../components/ModalOverlay";
 import { ToastContainer, useToast } from "../components/Toast";
 
 function pad2(n) {
@@ -332,15 +333,16 @@ export default function BangCong() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-center">
-                          <button
-                            className="btn-outline !py-2 !px-3 !text-xs"
-                            onClick={() => handleViewDetail(row)}
-                          >
-                            Xem chi tiết
-                          </button>
-                        </div>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => handleViewDetail(row)}
+                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center transition-all hover:bg-primary/10"
+                          style={{ color: "var(--color-primary)" }}
+                          title="Xem chi tiết"
+                          aria-label={`Xem chi tiết công của ${row.ten || ""}`}
+                        >
+                          <span className="material-symbols-outlined text-sm">visibility</span>
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -354,7 +356,7 @@ export default function BangCong() {
       {/* Detail Modal */}
       {detailOpen && (
         <ModalPortal>
-          <div className="modal-overlay print:hidden" onClick={() => setDetailOpen(false)}>
+          <ModalOverlay className="print:hidden" onClick={() => setDetailOpen(false)}>
             <div
               className="modal-panel max-w-5xl w-full max-h-[90vh] flex flex-col min-h-0 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
@@ -453,7 +455,7 @@ export default function BangCong() {
                 )}
               </div>
             </div>
-          </div>
+          </ModalOverlay>
         </ModalPortal>
       )}
     </div>
