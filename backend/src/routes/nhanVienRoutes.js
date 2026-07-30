@@ -6,6 +6,7 @@ const router = express.Router();
 router.get("/", nhanVienController.getList);
 router.get("/ca", nhanVienController.getShifts);
 router.get("/lich-phan-cong", nhanVienController.getAssignments);
+router.get("/ky-luong-da-chot", nhanVienController.getKyLuongDaChot);
 router.post("/", nhanVienController.createStaff);
 
 

@@ -79,9 +79,18 @@ const createStaff = async (staff) => {
 const updateStatus = async (id, trang_thai) => {
   const maNhanVien = parseInt(id, 10);
   if (!Number.isFinite(maNhanVien)) return false;
-  const sql = "UPDATE nhanvien SET trang_thai = ? WHERE ma_nhan_vien = ?";
-  const [result] = await db.execute(sql, [trang_thai, maNhanVien]);
-  return result.affectedRows > 0;
+
+  const [rows] = await db.execute(
+    "SELECT ma_nhan_vien FROM nhanvien WHERE ma_nhan_vien = ?",
+    [maNhanVien]
+  );
+  if (!rows.length) return false;
+
+  await db.execute("UPDATE nhanvien SET trang_thai = ? WHERE ma_nhan_vien = ?", [
+    trang_thai,
+    maNhanVien,
+  ]);
+  return true;
 };
 
 const createAssignment = async (assignment) => {
@@ -89,6 +98,56 @@ const createAssignment = async (assignment) => {
   const sql = "INSERT INTO phancong (ma_nhan_vien, ma_ca, ngay) VALUES (?, ?, ?)";
   const [result] = await db.execute(sql, [ma_nhan_vien, ma_ca, ngay]);
   return result;
+};
+
+
+const removeFutureAssignments = async (ma_nhan_vien, tuNgay) => {
+  const sql = `
+    DELETE pc FROM phancong pc
+    LEFT JOIN ky_luong kl
+      ON kl.thang = MONTH(pc.ngay) AND kl.nam = YEAR(pc.ngay)
+    WHERE pc.ma_nhan_vien = ?
+      AND pc.ngay >= ?
+      AND COALESCE(kl.trang_thai, 'chua_chot') = 'chua_chot'
+  `;
+  const [result] = await db.execute(sql, [ma_nhan_vien, tuNgay]);
+  return result.affectedRows;
+};
+
+
+const removeFutureAssignmentsOfInactiveStaff = async (tuNgay) => {
+  const sql = `
+    DELETE pc FROM phancong pc
+    JOIN nhanvien nv ON nv.ma_nhan_vien = pc.ma_nhan_vien
+    LEFT JOIN ky_luong kl
+      ON kl.thang = MONTH(pc.ngay) AND kl.nam = YEAR(pc.ngay)
+    WHERE pc.ngay >= ?
+      AND nv.trang_thai <> 'dang_lam'
+      AND COALESCE(kl.trang_thai, 'chua_chot') = 'chua_chot'
+  `;
+  const [result] = await db.execute(sql, [tuNgay]);
+  return result.affectedRows;
+};
+
+/** Trạng thái kỳ lương của tháng chứa `ngay`; chưa có kỳ = "chua_chot" */
+const getTrangThaiKyLuongTheoNgay = async (ngay) => {
+  const [rows] = await db.execute(
+    "SELECT trang_thai FROM ky_luong WHERE thang = MONTH(?) AND nam = YEAR(?) LIMIT 1",
+    [ngay, ngay]
+  );
+  return rows[0]?.trang_thai || "chua_chot";
+};
+
+/** Các kỳ lương đã chốt / đã thanh toán — dùng để khoá thao tác trên lịch phân công */
+const getKyLuongDaChot = async () => {
+  const [rows] = await db.execute(
+    "SELECT thang, nam, trang_thai FROM ky_luong WHERE trang_thai <> 'chua_chot' ORDER BY nam DESC, thang DESC"
+  );
+  return rows.map((r) => ({
+    thang: Number(r.thang),
+    nam: Number(r.nam),
+    trang_thai: r.trang_thai,
+  }));
 };
 
 const removeAssignment = async (assignment) => {
@@ -119,6 +178,10 @@ module.exports = {
   updateStatus,
   createAssignment,
   removeAssignment,
+  removeFutureAssignments,
+  removeFutureAssignmentsOfInactiveStaff,
+  getTrangThaiKyLuongTheoNgay,
+  getKyLuongDaChot,
   updateStaff,
   removeStaff,
 };

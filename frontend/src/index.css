@@ -148,7 +148,7 @@ html.dark {
   }
 
   .btn-ghost {
-    @apply py-2 px-3 rounded-lg font-medium transition-colors duration-150;
+    @apply py-2 px-3 rounded-lg font-medium transition-colors duration-150 inline-flex items-center justify-center gap-2;
     color: var(--color-muted);
   }
   .btn-ghost:hover {

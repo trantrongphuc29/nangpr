@@ -18,6 +18,12 @@ export const getLichPhanCong = async ({ startDate, endDate }) => {
   return Array.isArray(data) ? data : [];
 };
 
+/** Các kỳ lương đã chốt/đã thanh toán — lịch phân công của tháng đó bị khoá */
+export const getKyLuongDaChot = async () => {
+  const response = await axiosClient.get("/api/nhanvien/ky-luong-da-chot");
+  return Array.isArray(response.data) ? response.data : [];
+};
+
 export const createNhanVien = async (payload) => {
   const response = await axiosClient.post("/api/nhanvien", payload);
   return response.data;

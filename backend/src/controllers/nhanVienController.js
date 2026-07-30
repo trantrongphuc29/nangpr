@@ -27,6 +27,15 @@ const getAssignments = async (req, res) => {
   }
 };
 
+const getKyLuongDaChot = async (req, res) => {
+  try {
+    const results = await nhanVienService.getKyLuongDaChot();
+    return res.json(results);
+  } catch (err) {
+    return res.status(500).json({ message: "Lỗi tải trạng thái kỳ lương", error: err.message });
+  }
+};
+
 const createStaff = async (req, res) => {
   try {
     const result = await nhanVienService.createStaff(req.body);
@@ -38,12 +47,13 @@ const createStaff = async (req, res) => {
 
 const toggleStatus = async (req, res) => {
   try {
-    await nhanVienService.toggleStatus(req.params.id, req.body);
+    const { so_ca_da_go } = await nhanVienService.toggleStatus(req.params.id, req.body);
     const list = await nhanVienService.getList();
     const staff = list.find((s) => String(s.ma_nhan_vien) === String(req.params.id));
     return res.json({
       message: "Cập nhật trạng thái thành công",
       nhan_vien: staff || null,
+      so_ca_da_go,
     });
   } catch (err) {
     return res.status(err.status || 500).json({ message: err.message });
@@ -93,6 +103,7 @@ module.exports = {
   getList,
   getShifts,
   getAssignments,
+  getKyLuongDaChot,
   createStaff,
   toggleStatus,
   createAssignment,

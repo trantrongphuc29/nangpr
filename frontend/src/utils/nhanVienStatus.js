@@ -15,44 +15,11 @@ export function isDangLam(value) {
   return normalizeTrangThai(value) === "dang_lam";
 }
 
-export function isPastDate(dayStr, todayStr) {
-  const ngay = String(dayStr || "").substring(0, 10);
-  const homNay = String(todayStr || "").substring(0, 10);
-  return Boolean(ngay && homNay && ngay < homNay);
-}
-
-/** Ngày quá khứ hoặc hôm nay */
-export function isTodayOrPast(dayStr, todayStr) {
-  const ngay = String(dayStr || "").substring(0, 10);
-  const homNay = String(todayStr || "").substring(0, 10);
-  return Boolean(ngay && homNay && ngay <= homNay);
-}
-
 /**
- * Hiển thị ca đã phân công trên lịch tuần.
- * - Quá khứ & hôm nay: luôn giữ khi đổi trạng thái.
- * - Tương lai: ẩn nếu tạm nghỉ / đã nghỉ.
+ * Không còn "ẩn mềm" ca của nhân viên đã nghỉ: khi chuyển sang tạm nghỉ / đã nghỉ,
+ * backend xoá hẳn các ca từ hôm nay trở đi. Lịch hiển thị đúng những gì còn trong DB,
+ * cũng là đúng những gì sẽ được tính công.
  */
-export function shouldShowAssignmentOnSchedule({ assignmentDate, cellDate, today, currentStatus }) {
-  const ngayCa = String(assignmentDate || cellDate || "").substring(0, 10);
-  const homNay = String(today || "").substring(0, 10);
-  if (isTodayOrPast(ngayCa, homNay)) return true;
-
-  const s = normalizeTrangThai(currentStatus);
-  if (s === "dang_lam") return true;
-  return false;
-}
-
-/** @deprecated dùng shouldShowAssignmentOnSchedule */
-export function showOnScheduleDay(trangThai, dayStr, todayStr) {
-  return shouldShowAssignmentOnSchedule({
-    assignmentDate: dayStr,
-    cellDate: dayStr,
-    today: todayStr,
-    currentStatus: trangThai,
-  });
-}
-
 export function canAssignOnDay(trangThai, dayStr, todayStr) {
   return isDangLam(trangThai) && dayStr >= todayStr;
 }

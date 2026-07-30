@@ -4,6 +4,7 @@ import {
   createPhanCong,
   deletePhanCong,
   getDanhSachCa,
+  getKyLuongDaChot,
   getLichPhanCong,
   getNhanVienList,
   updateNhanVien,
@@ -14,7 +15,6 @@ import {
   normalizeTrangThai,
   isDangLam,
   canSelectInAssignModal,
-  shouldShowAssignmentOnSchedule,
 } from "../utils/nhanVienStatus";
 import { getNgayLe } from "../services/payrollService";
 import { formatPhoneDisplay } from "../utils/formatPhone";
@@ -143,6 +143,8 @@ const NhanVien = () => {
   const [assignments, setAssignments] = useState([]);
   const [shifts, setShifts] = useState(DEFAULT_SHIFTS);
   const [holidays, setHolidays] = useState({});
+  // Tập "YYYY-MM" của các kỳ lương đã chốt / đã thanh toán
+  const [lockedPeriods, setLockedPeriods] = useState(() => new Set());
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -178,12 +180,16 @@ const NhanVien = () => {
     setLoadError("");
     try {
       const { startStr, endStr } = getWeekRange(filterDate);
-      const [staffRes, assignRes] = await Promise.all([
+      const [staffRes, assignRes, kyChotRes] = await Promise.all([
         getNhanVienList(),
         getLichPhanCong({ startDate: startStr, endDate: endStr }),
+        getKyLuongDaChot().catch(() => []),
       ]);
       setStaffList(Array.isArray(staffRes) ? staffRes : []);
       setAssignments(normalizeAssignments(assignRes));
+      setLockedPeriods(
+        new Set((kyChotRes || []).map((k) => `${k.nam}-${String(k.thang).padStart(2, "0")}`))
+      );
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
       setLoadError(error.response?.data?.message || error.message || "Không tải được dữ liệu phân công");
@@ -237,6 +243,18 @@ const NhanVien = () => {
   const handleUpdateStaff = async (e) => {
     e.preventDefault();
     const newStatus = normalizeTrangThai(statusDraft);
+    const statusChanged = newStatus !== normalizeTrangThai(staffDetailModal.data.trang_thai);
+    const nghiViec = statusChanged && newStatus !== "dang_lam";
+
+    // Chuyển sang nghỉ sẽ gỡ hẳn nhân viên khỏi các ca sắp tới — báo trước cho quản lý
+    if (nghiViec) {
+      const ok = await confirm(
+        `Chuyển "${staffDetailModal.data.ten}" sang ${TRANG_THAI_LABELS[newStatus]} sẽ gỡ nhân viên khỏi tất cả ca từ hôm nay trở đi.\nCa đã làm trong quá khứ vẫn được giữ để tính công.`,
+        { danger: true, confirmLabel: "Xác nhận" }
+      );
+      if (!ok) return;
+    }
+
     const dataToSend = {
       ...staffDetailModal.data,
       ngay_sinh: dmyToYmd(editBirth) || null,
@@ -246,12 +264,18 @@ const NhanVien = () => {
     try {
       await updateNhanVien(dataToSend.ma_nhan_vien, dataToSend);
       // Trạng thái có endpoint riêng — chỉ gọi khi thực sự đổi
-      if (newStatus !== normalizeTrangThai(staffDetailModal.data.trang_thai)) {
-        await updateNhanVienStatus(dataToSend.ma_nhan_vien, newStatus);
+      let soCaDaGo = 0;
+      if (statusChanged) {
+        const res = await updateNhanVienStatus(dataToSend.ma_nhan_vien, newStatus);
+        soCaDaGo = Number(res?.so_ca_da_go || 0);
       }
       setStaffDetailModal({ ...staffDetailModal, isEditing: false, data: dataToSend });
       fetchData();
-      toast("Cập nhật thành công!");
+      toast(
+        soCaDaGo > 0
+          ? `Cập nhật thành công! Đã gỡ ${soCaDaGo} ca sắp tới khỏi lịch phân công.`
+          : "Cập nhật thành công!"
+      );
     } catch (error) {
       console.error("Lỗi chi tiết:", error.response);
       toast("Lỗi khi cập nhật: " + (error.response?.data?.message || error.message), "error");
@@ -269,6 +293,10 @@ const NhanVien = () => {
     e.preventDefault();
     if (!assignForm.ma_ca || assignStaffIds.length === 0) {
       toast("Vui lòng chọn ca và ít nhất một nhân viên", "error");
+      return;
+    }
+    if (isKyLuongDaChot(assignForm.ngay)) {
+      toast("Kỳ lương của tháng này đã chốt, không sửa được lịch phân công", "error");
       return;
     }
     setAssignSaving(true);
@@ -343,31 +371,24 @@ const NhanVien = () => {
 
   const weekRange = useMemo(() => getWeekRange(filterDate), [filterDate]);
 
-  const getStaffStatus = useCallback(
-    (maNhanVien) => {
-      const staff = staffList.find((s) => String(s.ma_nhan_vien) === String(maNhanVien));
-      return normalizeTrangThai(staff?.trang_thai);
-    },
-    [staffList]
+  /** Tháng của ngày này đã chốt lương chưa → khoá mọi thao tác phân ca */
+  const isKyLuongDaChot = useCallback(
+    (dayStr) => lockedPeriods.has(toYmd(dayStr).substring(0, 7)),
+    [lockedPeriods]
   );
 
-  
+  // Lịch hiển thị đúng dữ liệu trong DB — không ẩn mềm ca nào.
+  // Nhân viên chuyển sang nghỉ đã bị backend gỡ khỏi các ca tương lai.
   const getAssignmentsForCell = useCallback(
     (shiftId, dayStr) => {
       const ngay = toYmd(dayStr);
       const ca = Number(shiftId);
       if (!ngay || !Number.isFinite(ca)) return [];
-      return assignments.filter((a) => {
-        if (toYmd(a.ngay) !== ngay || Number(a.ma_ca) !== ca) return false;
-        return shouldShowAssignmentOnSchedule({
-          assignmentDate: a.ngay,
-          cellDate: ngay,
-          today,
-          currentStatus: getStaffStatus(a.ma_nhan_vien),
-        });
-      });
+      return assignments.filter(
+        (a) => toYmd(a.ngay) === ngay && Number(a.ma_ca) === ca
+      );
     },
-    [assignments, getStaffStatus, today]
+    [assignments]
   );
 
   const shiftPeriod = (delta) => {
@@ -379,6 +400,7 @@ const NhanVien = () => {
 
   const renderAssigneeList = (shiftId, dayStr) => {
     const assignedStaff = getAssignmentsForCell(shiftId, dayStr);
+    const daChot = isKyLuongDaChot(dayStr);
     return (
       <>
         {assignedStaff.map((assign, assignIdx) => {
@@ -399,25 +421,36 @@ const NhanVien = () => {
               >
                 {staffName}
               </button>
-              <button
-                type="button"
-                onClick={(e) => handleDeleteAssignment(assign.ma_nhan_vien, shiftId, dayStr, e)}
-                className="print:hidden opacity-70 hover:opacity-100 active:opacity-100 inline-flex items-center justify-center w-6 h-6 shrink-0 ml-auto text-error hover:bg-error/15 rounded-md transition-opacity"
-                aria-label="Gỡ ca"
-              >
-                <span className="material-symbols-outlined text-[18px] leading-none">close</span>
-              </button>
+              {!daChot && (
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteAssignment(assign.ma_nhan_vien, shiftId, dayStr, e)}
+                  className="print:hidden opacity-70 hover:opacity-100 active:opacity-100 inline-flex items-center justify-center w-6 h-6 shrink-0 ml-auto text-error hover:bg-error/15 rounded-md transition-opacity"
+                  aria-label="Gỡ ca"
+                >
+                  <span className="material-symbols-outlined text-[18px] leading-none">close</span>
+                </button>
+              )}
             </div>
           );
         })}
-        <button
-          type="button"
-          onClick={() => openAssignModalForDay(shiftId, dayStr)}
-          className="print:hidden inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-outline text-primary text-sm hover:bg-primary/10 shrink-0"
-          title="Thêm phân công"
-        >
-          <span className="material-symbols-outlined text-base">add</span>
-        </button>
+        {daChot ? (
+          <span
+            className="print:hidden inline-flex items-center gap-1 px-2 py-1 rounded-lg text-muted text-xs shrink-0"
+            title="Kỳ lương tháng này đã chốt — mở chốt ở trang Bảng lương nếu cần sửa"
+          >
+            <span className="material-symbols-outlined text-sm">lock</span>
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => openAssignModalForDay(shiftId, dayStr)}
+            className="print:hidden inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-outline text-primary text-sm hover:bg-primary/10 shrink-0"
+            title="Thêm phân công"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+          </button>
+        )}
       </>
     );
   };
@@ -1032,6 +1065,15 @@ const NhanVien = () => {
             </button>
             <h3 className="text-lg font-bold text-primary mb-1">Phân công ca</h3>
             <p className="text-sm text-muted mb-4">{formatDisplayDate(assignForm.ngay)}</p>
+            {isKyLuongDaChot(assignForm.ngay) && (
+              <div className="alert-warning mb-4 !p-3">
+                <span className="material-symbols-outlined text-lg">lock</span>
+                <p className="text-sm">
+                  Kỳ lương tháng {assignForm.ngay.substring(5, 7)}/{assignForm.ngay.substring(0, 4)} đã chốt.
+                  Muốn sửa lịch, hãy mở chốt ở trang <strong>Bảng lương</strong>.
+                </p>
+              </div>
+            )}
             <form onSubmit={handleAssignStaff} className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-muted">Ngày làm việc</label>
@@ -1091,7 +1133,7 @@ const NhanVien = () => {
               </div>
               <button
                 type="submit"
-                disabled={assignSaving || assignStaffIds.length === 0}
+                disabled={assignSaving || assignStaffIds.length === 0 || isKyLuongDaChot(assignForm.ngay)}
                 className="btn-primary w-full !py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {assignSaving ? "Đang phân công..." : "Xác nhận phân công"}
