@@ -7,21 +7,12 @@ import {
   deleteNgayLe,
 } from "../services/payrollService";
 import { ToastContainer, useToast } from "../components/Toast";
+import PriceInput from "../components/PriceInput";
 import { useConfirm } from "../context/ConfirmContext";
 
 function toInteger(v) {
   const n = Number(v);
   return Number.isFinite(n) ? Math.round(n) : 0;
-}
-
-function formatMoney(n) {
-  return `${Number(n || 0).toLocaleString("vi-VN")}đ`;
-}
-
-function parseMoneyInput(str) {
-  const digits = String(str ?? "").replace(/[^\d]/g, "");
-  if (!digits) return 0;
-  return parseInt(digits, 10);
 }
 
 const CONFIG_FIELDS = ["luong_gio", "phu_cap_mac_dinh", "trang_thai"];
@@ -58,24 +49,6 @@ function countDirtyChanges(rows, savedRows) {
     }
   }
   return n;
-}
-
-function MoneyEditInput({ ma_nhan_vien, field, value, editingField, setEditingField, onValueChange }) {
-  const editKey = `${ma_nhan_vien}-${field}`;
-  const isEditing = editingField === editKey;
-  const displayValue = isEditing ? String(toInteger(value)) : formatMoney(value);
-
-  return (
-    <input
-      className="input-field !p-2 !text-right tabular-nums w-full max-w-[200px]"
-      type="text"
-      inputMode="numeric"
-      value={displayValue}
-      onFocus={() => setEditingField(editKey)}
-      onBlur={() => setEditingField(null)}
-      onChange={(e) => onValueChange(parseMoneyInput(e.target.value))}
-    />
-  );
 }
 
 function NgayLeSection({ toast }) {
@@ -214,7 +187,6 @@ export default function CauHinhLuongNhanVien() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [editingField, setEditingField] = useState(null);
 
   const [rows, setRows] = useState([]);
   const [savedRows, setSavedRows] = useState([]);
@@ -230,12 +202,10 @@ export default function CauHinhLuongNhanVien() {
       const mapped = (res || []).map(normalizeRow);
       setRows(mapped);
       setSavedRows(snapshotRows(mapped));
-      setEditingField(null);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Không tải được cấu hình lương");
       setRows([]);
       setSavedRows([]);
-      setEditingField(null);
     } finally {
       setLoading(false);
     }
@@ -247,8 +217,11 @@ export default function CauHinhLuongNhanVien() {
   }, []);
 
   const handleMoneyChange = (ma_nhan_vien, field, value) => {
+    // Giữ nguyên chuỗi rỗng khi người dùng xóa hết để ô không dính số 0;
+    // các chỗ đọc giá trị đều đã đi qua toInteger() nên "" quy về 0 khi lưu.
+    const next = value === "" ? "" : toInteger(value);
     setRows((prev) =>
-      prev.map((r) => (r.ma_nhan_vien === ma_nhan_vien ? { ...r, [field]: toInteger(value) } : r))
+      prev.map((r) => (r.ma_nhan_vien === ma_nhan_vien ? { ...r, [field]: next } : r))
     );
   };
 
@@ -360,25 +333,23 @@ export default function CauHinhLuongNhanVien() {
                       <td className="px-4 py-3 font-semibold">{r.ten}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center">
-                          <MoneyEditInput
-                            ma_nhan_vien={r.ma_nhan_vien}
-                            field="luong_gio"
+                          <PriceInput
+                            className="input-field !p-2 !text-right tabular-nums w-full max-w-[200px]"
                             value={r.luong_gio}
-                            editingField={editingField}
-                            setEditingField={setEditingField}
-                            onValueChange={(v) => handleMoneyChange(r.ma_nhan_vien, "luong_gio", v)}
+                            placeholder="0"
+                            aria-label={`Lương/giờ của ${r.ten || ""}`}
+                            onChange={(v) => handleMoneyChange(r.ma_nhan_vien, "luong_gio", v)}
                           />
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center">
-                          <MoneyEditInput
-                            ma_nhan_vien={r.ma_nhan_vien}
-                            field="phu_cap_mac_dinh"
+                          <PriceInput
+                            className="input-field !p-2 !text-right tabular-nums w-full max-w-[200px]"
                             value={r.phu_cap_mac_dinh}
-                            editingField={editingField}
-                            setEditingField={setEditingField}
-                            onValueChange={(v) => handleMoneyChange(r.ma_nhan_vien, "phu_cap_mac_dinh", v)}
+                            placeholder="0"
+                            aria-label={`Phụ cấp/tháng của ${r.ten || ""}`}
+                            onChange={(v) => handleMoneyChange(r.ma_nhan_vien, "phu_cap_mac_dinh", v)}
                           />
                         </div>
                       </td>

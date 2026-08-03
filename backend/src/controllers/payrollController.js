@@ -62,29 +62,63 @@ async function getBangLuong(req, res) {
   }
 }
 
-async function updateBangLuongEmployee(req, res) {
+async function getDieuChinh(req, res) {
   try {
-    const { thang, nam, ma_nhan_vien, phu_cap, thuong, khau_tru, tam_ung } = req.body || {};
+    const thang = parseIntSafe(req.query.thang);
+    const nam = parseIntSafe(req.query.nam);
+    const ma_nhan_vien = parseIntSafe(req.query.ma_nhan_vien);
+    const loai = req.query.loai;
+
+    if (!thang || !nam || !ma_nhan_vien || !loai) {
+      return res.status(400).json({ message: "Thiếu tham số thang/nam/ma_nhan_vien/loai" });
+    }
+
+    const result = await payrollService.getDieuChinh({ thang, nam, ma_nhan_vien, loai });
+    return res.json(result);
+  } catch (err) {
+    return res.status(err.status || 500).json({ message: err.message || "Lỗi lấy khoản điều chỉnh", error: err.message });
+  }
+}
+
+async function addDieuChinh(req, res) {
+  try {
+    const { thang, nam, ma_nhan_vien, loai, so_tien, ly_do, ngay } = req.body || {};
 
     const thangNum = parseIntSafe(thang);
     const namNum = parseIntSafe(nam);
     const maNum = parseIntSafe(ma_nhan_vien);
-    if (!thangNum || !namNum || !maNum) {
-      return res.status(400).json({ message: "Thiếu tham số thang/nam/ma_nhan_vien" });
+    if (!thangNum || !namNum || !maNum || !loai) {
+      return res.status(400).json({ message: "Thiếu tham số thang/nam/ma_nhan_vien/loai" });
     }
 
-    const result = await payrollService.updateBangLuongEmployee({
+    const result = await payrollService.addDieuChinh({
       thang: thangNum,
       nam: namNum,
       ma_nhan_vien: maNum,
-      phu_cap: normalizeMoneyInt(phu_cap),
-      thuong: normalizeMoneyInt(thuong),
-      khau_tru: normalizeMoneyInt(khau_tru),
-      tam_ung: normalizeMoneyInt(tam_ung),
+      loai,
+      so_tien: normalizeMoneyInt(so_tien),
+      ly_do,
+      ngay,
     });
-    return res.json(result);
+    return res.json({ message: "Đã thêm khoản", ...result });
   } catch (err) {
-    return res.status(err.status || 500).json({ message: err.message || "Lỗi cập nhật bảng lương", error: err.message });
+    return res.status(err.status || 500).json({ message: err.message || "Lỗi thêm khoản điều chỉnh", error: err.message });
+  }
+}
+
+async function deleteDieuChinh(req, res) {
+  try {
+    const id = parseIntSafe(req.params.id);
+    const thang = parseIntSafe(req.query.thang);
+    const nam = parseIntSafe(req.query.nam);
+    if (!id || !thang || !nam) {
+      return res.status(400).json({ message: "Thiếu tham số id/thang/nam" });
+    }
+
+    const result = await payrollService.deleteDieuChinh({ thang, nam, id });
+    return res.json({ message: "Đã xóa khoản", ...result });
+  } catch (err) {
+    return res.status(err.status || 500).json({ message: err.message || "Lỗi xóa khoản điều chỉnh", error: err.message });
   }
 }
 
@@ -200,7 +234,9 @@ module.exports = {
   getBangCong,
   getBangCongChiTiet,
   getBangLuong,
-  updateBangLuongEmployee,
+  getDieuChinh,
+  addDieuChinh,
+  deleteDieuChinh,
   lockKyLuong,
   unlockKyLuong,
   markKyLuongPaid,

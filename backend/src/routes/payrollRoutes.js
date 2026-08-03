@@ -8,8 +8,10 @@ router.get("/bang-cong", requireAdmin, payrollController.getBangCong);
 router.get("/bang-cong/chi-tiet", requireAdmin, payrollController.getBangCongChiTiet);
 router.get("/bang-luong", requireAdmin, payrollController.getBangLuong);
 
-// Cập nhật trường thủ công (chỉ khi "Chưa chốt")
-router.put("/bang-luong/nhan-vien", requireAdmin, payrollController.updateBangLuongEmployee);
+// Khoản điều chỉnh: thưởng / khấu trừ / tạm ứng (thêm-xóa chỉ khi "Chưa chốt")
+router.get("/bang-luong/dieu-chinh", requireAdmin, payrollController.getDieuChinh);
+router.post("/bang-luong/dieu-chinh", requireAdmin, payrollController.addDieuChinh);
+router.delete("/bang-luong/dieu-chinh/:id", requireAdmin, payrollController.deleteDieuChinh);
 
 // Chốt / Mở chốt / Đã thanh toán
 router.post("/ky-luong/chot", requireAdmin, payrollController.lockKyLuong);

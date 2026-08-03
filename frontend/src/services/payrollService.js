@@ -29,16 +29,35 @@ export const getBangLuong = async ({ thang, nam, ma_nhan_vien } = {}) => {
   return response.data;
 };
 
-export const updateBangLuongEmployee = async ({ thang, nam, ma_nhan_vien, phu_cap, thuong, khau_tru, tam_ung }) => {
-  const response = await axiosClient.put("/api/payroll/bang-luong/nhan-vien", {
+// ===== Khoản điều chỉnh: thưởng / khấu trừ / tạm ứng =====
+export const getDieuChinh = async ({ thang, nam, ma_nhan_vien, loai }) => {
+  const params = new URLSearchParams();
+  params.append("thang", thang);
+  params.append("nam", nam);
+  params.append("ma_nhan_vien", ma_nhan_vien);
+  params.append("loai", loai);
+  const response = await axiosClient.get(`/api/payroll/bang-luong/dieu-chinh?${params.toString()}`);
+  return response.data;
+};
+
+export const addDieuChinh = async ({ thang, nam, ma_nhan_vien, loai, so_tien, ly_do, ngay }) => {
+  const response = await axiosClient.post("/api/payroll/bang-luong/dieu-chinh", {
     thang,
     nam,
     ma_nhan_vien,
-    phu_cap,
-    thuong,
-    khau_tru,
-    tam_ung,
+    loai,
+    so_tien,
+    ly_do,
+    ngay,
   });
+  return response.data;
+};
+
+export const deleteDieuChinh = async ({ id, thang, nam }) => {
+  const params = new URLSearchParams();
+  params.append("thang", thang);
+  params.append("nam", nam);
+  const response = await axiosClient.delete(`/api/payroll/bang-luong/dieu-chinh/${id}?${params.toString()}`);
   return response.data;
 };
 

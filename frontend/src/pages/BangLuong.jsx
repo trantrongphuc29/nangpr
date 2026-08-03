@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getBangLuong,
   getBangCongChiTiet,
-  updateBangLuongEmployee,
   lockKyLuong,
   unlockKyLuong,
   markKyLuongPaid,
@@ -11,6 +10,7 @@ import {
 import { exportBangLuongExcel, exportBangLuongPDF } from "../utils/bangLuongExport";
 import ModalPortal from "../components/ModalPortal";
 import ModalOverlay from "../components/ModalOverlay";
+import DieuChinhModal from "../components/DieuChinhModal";
 import { ToastContainer, useToast } from "../components/Toast";
 import { useConfirm } from "../context/ConfirmContext";
 
@@ -32,18 +32,6 @@ function toInt(n) {
   return Math.round(v);
 }
 
-function parseMoneyInput(str) {
-  const digits = String(str ?? "").replace(/[^\d]/g, "");
-  if (!digits) return 0;
-  return parseInt(digits, 10);
-}
-
-function formatMoneyInput(n) {
-  return formatMoney(n);
-}
-
-const EDIT_FIELDS = ["phu_cap", "thuong", "khau_tru", "tam_ung"];
-
 function mapRowsFromApi(list) {
   return (list || []).map((r) => ({
     ...r,
@@ -51,48 +39,41 @@ function mapRowsFromApi(list) {
     thuong: toInt(r.thuong),
     khau_tru: toInt(r.khau_tru),
     tam_ung: toInt(r.tam_ung),
+    so_khoan_thuong: toInt(r.so_khoan_thuong),
+    so_khoan_khau_tru: toInt(r.so_khoan_khau_tru),
+    so_khoan_tam_ung: toInt(r.so_khoan_tam_ung),
   }));
 }
 
-function snapshotRows(list) {
-  return list.map((r) => ({
-    ma_nhan_vien: r.ma_nhan_vien,
-    phu_cap: toInt(r.phu_cap),
-    thuong: toInt(r.thuong),
-    khau_tru: toInt(r.khau_tru),
-    tam_ung: toInt(r.tam_ung),
-  }));
-}
-
-function countDirtyChanges(rows, savedRows) {
-  let n = 0;
-  for (const r of rows) {
-    const base = savedRows.find((b) => b.ma_nhan_vien === r.ma_nhan_vien);
-    if (!base) continue;
-    for (const f of EDIT_FIELDS) {
-      if (toInt(r[f]) !== toInt(base[f])) n += 1;
-    }
-  }
-  return n;
-}
-
-function MoneyEditInput({ ma_nhan_vien, field, value, disabled, editingField, setEditingField, onValueChange }) {
-  const editKey = `${ma_nhan_vien}-${field}`;
-  const isEditing = editingField === editKey;
-  const displayValue = isEditing ? String(toInt(value)) : formatMoneyInput(value);
+// Ô Thưởng / Khấu trừ / Tạm ứng: hiển thị tổng + số khoản, bấm để mở modal
+// quản lý từng khoản. Kỳ đã chốt vẫn bấm được nhưng chỉ để xem lịch sử.
+function DieuChinhCell({ value, soKhoan, mau, onOpen, readOnly }) {
+  const coKhoan = soKhoan > 0;
 
   return (
-    <input
-      className="input-field !p-2 !text-right tabular-nums"
-      style={{ maxWidth: 160 }}
-      type="text"
-      inputMode="numeric"
-      value={displayValue}
-      disabled={disabled}
-      onFocus={() => setEditingField(editKey)}
-      onBlur={() => setEditingField(null)}
-      onChange={(e) => onValueChange(parseMoneyInput(e.target.value))}
-    />
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full max-w-[150px] ml-auto flex flex-col items-end gap-0.5 px-2.5 py-1.5 rounded-lg border border-transparent transition-all hover:border-outline hover:bg-primary/5"
+      title={readOnly ? "Xem lịch sử các khoản" : "Bấm để thêm / xóa từng khoản"}
+    >
+      <span className={`font-bold tabular-nums ${coKhoan ? mau : "text-muted"}`}>{formatMoney(value)}</span>
+      <span className="text-[11px] text-muted flex items-center gap-0.5">
+        {coKhoan ? (
+          <>
+            {soKhoan} khoản
+            <span className="material-symbols-outlined text-[13px]">chevron_right</span>
+          </>
+        ) : readOnly ? (
+          "—"
+        ) : (
+          <>
+            <span className="material-symbols-outlined text-[13px]">add</span>
+            Thêm
+          </>
+        )}
+      </span>
+    </button>
   );
 }
 
@@ -108,10 +89,7 @@ export default function BangLuong() {
   const [ky, setKy] = useState(null);
   const [totals, setTotals] = useState(null);
   const [rows, setRows] = useState([]);
-  const [savedRows, setSavedRows] = useState([]);
-  const [editingField, setEditingField] = useState(null);
 
-  const [saving, setSaving] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -120,11 +98,11 @@ export default function BangLuong() {
   const [detailEmployee, setDetailEmployee] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  // Modal khoản điều chỉnh: { loai, employee }
+  const [dieuChinh, setDieuChinh] = useState(null);
+
   const kyTrangThai = ky?.trang_thai;
   const isChuaChot = kyTrangThai === "chua_chot";
-
-  const changeCount = useMemo(() => countDirtyChanges(rows, savedRows), [rows, savedRows]);
-  const hasUnsavedChanges = changeCount > 0;
 
   const employeeOptions = useMemo(() => {
     return rows.map((r) => ({ ma_nhan_vien: r.ma_nhan_vien, ten: r.ten }));
@@ -158,17 +136,12 @@ export default function BangLuong() {
       });
       setKy(res.ky);
       setTotals(res.totals);
-      const mapped = mapRowsFromApi(res.rows);
-      setRows(mapped);
-      setSavedRows(snapshotRows(mapped));
-      setEditingField(null);
+      setRows(mapRowsFromApi(res.rows));
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Không tải được bảng lương");
       setKy(null);
       setTotals(null);
       setRows([]);
-      setSavedRows([]);
-      setEditingField(null);
     } finally {
       setLoading(false);
     }
@@ -179,62 +152,18 @@ export default function BangLuong() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thang, nam, maNhanVien]);
 
-  const handleChangeField = (ma_nhan_vien, field, value) => {
-    const n = Number(value);
-    const normalized = Number.isFinite(n) ? Math.round(n) : 0;
-    setRows((prev) =>
-      prev.map((r) => {
-        if (r.ma_nhan_vien !== ma_nhan_vien) return r;
-        const updated = { ...r, [field]: normalized };
-        updated.luong_thuc_nhan =
-          Number(updated.luong_co_ban || 0) +
-          Number(updated.phu_cap || 0) +
-          Number(updated.thuong || 0) -
-          Number(updated.khau_tru || 0) -
-          Number(updated.tam_ung || 0);
-        return updated;
-      })
+  // Modal trả về row đã tính lại từ server -> chỉ thay đúng dòng đó,
+  // đồng thời cộng lại các thẻ tổng ở đầu trang.
+  const handleRowUpdated = (updated) => {
+    const mapped = mapRowsFromApi([updated])[0];
+    setRows((prev) => prev.map((r) => (r.ma_nhan_vien === mapped.ma_nhan_vien ? { ...r, ...mapped } : r)));
+    setDetailEmployee((prev) =>
+      prev && prev.ma_nhan_vien === mapped.ma_nhan_vien ? { ...prev, ...mapped } : prev
     );
-  };
-
-  const handleSaveEdits = async () => {
-    if (!isChuaChot || !hasUnsavedChanges) return;
-    setSaving(true);
-    try {
-      const changedIds = new Set();
-      for (const r of rows) {
-        const base = savedRows.find((b) => b.ma_nhan_vien === r.ma_nhan_vien);
-        if (!base) continue;
-        if (EDIT_FIELDS.some((f) => toInt(r[f]) !== toInt(base[f]))) {
-          changedIds.add(r.ma_nhan_vien);
-        }
-      }
-      for (const r of rows.filter((row) => changedIds.has(row.ma_nhan_vien))) {
-        await updateBangLuongEmployee({
-          thang,
-          nam,
-          ma_nhan_vien: r.ma_nhan_vien,
-          phu_cap: toInt(r.phu_cap),
-          thuong: toInt(r.thuong),
-          khau_tru: toInt(r.khau_tru),
-          tam_ung: toInt(r.tam_ung),
-        });
-      }
-      await load();
-      toast("Đã lưu thay đổi");
-    } catch (err) {
-      toast(err.response?.data?.message || err.message || "Không thể lưu", "error");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleLock = async () => {
     if (actionBusy) return;
-    if (hasUnsavedChanges) {
-      toast("Vui lòng lưu chỉnh sửa trước khi chốt lương.", "error");
-      return;
-    }
     const ok = await confirm(
       `Chốt lương tháng ${pad2(thang)}/${nam}?\n\nSau khi chốt, bảng lương sẽ khóa chỉnh sửa cho đến khi mở chốt`,
       { confirmLabel: "Chốt lương" }
@@ -367,7 +296,9 @@ export default function BangLuong() {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div>
         <h2 className="text-3xl font-bold text-on-surface">Bảng lương</h2>
-        <p className="text-sm text-muted">Tự động tính lương khi kỳ ở trạng thái Chưa chốt</p>
+        <p className="text-sm text-muted">
+          Tự động tính lương khi kỳ ở trạng thái Chưa chốt. Thưởng / khấu trừ / tạm ứng nhập theo từng khoản, hệ thống tự cộng tổng.
+        </p>
       </div>
 
       {/* Filters */}
@@ -436,24 +367,6 @@ export default function BangLuong() {
           <div className="flex flex-wrap items-center gap-2">
             {isChuaChot ? (
               <>
-                <button
-                  type="button"
-                  className={
-                    hasUnsavedChanges
-                      ? "btn-primary !py-2 !px-4 !text-sm"
-                      : "btn-outline !py-2 !px-4 !text-sm opacity-50 cursor-not-allowed"
-                  }
-                  onClick={handleSaveEdits}
-                  disabled={saving || !hasUnsavedChanges}
-                  title={hasUnsavedChanges ? "Lưu các ô đã chỉnh" : "Chưa có thay đổi cần lưu"}
-                >
-                  <span className="material-symbols-outlined text-lg">save</span>
-                  {saving
-                    ? "Đang lưu..."
-                    : hasUnsavedChanges
-                      ? `Lưu ${changeCount} thay đổi`
-                      : "Lưu chỉnh sửa"}
-                </button>
                 <button
                   className="btn-outline !py-2 !px-4 !text-sm border-2 border-primary disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleLock}
@@ -544,7 +457,10 @@ export default function BangLuong() {
           <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-error)" }} />
           <div className="pl-2">
             <p className="text-xs font-medium text-muted">Tổng tiền phải trả</p>
-            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{formatMoney(totals?.tong_tien_phai_tra || 0)}</p>
+            {/* Lấy từ footTotals để cập nhật ngay khi thêm/xóa khoản, không cần tải lại trang */}
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">
+              {formatMoney(rows.length ? footTotals.luong_thuc_nhan : totals?.tong_tien_phai_tra || 0)}
+            </p>
           </div>
         </div>
       </div>
@@ -566,7 +482,9 @@ export default function BangLuong() {
                   <th className="px-4 py-3 text-center">Tổng giờ</th>
                   <th className="px-4 py-3 text-center">Lương/giờ</th>
                   <th className="px-4 py-3 text-center">Lương cơ bản</th>
-                  <th className="px-4 py-3 text-center">Phụ cấp</th>
+                  <th className="px-4 py-3 text-center" title="Lấy từ trang Cấu hình lương nhân viên">
+                    Phụ cấp
+                  </th>
                   <th className="px-4 py-3 text-center">Thưởng</th>
                   <th className="px-4 py-3 text-center">Khấu trừ</th>
                   <th className="px-4 py-3 text-center">Tạm ứng</th>
@@ -603,51 +521,41 @@ export default function BangLuong() {
                       <td className={`px-4 py-3 text-right font-bold ${chuaCauHinhLuong ? "text-warning" : ""}`}>{formatMoney(r.luong_gio)}</td>
                       <td className="px-4 py-3 text-right font-bold">{formatMoney(r.luong_co_ban)}</td>
 
-                      <td className="px-1 py-3 text-right">
-                        <MoneyEditInput
-                          ma_nhan_vien={r.ma_nhan_vien}
-                          field="phu_cap"
-                          value={r.phu_cap}
-                          disabled={!isChuaChot}
-                          editingField={editingField}
-                          setEditingField={setEditingField}
-                          onValueChange={(v) => handleChangeField(r.ma_nhan_vien, "phu_cap", v)}
-                        />
-                      </td>
+                      <td className="px-4 py-3 text-right font-bold">{formatMoney(r.phu_cap)}</td>
                       <td className="px-2 py-3 text-right">
-                        <MoneyEditInput
-                          ma_nhan_vien={r.ma_nhan_vien}
-                          field="thuong"
+                        <DieuChinhCell
                           value={r.thuong}
-                          disabled={!isChuaChot}
-                          editingField={editingField}
-                          setEditingField={setEditingField}
-                          onValueChange={(v) => handleChangeField(r.ma_nhan_vien, "thuong", v)}
+                          soKhoan={r.so_khoan_thuong}
+                          mau="text-success"
+                          readOnly={!isChuaChot}
+                          onOpen={() => setDieuChinh({ loai: "thuong", employee: r })}
                         />
                       </td>
                       <td className="px-2 py-3 text-right">
-                        <MoneyEditInput
-                          ma_nhan_vien={r.ma_nhan_vien}
-                          field="khau_tru"
+                        <DieuChinhCell
                           value={r.khau_tru}
-                          disabled={!isChuaChot}
-                          editingField={editingField}
-                          setEditingField={setEditingField}
-                          onValueChange={(v) => handleChangeField(r.ma_nhan_vien, "khau_tru", v)}
+                          soKhoan={r.so_khoan_khau_tru}
+                          mau="text-error"
+                          readOnly={!isChuaChot}
+                          onOpen={() => setDieuChinh({ loai: "khau_tru", employee: r })}
                         />
                       </td>
                       <td className="px-2 py-3 text-right">
-                        <MoneyEditInput
-                          ma_nhan_vien={r.ma_nhan_vien}
-                          field="tam_ung"
+                        <DieuChinhCell
                           value={r.tam_ung}
-                          disabled={!isChuaChot}
-                          editingField={editingField}
-                          setEditingField={setEditingField}
-                          onValueChange={(v) => handleChangeField(r.ma_nhan_vien, "tam_ung", v)}
+                          soKhoan={r.so_khoan_tam_ung}
+                          mau="text-error"
+                          readOnly={!isChuaChot}
+                          onOpen={() => setDieuChinh({ loai: "tam_ung", employee: r })}
                         />
                       </td>
-                      <td className="px-4 py-3 text-right font-bold">{formatMoney(r.luong_thuc_nhan)}</td>
+                      <td
+                        className={`px-4 py-3 text-right font-bold ${
+                          Number(r.luong_thuc_nhan || 0) < 0 ? "text-error" : ""
+                        }`}
+                      >
+                        {formatMoney(r.luong_thuc_nhan)}
+                      </td>
 
                       <td className="px-4 py-3 text-center">
                         <button
@@ -685,6 +593,20 @@ export default function BangLuong() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Modal khoản điều chỉnh */}
+      {dieuChinh && (
+        <DieuChinhModal
+          loai={dieuChinh.loai}
+          employee={dieuChinh.employee}
+          thang={thang}
+          nam={nam}
+          readOnly={!isChuaChot}
+          onClose={() => setDieuChinh(null)}
+          onRowUpdated={handleRowUpdated}
+          onError={(msg) => toast(msg, "error")}
+        />
       )}
 
       {/* Detail Modal */}

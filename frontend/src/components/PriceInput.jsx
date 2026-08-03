@@ -5,7 +5,10 @@
  * ============================== */
 import React from "react";
 
-export default function PriceInput({ value, onChange, className = "", ...props }) {
+const PriceInput = React.forwardRef(function PriceInput(
+  { value, onChange, className = "", ...props },
+  ref
+) {
   const handleChange = (e) => {
     // Chỉ giữ lại chữ số
     const raw = e.target.value.replace(/[^0-9]/g, "");
@@ -22,6 +25,7 @@ export default function PriceInput({ value, onChange, className = "", ...props }
   return (
     <div className="relative">
       <input
+        ref={ref}
         type="text"
         inputMode="numeric"
         value={displayValue}
@@ -31,4 +35,6 @@ export default function PriceInput({ value, onChange, className = "", ...props }
       />
     </div>
   );
-}
+});
+
+export default PriceInput;

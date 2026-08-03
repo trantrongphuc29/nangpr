@@ -1004,7 +1004,7 @@ const NhanVien = () => {
             <form onSubmit={handleAddStaff} className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-muted">Họ và tên</label>
-                <input required type="text" className="input-field mt-1" value={formData.ten} onChange={(e) => setFormData({ ...formData, ten: e.target.value })} />
+                <input required type="text" maxLength={30} className="input-field mt-1" value={formData.ten} onChange={(e) => setFormData({ ...formData, ten: e.target.value.slice(0, 30) })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1042,7 +1042,7 @@ const NhanVien = () => {
               </div>
               <div>
                 <label className="text-xs font-semibold text-muted">Địa chỉ</label>
-                <input type="text" className="input-field mt-1" value={formData.dia_chi} onChange={(e) => setFormData({ ...formData, dia_chi: e.target.value })} />
+                <input type="text" maxLength={100} className="input-field mt-1" value={formData.dia_chi} onChange={(e) => setFormData({ ...formData, dia_chi: e.target.value.slice(0, 100) })} />
               </div>
               <button
                 type="submit"

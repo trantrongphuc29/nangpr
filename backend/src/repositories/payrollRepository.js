@@ -125,7 +125,9 @@ async function recalculateBangLuong({ ky_luong_id }) {
     [ky_luong_id]
   );
 
-  // Cập nhật các trường tính từ bảng công + cấu hình lương (preserve các khoản nhập tay đang có)
+  // Cập nhật các trường tính từ bảng công + cấu hình lương.
+  // Thưởng / khấu trừ / tạm ứng là giá trị dẫn xuất = SUM các dòng trong
+  // bang_luong_dieu_chinh, nên gộp luôn vào đây để chỉ có một nguồn sự thật.
   await db.execute(
     `
     UPDATE bang_luong_thang bl
@@ -133,22 +135,79 @@ async function recalculateBangLuong({ ky_luong_id }) {
       ON bc.ky_luong_id = bl.ky_luong_id AND bc.ma_nhan_vien = bl.ma_nhan_vien
     LEFT JOIN nhanvien_luong nvl
       ON nvl.ma_nhan_vien = bl.ma_nhan_vien
+    LEFT JOIN (
+      SELECT
+        ma_nhan_vien,
+        SUM(CASE WHEN loai = 'thuong'   THEN so_tien ELSE 0 END) AS thuong,
+        SUM(CASE WHEN loai = 'khau_tru' THEN so_tien ELSE 0 END) AS khau_tru,
+        SUM(CASE WHEN loai = 'tam_ung'  THEN so_tien ELSE 0 END) AS tam_ung
+      FROM bang_luong_dieu_chinh
+      WHERE ky_luong_id = ?
+      GROUP BY ma_nhan_vien
+    ) dc ON dc.ma_nhan_vien = bl.ma_nhan_vien
     SET
       bl.tong_ca = bc.tong_ca,
       bl.tong_gio = bc.tong_gio,
       bl.luong_gio = COALESCE(nvl.luong_gio, 0),
       bl.luong_co_ban = COALESCE(bc.tong_gio_quy_doi, bc.tong_gio) * COALESCE(nvl.luong_gio, 0),
       bl.phu_cap = COALESCE(nvl.phu_cap_mac_dinh, 0),
+      bl.thuong = COALESCE(dc.thuong, 0),
+      bl.khau_tru = COALESCE(dc.khau_tru, 0),
+      bl.tam_ung = COALESCE(dc.tam_ung, 0),
       bl.luong_thuc_nhan = (COALESCE(bc.tong_gio_quy_doi, bc.tong_gio) * COALESCE(nvl.luong_gio, 0))
         + COALESCE(nvl.phu_cap_mac_dinh, 0)
-        + COALESCE(bl.thuong, 0)
-        - COALESCE(bl.khau_tru, 0)
-        - COALESCE(bl.tam_ung, 0),
+        + COALESCE(dc.thuong, 0)
+        - COALESCE(dc.khau_tru, 0)
+        - COALESCE(dc.tam_ung, 0),
       bl.last_recalc_at = NOW()
     WHERE bl.ky_luong_id = ?
   `,
-    [ky_luong_id]
+    [ky_luong_id, ky_luong_id]
   );
+}
+
+// ===== Khoản điều chỉnh (thưởng / khấu trừ / tạm ứng) =====
+async function getDieuChinh({ ky_luong_id, ma_nhan_vien, loai }) {
+  const [rows] = await db.execute(
+    `
+      SELECT
+        id,
+        loai,
+        so_tien,
+        ly_do,
+        DATE_FORMAT(ngay, '%Y-%m-%d') AS ngay,
+        created_at
+      FROM bang_luong_dieu_chinh
+      WHERE ky_luong_id = ? AND ma_nhan_vien = ? AND loai = ?
+      ORDER BY ngay DESC, id DESC
+    `,
+    [ky_luong_id, ma_nhan_vien, loai]
+  );
+  return rows.map((r) => ({ ...r, so_tien: Number(r.so_tien) }));
+}
+
+async function getDieuChinhById({ id }) {
+  const [rows] = await db.execute(
+    `SELECT id, ky_luong_id, ma_nhan_vien, loai FROM bang_luong_dieu_chinh WHERE id = ?`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+async function addDieuChinh({ ky_luong_id, ma_nhan_vien, loai, so_tien, ly_do, ngay }) {
+  const [result] = await db.execute(
+    `
+      INSERT INTO bang_luong_dieu_chinh (ky_luong_id, ma_nhan_vien, loai, so_tien, ly_do, ngay)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    [ky_luong_id, ma_nhan_vien, loai, so_tien, ly_do, ngay]
+  );
+  return result.insertId;
+}
+
+async function deleteDieuChinh({ id }) {
+  const [result] = await db.execute(`DELETE FROM bang_luong_dieu_chinh WHERE id = ?`, [id]);
+  return result.affectedRows > 0;
 }
 
 async function getBangCongSummary({ ky_luong_id, ma_nhan_vien }) {
@@ -240,6 +299,19 @@ async function getBangCongChiTiet({ ky_luong_id, ma_nhan_vien }) {
   return rows;
 }
 
+// Số khoản chi tiết của từng loại, để giao diện hiển thị "N khoản" trên mỗi ô.
+// Dùng subquery tương quan thay vì JOIN để không phải thêm tham số cho ky_luong_id.
+const SO_KHOAN_SELECT = `
+        (SELECT COUNT(*) FROM bang_luong_dieu_chinh dc
+          WHERE dc.ky_luong_id = bl.ky_luong_id AND dc.ma_nhan_vien = bl.ma_nhan_vien
+            AND dc.loai = 'thuong') AS so_khoan_thuong,
+        (SELECT COUNT(*) FROM bang_luong_dieu_chinh dc
+          WHERE dc.ky_luong_id = bl.ky_luong_id AND dc.ma_nhan_vien = bl.ma_nhan_vien
+            AND dc.loai = 'khau_tru') AS so_khoan_khau_tru,
+        (SELECT COUNT(*) FROM bang_luong_dieu_chinh dc
+          WHERE dc.ky_luong_id = bl.ky_luong_id AND dc.ma_nhan_vien = bl.ma_nhan_vien
+            AND dc.loai = 'tam_ung') AS so_khoan_tam_ung`;
+
 async function getBangLuongSummary({ ky_luong_id, ma_nhan_vien }) {
   const params = [ky_luong_id];
   let where = "bl.ky_luong_id = ?";
@@ -279,7 +351,8 @@ async function getBangLuongSummary({ ky_luong_id, ma_nhan_vien }) {
         bl.thuong,
         bl.khau_tru,
         bl.tam_ung,
-        bl.luong_thuc_nhan
+        bl.luong_thuc_nhan,
+        ${SO_KHOAN_SELECT}
       FROM bang_luong_thang bl
       JOIN nhanvien nv ON nv.ma_nhan_vien = bl.ma_nhan_vien
       WHERE bl.ky_luong_id = ?
@@ -318,7 +391,8 @@ async function getBangLuongRow({ ky_luong_id, ma_nhan_vien }) {
         bl.thuong,
         bl.khau_tru,
         bl.tam_ung,
-        bl.luong_thuc_nhan
+        bl.luong_thuc_nhan,
+        ${SO_KHOAN_SELECT}
       FROM bang_luong_thang bl
       JOIN nhanvien nv ON nv.ma_nhan_vien = bl.ma_nhan_vien
       WHERE bl.ky_luong_id = ? AND bl.ma_nhan_vien = ?
@@ -326,41 +400,6 @@ async function getBangLuongRow({ ky_luong_id, ma_nhan_vien }) {
     [ky_luong_id, ma_nhan_vien]
   );
   return rows[0] || null;
-}
-
-async function updateBangLuongEmployee({ ky_luong_id, ma_nhan_vien, phu_cap, thuong, khau_tru, tam_ung }) {
-  const [result] = await db.execute(
-    `
-      UPDATE bang_luong_thang bl
-      JOIN ky_luong kl ON kl.id = bl.ky_luong_id
-      SET
-        bl.phu_cap = ?,
-        bl.thuong = ?,
-        bl.khau_tru = ?,
-        bl.tam_ung = ?,
-        bl.luong_thuc_nhan = bl.luong_co_ban + ? + ? - ? - ?
-      WHERE bl.ky_luong_id = ?
-        AND bl.ma_nhan_vien = ?
-        AND kl.trang_thai = 'chua_chot'
-    `,
-    [
-      phu_cap,
-      thuong,
-      khau_tru,
-      tam_ung,
-      phu_cap,
-      thuong,
-      khau_tru,
-      tam_ung,
-      ky_luong_id,
-      ma_nhan_vien,
-    ]
-  );
-
-  // eslint-disable-next-line no-underscore-dangle
-  if (!result || result.affectedRows === 0) {
-    throw { status: 400, message: "Không thể cập nhật. Kỳ lương đã chốt hoặc nhân viên không thuộc kỳ." };
-  }
 }
 
 async function lockKyLuong({ ky_id }) {
@@ -459,11 +498,13 @@ async function syncBangLuongFromLuongConfig(ma_nhan_vien_list) {
       UPDATE bang_luong_thang bl
       INNER JOIN ky_luong kl ON kl.id = bl.ky_luong_id AND kl.trang_thai = 'chua_chot'
       INNER JOIN nhanvien_luong nvl ON nvl.ma_nhan_vien = bl.ma_nhan_vien
+      LEFT JOIN bang_cong_thang bc
+        ON bc.ky_luong_id = bl.ky_luong_id AND bc.ma_nhan_vien = bl.ma_nhan_vien
       SET
         bl.luong_gio = COALESCE(nvl.luong_gio, 0),
         bl.phu_cap = COALESCE(nvl.phu_cap_mac_dinh, 0),
-        bl.luong_co_ban = bl.tong_gio * COALESCE(nvl.luong_gio, 0),
-        bl.luong_thuc_nhan = (bl.tong_gio * COALESCE(nvl.luong_gio, 0))
+        bl.luong_co_ban = COALESCE(bc.tong_gio_quy_doi, bl.tong_gio) * COALESCE(nvl.luong_gio, 0),
+        bl.luong_thuc_nhan = (COALESCE(bc.tong_gio_quy_doi, bl.tong_gio) * COALESCE(nvl.luong_gio, 0))
           + COALESCE(nvl.phu_cap_mac_dinh, 0)
           + COALESCE(bl.thuong, 0)
           - COALESCE(bl.khau_tru, 0)
@@ -550,7 +591,10 @@ module.exports = {
   getBangCongChiTiet,
   getBangLuongSummary,
   getBangLuongRow,
-  updateBangLuongEmployee,
+  getDieuChinh,
+  getDieuChinhById,
+  addDieuChinh,
+  deleteDieuChinh,
   lockKyLuong,
   unlockKyLuong,
   markKyLuongPaid,
