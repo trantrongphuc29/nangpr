@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getRevenueReport } from "../services/donHangService";
 import { getCostStats, getNguyenLieu } from "../services/nguyenlieuService";
 import { getCongNoStats } from "../services/congNoService";
+import { getTopNhanVienNangNo } from "../services/payrollService";
 
 const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
 const fmtN = (n) => Number(n || 0).toLocaleString("vi-VN");
@@ -90,6 +91,15 @@ function DailyRevenueChart({ data, loading }) {
     [data]
   );
 
+  // Trung bình chỉ tính trên ngày đã trọn vẹn — hôm nay chưa hết ngày nên luôn thấp,
+  // đưa vào sẽ kéo tụt mốc tham chiếu (ngày 1 hàng tháng thì trung bình = chính hôm nay).
+  const { avg, avgPct } = useMemo(() => {
+    const ngayTron = data.filter((d) => !d.isToday);
+    if (ngayTron.length === 0) return { avg: null, avgPct: null };
+    const mean = ngayTron.reduce((s, d) => s + d.total, 0) / ngayTron.length;
+    return { avg: mean, avgPct: (mean / maxVal) * 100 };
+  }, [data, maxVal]);
+
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-4">
@@ -106,28 +116,52 @@ function DailyRevenueChart({ data, loading }) {
           <p className="text-sm text-muted">Chưa có doanh thu tháng này</p>
         </div>
       ) : (
-        // pt-10: chừa khoảng phía trên để tooltip không bị cắt (overflow-x ép overflow-y = auto)
-        <div className="flex items-end gap-1 h-52 pt-10 overflow-x-auto pb-1 custom-scrollbar">
-          {data.map((d) => {
-            const pct = maxVal > 0 ? (d.total / maxVal) * 100 : 0;
-            return (
-              <div key={d.date} className="flex-1 min-w-[24px] h-full flex flex-col items-center gap-1 group relative">
-                <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-on-surface text-card text-[10px] font-medium px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 shadow-md pointer-events-none">
-                  {d.dateLabel}: {fmt(d.total)}
-                  <span className="text-card/60 ml-1">({d.count} đơn)</span>
+        <div className="overflow-x-auto pb-1 custom-scrollbar">
+          {/* pt-10: chừa khoảng phía trên để tooltip không bị cắt (overflow-x ép overflow-y = auto) */}
+          <div className="min-w-full pt-10">
+            {/* Hàng cột — tách khỏi hàng nhãn để đường trung bình định vị đúng theo vùng cột */}
+            <div className="relative flex items-end gap-1 h-40">
+              {avgPct !== null && (
+                <div className="absolute inset-x-0 z-[5] pointer-events-none" style={{ bottom: `${avgPct}%` }}>
+                  <div className="border-t border-dashed" style={{ borderColor: "var(--color-muted)" }} />
+                  <span
+                    className="absolute right-0 -top-2.5 text-[10px] font-medium px-1 rounded bg-card whitespace-nowrap"
+                    style={{ color: "var(--color-muted)" }}
+                  >
+                    TB {fmt(avg)}
+                  </span>
                 </div>
-                <div className="flex-1 w-full flex items-end">
-                  <div
-                    className={`w-full rounded-t-sm transition-colors ${d.isToday ? 'bg-primary' : 'bg-primary/20'}`}
-                    style={{ height: `${Math.max(pct, 3)}%` }}
-                  />
-                </div>
-                <span className={`text-[9px] leading-none ${d.isToday ? 'text-primary font-semibold' : 'text-muted'}`}>
+              )}
+
+              {data.map((d) => {
+                const pct = maxVal > 0 ? (d.total / maxVal) * 100 : 0;
+                return (
+                  <div key={d.date} className="flex-1 min-w-[24px] h-full flex items-end group relative">
+                    <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-on-surface text-card text-[10px] font-medium px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 shadow-md pointer-events-none">
+                      {d.dateLabel}: {fmt(d.total)}
+                      <span className="text-card/60 ml-1">({d.count} đơn)</span>
+                    </div>
+                    <div
+                      className={`w-full rounded-t-sm transition-colors ${d.isToday ? 'bg-primary' : 'bg-primary/20'}`}
+                      style={{ height: `${Math.max(pct, 3)}%` }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Hàng nhãn — cùng flex-1/min-w/gap với hàng cột để thẳng trục */}
+            <div className="flex gap-1 mt-1">
+              {data.map((d) => (
+                <span
+                  key={d.date}
+                  className={`flex-1 min-w-[24px] text-center text-[9px] leading-none ${d.isToday ? 'text-primary font-semibold' : 'text-muted'}`}
+                >
                   {d.shortLabel}
                 </span>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+          </div>
         </div>
       )}
       {hasData && (
@@ -179,7 +213,7 @@ function RecentActivity({ title, items, loading }) {
         </div>
       ) : (
         <>
-          <div className={`divide-y divide-outline-subtle ${visible > RECENT_PAGE_SIZE ? 'max-h-96 overflow-y-auto custom-scrollbar pr-1' : ''}`}>
+          <div className="divide-y divide-outline-subtle">
             {shown.map((item, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0 flex-1">
@@ -357,20 +391,77 @@ function StockOverview({ stats, alerts, loading }) {
   );
 }
 
-/* ── Utils ── */
-function groupOrdersByDate(orders) {
-  const map = {};
-  orders.forEach((o) => {
-    const d = new Date(o.ngay_tao);
-    const vn = new Date(d.getTime() + 7 * 3600000);
-    const key = `${vn.getUTCFullYear()}-${String(vn.getUTCMonth() + 1).padStart(2, '0')}-${String(vn.getUTCDate()).padStart(2, '0')}`;
-    const label = `${String(vn.getUTCDate()).padStart(2, '0')}/${String(vn.getUTCMonth() + 1).padStart(2, '0')}`;
-    const shortLabel = String(vn.getUTCDate());
-    if (!map[key]) map[key] = { date: key, dateLabel: label, shortLabel, total: 0, count: 0 };
-    map[key].total += Number(o.tong_thanh_toan ?? o.tong_tien ?? 0);
-    map[key].count += 1;
-  });
-  return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+/* ── TopNhanVienTheoGioLam — xếp theo tổng giờ làm trong tháng ── */
+const fmtGio = (n) => Number(n || 0).toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+
+function TopNhanVienTheoGioLam({ items, loading }) {
+  const rankColors = ["var(--color-warning)", "var(--color-info)", "var(--color-primary)"];
+  const mauHang = (i) => rankColors[i] || "var(--color-muted)";
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm font-semibold text-on-surface">Top nhân viên theo giờ làm</h3>
+          <p className="text-xs text-muted mt-0.5">Tháng này</p>
+        </div>
+        <Link to="/bangcong" className="text-xs font-medium flex items-center gap-0.5 hover:underline" style={{ color: "var(--color-primary)" }}>
+          Bảng công <span className="material-symbols-outlined text-sm">chevron_right</span>
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-12 bg-surface-container-high rounded-lg animate-pulse" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="py-8 text-center">
+          <span className="material-symbols-outlined text-3xl text-muted/30 block mb-1">groups</span>
+          <p className="text-sm text-muted">Chưa có công tháng này</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((nv, i) => {
+            const gio = Number(nv.tong_gio) || 0;
+            const mau = mauHang(i);
+            return (
+              <div key={nv.ma_nhan_vien} className="flex items-center gap-3">
+                <span
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 tabular-nums"
+                  style={{ color: mau, backgroundColor: `color-mix(in srgb, ${mau} 14%, transparent)` }}
+                >
+                  {i + 1}
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-sm text-on-surface truncate">
+                      {nv.ten}
+                      {nv.trang_thai !== "dang_lam" && (
+                        <span className="text-[10px] text-muted ml-1.5">
+                          ({nv.trang_thai === "da_nghi" ? "đã nghỉ" : "tạm nghỉ"})
+                        </span>
+                      )}
+                    </p>
+                    <span className="text-sm font-semibold text-on-surface tabular-nums shrink-0">
+                      {fmtGio(gio)}h
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-muted mt-0.5 tabular-nums">
+                    {fmtN(nv.tong_ca)} ca
+                    {Number(nv.luong_gio) > 0 && <> · {fmt(nv.luong_gio)}/h</>}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ── Main ── */
@@ -381,16 +472,19 @@ export default function Dashboard() {
   const [todayRevenue, setTodayRevenue] = useState({ total: 0, orders: 0, tm: 0, ck: 0, taiCho: 0, mangVe: 0, giaoHang: 0 });
   const [monthRevenue, setMonthRevenue] = useState({ total: 0, orders: 0 });
   const [trend, setTrend] = useState({ today: null, month: null });
-  const [monthOrders, setMonthOrders] = useState([]);
+  const [monthSeries, setMonthSeries] = useState([]);
   const [costStats, setCostStats] = useState({ day: 0, month: 0 });
   const [debt, setDebt] = useState({ tong_con_no: 0, so_phieu_no: 0, so_ncc_dang_no: 0 });
   const [recentOrders, setRecentOrders] = useState([]);
   const [stockStats, setStockStats] = useState({ total: 0, sapHet: 0, hetHang: 0, sapHetHan: 0, hetHan: 0 });
   const [stockAlerts, setStockAlerts] = useState([]);
+  const [topNhanVien, setTopNhanVien] = useState([]);
 
-  // Biểu đồ doanh thu theo ngày — liên tục từ ngày 1 đến hôm nay (lấp ngày trống bằng 0)
+  // Biểu đồ doanh thu theo ngày — liên tục từ ngày 1 đến hôm nay (lấp ngày trống bằng 0).
+  // Nguồn là `series` do server tổng hợp: không phân trang (danh sách đơn bị cắt ở limit)
+  // và đã cộng phí giao hàng, nên khớp với summary dùng cho thẻ KPI.
   const dailyChartData = useMemo(() => {
-    const map = new Map(groupOrdersByDate(monthOrders).map((d) => [d.date, d]));
+    const map = new Map(monthSeries.map((s) => [s.bucket, s]));
     const vnToday = new Date(Date.now() + 7 * 3600000);
     const y = vnToday.getUTCFullYear(), m = vnToday.getUTCMonth(), today = vnToday.getUTCDate();
     const pad = (n) => String(n).padStart(2, "0");
@@ -402,13 +496,13 @@ export default function Dashboard() {
         date: key,
         dateLabel: `${pad(dd)}/${pad(m + 1)}`,
         shortLabel: String(dd),
-        total: found ? found.total : 0,
-        count: found ? found.count : 0,
+        total: found ? found.revenue : 0,
+        count: found ? found.orders : 0,
         isToday: dd === today,
       });
     }
     return out;
-  }, [monthOrders]);
+  }, [monthSeries]);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -420,15 +514,19 @@ export default function Dashboard() {
       const today = ymd(now);
       const yesterday = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
       const lastMonthRef = ymd(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-      const [todayRev, monthRev, costResult, debtResult, nlList, yesterdayRev, lastMonthRev] = await Promise.all([
+      const [todayRev, monthRev, costResult, debtResult, nlList, yesterdayRev, lastMonthRev, topNV] = await Promise.all([
         // limit lớn để TM/CK & phân loại đơn tính đủ, khớp với summary.total_orders
         getRevenueReport({ period: "day", date: today, limit: 1000, offset: 0 }),
-        getRevenueReport({ period: "month", limit: 500, offset: 0 }),
+        // Chỉ cần summary + series; danh sách đơn của tháng không dùng tới nên lấy limit nhỏ nhất
+        getRevenueReport({ period: "month", limit: 1, offset: 0 }),
         getCostStats(),
         getCongNoStats(),
         getNguyenLieu(),
         getRevenueReport({ period: "day", date: yesterday, limit: 1, offset: 0 }),
         getRevenueReport({ period: "month", date: lastMonthRef, limit: 1, offset: 0 }),
+        // Chỉ endpoint này yêu cầu quyền admin -> nuốt lỗi riêng, tránh 401 làm hỏng cả dashboard
+        getTopNhanVienNangNo({ thang: now.getMonth() + 1, nam: now.getFullYear(), limit: 5 })
+          .catch(() => ({ rows: [] })),
       ]);
 
       // % thay đổi so với kỳ trước (null nếu kỳ trước = 0 để tránh chia 0 / vô nghĩa)
@@ -452,9 +550,10 @@ export default function Dashboard() {
         giaoHang: s.count_giao_hang || 0,
       });
       setMonthRevenue({ total: monthRev.summary?.total_revenue || 0, orders: monthRev.summary?.total_orders || 0 });
-      setMonthOrders(monthRev.orders || []);
+      setMonthSeries(monthRev.series || []);
       setCostStats({ day: costResult.day || 0, month: costResult.month || 0 });
       setDebt({ tong_con_no: debtResult.tong_con_no || 0, so_phieu_no: debtResult.so_phieu_no || 0, so_ncc_dang_no: debtResult.so_ncc_dang_no || 0 });
+      setTopNhanVien(topNV?.rows || []);
 
       setRecentOrders(
         (todayRev.orders || []).map((o) => ({
@@ -532,6 +631,7 @@ export default function Dashboard() {
           </div>
           <div className="space-y-4">
             <div className="card h-64 animate-pulse" />
+            <div className="card h-60 animate-pulse" />
             <div className="card h-72 animate-pulse" />
           </div>
         </div>
@@ -576,6 +676,7 @@ export default function Dashboard() {
             </div>
             <div className="space-y-4">
               <OrderTypeBreakdown todayRevenue={todayRevenue} />
+              <TopNhanVienTheoGioLam items={topNhanVien} loading={loading} />
               <StockOverview stats={stockStats} alerts={stockAlerts} loading={loading} />
             </div>
           </div>

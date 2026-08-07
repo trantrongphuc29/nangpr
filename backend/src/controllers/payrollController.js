@@ -45,6 +45,25 @@ async function getBangCongChiTiet(req, res) {
   }
 }
 
+async function getTopNhanVienNangNo(req, res) {
+  try {
+    const thang = parseIntSafe(req.query.thang);
+    const nam = parseIntSafe(req.query.nam);
+    const limit = req.query.limit ? parseIntSafe(req.query.limit) : 5;
+
+    if (!thang || !nam) {
+      return res.status(400).json({ message: "Thiếu tham số thang/nam" });
+    }
+
+    const result = await payrollService.getTopNhanVienNangNo({ thang, nam, limit });
+    return res.json(result);
+  } catch (err) {
+    return res
+      .status(err.status || 500)
+      .json({ message: err.message || "Lỗi lấy top nhân viên năng nổ", error: err.message });
+  }
+}
+
 async function getBangLuong(req, res) {
   try {
     const thang = parseIntSafe(req.query.thang);
@@ -233,6 +252,7 @@ async function deleteNgayLe(req, res) {
 module.exports = {
   getBangCong,
   getBangCongChiTiet,
+  getTopNhanVienNangNo,
   getBangLuong,
   getDieuChinh,
   addDieuChinh,

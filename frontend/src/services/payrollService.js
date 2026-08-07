@@ -19,6 +19,16 @@ export const getBangCongChiTiet = async ({ thang, nam, ma_nhan_vien }) => {
   return response.data;
 };
 
+export const getTopNhanVienNangNo = async ({ thang, nam, limit = 5 } = {}) => {
+  const params = new URLSearchParams();
+  params.append("thang", thang);
+  params.append("nam", nam);
+  params.append("limit", limit);
+
+  const response = await axiosClient.get(`/api/payroll/nhan-vien-nang-no?${params.toString()}`);
+  return response.data;
+};
+
 export const getBangLuong = async ({ thang, nam, ma_nhan_vien } = {}) => {
   const params = new URLSearchParams();
   params.append("thang", thang);

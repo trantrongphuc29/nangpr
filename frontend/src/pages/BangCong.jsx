@@ -189,7 +189,7 @@ export default function BangCong() {
                 Tháng
               </label>
               <select
-                className="input-field !w-auto !min-w-0 !py-2 !pl-3 !pr-9 text-sm"
+                className="input-field !w-auto !min-w-0 !py-2 !pl-2.5 !pr-1.5 text-sm"
                 value={thang}
                 onChange={(e) => setThang(Number(e.target.value))}
               >
@@ -205,7 +205,7 @@ export default function BangCong() {
                 Năm
               </label>
               <select
-                className="input-field !w-auto !min-w-0 !py-2 !pl-3 !pr-9 text-sm"
+                className="input-field !w-auto !min-w-0 !py-2 !pl-2.5 !pr-1.5 text-sm"
                 value={nam}
                 onChange={(e) => setNam(Number(e.target.value))}
               >
@@ -221,7 +221,7 @@ export default function BangCong() {
                 Nhân viên
               </label>
               <select
-                className="input-field !w-[12rem] sm:!w-[14rem] !min-w-0 !py-2 !pl-3 !pr-9 text-sm"
+                className="input-field !w-[12rem] sm:!w-[14rem] !min-w-0 !py-2 !pl-2.5 !pr-1.5 text-sm"
                 value={maNhanVien}
                 onChange={(e) => setMaNhanVien(e.target.value)}
               >

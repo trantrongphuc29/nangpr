@@ -21,6 +21,19 @@ async function getBangCongChiTiet({ thang, nam, ma_nhan_vien }) {
   return { ky, ma_nhan_vien, rows };
 }
 
+async function getTopNhanVienNangNo({ thang, nam, limit }) {
+  const ky = await payrollRepository.ensureKyLuong({ thang, nam });
+
+  // Bảng công chỉ được ghi lại khi có người mở trang Bảng công/Bảng lương.
+  // Dashboard phải tự tính lại, nếu không sẽ hiển thị số liệu cũ của tháng đang chạy.
+  if (ky.trang_thai === "chua_chot") {
+    await payrollRepository.recalculateBangCong({ ky_luong_id: ky.id, thang, nam });
+  }
+
+  const rows = await payrollRepository.getTopNhanVienNangNo({ ky_luong_id: ky.id, limit });
+  return { ky, rows };
+}
+
 async function getBangLuong({ thang, nam, ma_nhan_vien }) {
   const ky = await payrollRepository.ensureKyLuong({ thang, nam });
 
@@ -215,6 +228,7 @@ async function deleteNgayLe({ ngay }) {
 module.exports = {
   getBangCong,
   getBangCongChiTiet,
+  getTopNhanVienNangNo,
   getBangLuong,
   getDieuChinh,
   addDieuChinh,

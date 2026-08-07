@@ -296,9 +296,7 @@ export default function BangLuong() {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div>
         <h2 className="text-3xl font-bold text-on-surface">Bảng lương</h2>
-        <p className="text-sm text-muted">
-          Tự động tính lương khi kỳ ở trạng thái Chưa chốt. Thưởng / khấu trừ / tạm ứng nhập theo từng khoản, hệ thống tự cộng tổng.
-        </p>
+        <p className="text-sm text-muted">Tính lương tháng từ bảng công, thưởng, khấu trừ và tạm ứng</p>
       </div>
 
       {/* Filters */}
@@ -310,7 +308,7 @@ export default function BangLuong() {
                 Tháng
               </label>
               <select
-                className="input-field !w-[4.5rem] !min-w-[4.5rem] !py-2 !px-2 !pr-7 text-sm"
+                className="input-field !w-auto !min-w-0 !py-2 !pl-2.5 !pr-1.5 text-sm"
                 value={thang}
                 onChange={(e) => setThang(Number(e.target.value))}
               >
@@ -326,7 +324,7 @@ export default function BangLuong() {
                 Năm
               </label>
               <select
-                className="input-field !w-[5.25rem] !min-w-[5.25rem] !py-2 !px-2 !pr-7 text-sm"
+                className="input-field !w-auto !min-w-0 !py-2 !pl-2.5 !pr-1.5 text-sm"
                 value={nam}
                 onChange={(e) => setNam(Number(e.target.value))}
               >
@@ -342,7 +340,7 @@ export default function BangLuong() {
                 Nhân viên
               </label>
               <select
-                className="input-field !w-[12rem] sm:!w-[14rem] !min-w-0 !py-2 !px-2 !pr-7 text-sm"
+                className="input-field !w-[12rem] sm:!w-[14rem] !min-w-0 !py-2 !pl-2.5 !pr-1.5 text-sm"
                 value={maNhanVien}
                 onChange={(e) => setMaNhanVien(e.target.value)}
               >
@@ -378,8 +376,9 @@ export default function BangLuong() {
               </>
             ) : (
               <>
-                <div className="text-muted text-xs uppercase tracking-widest font-semibold">
-                  Kỳ {kyLabel}. Dữ liệu đã khóa.
+                {/* kyLabel viết hoa đầu vì dùng làm nhãn đứng riêng; ở đây nó nằm giữa câu nên hạ về chữ thường */}
+                <div className="text-sm text-muted">
+                  Dữ liệu đã khóa
                 </div>
                 {kyTrangThai === "da_chot" && (
                   <>

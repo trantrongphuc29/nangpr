@@ -299,6 +299,56 @@ async function getBangCongChiTiet({ ky_luong_id, ma_nhan_vien }) {
   return rows;
 }
 
+// mysql2 (execute) không nhận placeholder `?` cho LIMIT nên phải nội suy số nguyên đã kiểm tra
+const toSafeInt = (v, fallback) => {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+};
+
+// Top nhân viên năng nổ trong kỳ: xếp theo tổng giờ đã làm.
+// Ca chỉ dài 2.5h hoặc 3h nên tổng giờ rất hay bằng nhau -> hoà thì lương giờ THẤP hơn xếp trên
+// (cùng số giờ nhưng nhận ít hơn = cống hiến nhiều hơn so với đãi ngộ).
+// ma_nhan_vien chốt cuối để thứ tự ổn định (LIMIT trên sort không ổn định sẽ đổi người mỗi lần tải).
+// LEFT JOIN nhanvien_luong vì tạo nhân viên không sinh sẵn dòng cấu hình lương —
+// người chưa cấu hình lương vẫn phải được xếp hạng theo giờ công của họ.
+async function getTopNhanVienNangNo({ ky_luong_id, limit = 5 }) {
+  const [rows] = await db.execute(
+    `
+      SELECT
+        nv.ma_nhan_vien,
+        nv.ten,
+        nv.trang_thai,
+        bc.tong_gio,
+        bc.tong_ca,
+        bc.so_ngay_lam,
+        COALESCE(nvl.luong_gio, 0) AS luong_gio
+      FROM bang_cong_thang bc
+      JOIN nhanvien nv ON nv.ma_nhan_vien = bc.ma_nhan_vien
+      LEFT JOIN nhanvien_luong nvl ON nvl.ma_nhan_vien = bc.ma_nhan_vien
+      WHERE bc.ky_luong_id = ?
+        AND bc.tong_gio > 0
+      ORDER BY
+        bc.tong_gio DESC,
+        -- luong_gio = 0 nghĩa là "chưa cấu hình lương", không phải lương thấp:
+        -- đẩy nhóm này xuống cuối thay vì để họ thắng mọi trận hoà
+        CASE WHEN COALESCE(nvl.luong_gio, 0) > 0 THEN 0 ELSE 1 END ASC,
+        COALESCE(nvl.luong_gio, 0) ASC,
+        nv.ma_nhan_vien ASC
+      LIMIT ${toSafeInt(limit, 5)}
+    `,
+    [ky_luong_id]
+  );
+
+  // DECIMAL về từ mysql2 là chuỗi -> ép số để giao diện tính toán / so sánh được
+  return rows.map((r) => ({
+    ...r,
+    tong_gio: Number(r.tong_gio),
+    tong_ca: Number(r.tong_ca),
+    so_ngay_lam: Number(r.so_ngay_lam),
+    luong_gio: Number(r.luong_gio),
+  }));
+}
+
 // Số khoản chi tiết của từng loại, để giao diện hiển thị "N khoản" trên mỗi ô.
 // Dùng subquery tương quan thay vì JOIN để không phải thêm tham số cho ky_luong_id.
 const SO_KHOAN_SELECT = `
@@ -589,6 +639,7 @@ module.exports = {
   recalculateBangLuong,
   getBangCongSummary,
   getBangCongChiTiet,
+  getTopNhanVienNangNo,
   getBangLuongSummary,
   getBangLuongRow,
   getDieuChinh,

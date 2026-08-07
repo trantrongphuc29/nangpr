@@ -6,6 +6,10 @@ const router = express.Router();
 
 router.get("/bang-cong", requireAdmin, payrollController.getBangCong);
 router.get("/bang-cong/chi-tiet", requireAdmin, payrollController.getBangCongChiTiet);
+
+// Top nhân viên năng nổ trong tháng (dashboard)
+router.get("/nhan-vien-nang-no", requireAdmin, payrollController.getTopNhanVienNangNo);
+
 router.get("/bang-luong", requireAdmin, payrollController.getBangLuong);
 
 // Khoản điều chỉnh: thưởng / khấu trừ / tạm ứng (thêm-xóa chỉ khi "Chưa chốt")
