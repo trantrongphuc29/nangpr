@@ -926,7 +926,7 @@ const NhanVien = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-on-surface mb-1">Địa chỉ</label>
-                  <input type="text" className="input-field" value={staffDetailModal.data.dia_chi || ''} onChange={e => setStaffDetailModal({...staffDetailModal, data: {...staffDetailModal.data, dia_chi: e.target.value}})} />
+                  <input type="text" maxLength={100} className="input-field" value={staffDetailModal.data.dia_chi || ''} onChange={e => setStaffDetailModal({...staffDetailModal, data: {...staffDetailModal.data, dia_chi: e.target.value.slice(0, 100)}})} />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-on-surface mb-1">Trạng thái</label>
@@ -971,9 +971,9 @@ const NhanVien = () => {
                     <p className="text-[11px] font-medium text-muted mb-1">Trạng thái</p>
                     <StaffStatusBadge status={staffDetailModal.data.trang_thai} />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 min-w-0">
                     <p className="text-[11px] font-medium text-muted">Địa chỉ</p>
-                    <p className="text-sm font-medium mt-0.5">{staffDetailModal.data.dia_chi || '—'}</p>
+                    <p className="text-sm font-medium mt-0.5 [overflow-wrap:anywhere] max-h-24 overflow-y-auto">{staffDetailModal.data.dia_chi || '—'}</p>
                   </div>
                 </div>
 
