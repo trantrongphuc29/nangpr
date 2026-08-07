@@ -325,18 +325,18 @@ export default function BangCong() {
                       title="Nhấn để xem chi tiết công"
                       aria-label={`Xem chi tiết công của ${row.ten || ""}`}
                     >
-                      <td className="px-4 py-3 font-semibold">{row.ten}</td>
-                      <td className="px-4 py-3 text-center font-bold tabular-nums">{row.so_ngay_lam ?? 0}</td>
+                      <td className="px-4 py-4 font-semibold">{row.ten}</td>
+                      <td className="px-4 py-4 text-center font-bold tabular-nums">{row.so_ngay_lam ?? 0}</td>
                       {CAC_BUOI.map((buoi) => {
                         const n = Number(row[buoi.key] ?? 0);
                         return (
-                          <td key={buoi.key} className={`px-3 py-3 text-center tabular-nums ${n > 0 ? "font-semibold text-on-surface" : "text-muted/30"}`}>
+                          <td key={buoi.key} className={`px-3 py-4 text-center tabular-nums ${n > 0 ? "font-semibold text-on-surface" : "text-muted/30"}`}>
                             {n}
                           </td>
                         );
                       })}
-                      <td className="px-4 py-3 text-center font-bold">{row.tong_ca}</td>
-                      <td className="px-4 py-3 text-center font-bold">
+                      <td className="px-4 py-4 text-center font-bold">{row.tong_ca}</td>
+                      <td className="px-4 py-4 text-center font-bold">
                         {Number(row.tong_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}{" "}
                         <span className="text-muted text-xs">giờ</span>
                         {Number(row.tong_gio_quy_doi ?? row.tong_gio ?? 0) > Number(row.tong_gio || 0) && (

@@ -141,7 +141,7 @@ export default function Login() {
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-outlined text-lg">login</span>
+                  <span className="text-lg"></span>
                   Đăng nhập
                 </>
               )}
