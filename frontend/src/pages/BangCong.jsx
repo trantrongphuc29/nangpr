@@ -95,15 +95,14 @@ export default function BangCong() {
   const totals = data?.totals || {};
 
   const sortedRows = useMemo(() => {
-    return [...(data?.rows || [])].sort((a, b) => {
-      const caA = Number(a.tong_ca) || 0;
-      const caB = Number(b.tong_ca) || 0;
-      const hasA = caA > 0 ? 1 : 0;
-      const hasB = caB > 0 ? 1 : 0;
-      if (hasB !== hasA) return hasB - hasA;
-      if (caB !== caA) return caB - caA;
-      return (a.ten || "").localeCompare(b.ten || "", "vi");
-    });
+    return [...(data?.rows || [])]
+      .filter((r) => (Number(r.tong_ca) || 0) > 0)
+      .sort((a, b) => {
+        const caA = Number(a.tong_ca) || 0;
+        const caB = Number(b.tong_ca) || 0;
+        if (caB !== caA) return caB - caA;
+        return (a.ten || "").localeCompare(b.ten || "", "vi");
+      });
   }, [data?.rows]);
 
   useEffect(() => {
