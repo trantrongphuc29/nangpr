@@ -29,6 +29,8 @@
   --color-warning: #8B6914;
   --color-warning-bg: #FBF6EA;
   --color-warning-border: rgba(139, 105, 20, 0.15);
+  --color-amber: #B45309;
+  --color-purple: #6D4A9E;
   --color-info: #2E5EAA;
   --color-info-bg: #EEF3FB;
   --color-info-border: rgba(46, 94, 170, 0.15);
@@ -78,6 +80,8 @@ html.dark {
   --color-warning: #E3A83B;
   --color-warning-bg: rgba(227, 168, 59, 0.14);
   --color-warning-border: rgba(227, 168, 59, 0.25);
+  --color-amber: #E8A33D;
+  --color-purple: #A78BFA;
   --color-info: #6BA8F0;
   --color-info-bg: rgba(107, 168, 240, 0.14);
   --color-info-border: rgba(107, 168, 240, 0.25);

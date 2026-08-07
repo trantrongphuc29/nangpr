@@ -520,13 +520,44 @@ const DonHangRepository = {
     return rows;
   },
 
+  /**
+   * Gửi bar: kiểm tra tồn kho + trừ kho + đánh dấu đã gửi trong 1 transaction
+   * (nếu lỗi giữa chừng thì rollback toàn bộ, tránh lệch kho)
+   */
   sendToBar: async (ma_don_hang) => {
-    const [r] = await db.execute(
-      `UPDATE chitiethoadon SET so_luong_da_gui_bar = so_luong, trang_thai_mon = 'Dang lam'
-       WHERE ma_don_hang = ? AND so_luong > COALESCE(so_luong_da_gui_bar, 0)`,
-      [ma_don_hang]
-    );
-    return r.affectedRows;
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      const [rows] = await conn.execute(
+        `SELECT ct.* FROM chitiethoadon ct WHERE ct.ma_don_hang = ?`,
+        [ma_don_hang]
+      );
+      const items = mapItems(rows);
+
+      // Kiểm tra tồn kho + trừ kho cho từng món chưa gửi bar
+      for (const item of items) {
+        const soLuongChoBar = Number(item.so_luong) - Number(item.so_luong_da_gui_bar || 0);
+        if (soLuongChoBar > 0) {
+          await MonRepository.assertCanSell(item.ma_mon, soLuongChoBar, conn);
+          await MonRepository.deductStockByOrder(item.ma_mon, soLuongChoBar, conn);
+        }
+      }
+
+      const [r] = await conn.execute(
+        `UPDATE chitiethoadon SET so_luong_da_gui_bar = so_luong, trang_thai_mon = 'Dang lam'
+         WHERE ma_don_hang = ? AND so_luong > COALESCE(so_luong_da_gui_bar, 0)`,
+        [ma_don_hang]
+      );
+
+      await conn.commit();
+      return r.affectedRows;
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
   },
 
   getBarQueue: async () => {
@@ -546,95 +577,151 @@ const DonHangRepository = {
   },
 
   moveOrder: async (ma_don_hang, ma_ban_moi) => {
-    const order = await DonHangRepository.getById(ma_don_hang);
-    if (!order) throw new Error("Đơn không tồn tại");
-    if (order.trang_thai_thanh_toan === 'Da thanh toan') throw new Error("Đơn đã thanh toán, không thể chuyển");
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
 
-    const existing = await DonHangRepository.findActiveByBan(ma_ban_moi);
-    if (existing && existing.ma_don_hang !== ma_don_hang) {
-      throw new Error(`Bàn đích đang có khách (đơn #${existing.ma_don_hang})`);
-    }
-
-    const oldMaBan = order.ma_ban;
-    await db.execute(`UPDATE donhang SET ma_ban = ? WHERE ma_don_hang = ?`, [ma_ban_moi, ma_don_hang]);
-
-    if (oldMaBan) {
-      const [other] = await db.execute(
-        `SELECT ma_don_hang FROM donhang WHERE ma_ban = ? AND ${ACTIVE_ORDER} AND ma_don_hang != ? LIMIT 1`,
-        [oldMaBan, ma_don_hang]
+      const [orderRows] = await conn.execute(
+        `SELECT * FROM donhang WHERE ma_don_hang = ?`,
+        [ma_don_hang]
       );
-      if (!other.length) {
-        await db.execute(`UPDATE ban SET trang_thai = 'Trong' WHERE ma_ban = ?`, [oldMaBan]);
-      }
-    }
-    await db.execute(`UPDATE ban SET trang_thai = 'Co khach' WHERE ma_ban = ?`, [ma_ban_moi]);
+      const order = orderRows[0];
+      if (!order) throw new Error("Đơn không tồn tại");
+      if (order.trang_thai_thanh_toan === 'Da thanh toan') throw new Error("Đơn đã thanh toán, không thể chuyển");
 
-    return DonHangRepository.getOrderDetail(ma_don_hang);
+      const [existing] = await conn.execute(
+        `SELECT * FROM donhang WHERE ma_ban = ? AND ${ACTIVE_ORDER} ORDER BY ma_don_hang DESC LIMIT 1`,
+        [ma_ban_moi]
+      );
+      if (existing.length && existing[0].ma_don_hang !== ma_don_hang) {
+        throw new Error(`Bàn đích đang có khách (đơn #${existing[0].ma_don_hang})`);
+      }
+
+      const oldMaBan = order.ma_ban;
+      await conn.execute(`UPDATE donhang SET ma_ban = ? WHERE ma_don_hang = ?`, [ma_ban_moi, ma_don_hang]);
+
+      if (oldMaBan) {
+        const [other] = await conn.execute(
+          `SELECT ma_don_hang FROM donhang WHERE ma_ban = ? AND ${ACTIVE_ORDER} AND ma_don_hang != ? LIMIT 1`,
+          [oldMaBan, ma_don_hang]
+        );
+        if (!other.length) {
+          await conn.execute(`UPDATE ban SET trang_thai = 'Trong' WHERE ma_ban = ?`, [oldMaBan]);
+        }
+      }
+      await conn.execute(`UPDATE ban SET trang_thai = 'Co khach' WHERE ma_ban = ?`, [ma_ban_moi]);
+
+      await conn.commit();
+      return DonHangRepository.getOrderDetail(ma_don_hang);
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
   },
 
   cancelOrder: async (ma_don_hang) => {
-    const order = await DonHangRepository.getById(ma_don_hang);
-    if (!order) throw new Error("Đơn không tồn tại");
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
 
-    // Hoàn trả kho cho món đã gửi bar trước khi xoá
-    const items = await DonHangRepository.getItems(ma_don_hang);
-    for (const item of items) {
-      const daGui = Number(item.so_luong_da_gui_bar || 0);
-      if (daGui > 0) {
-        await MonRepository.deductStockByOrder(item.ma_mon, -daGui);
-      }
-    }
-
-    await db.execute(`DELETE FROM chitiethoadon WHERE ma_don_hang = ?`, [ma_don_hang]);
-    await db.execute(
-      `UPDATE donhang SET trang_thai_don = 'Da huy', trang_thai_thanh_toan = 'Da huy' WHERE ma_don_hang = ?`,
-      [ma_don_hang]
-    );
-    // Reset bàn về 'Trong' nếu không còn đơn active nào khác tại bàn đó
-    if (order.ma_ban) {
-      const [other] = await db.execute(
-        `SELECT ma_don_hang FROM donhang WHERE ma_ban = ? AND ${ACTIVE_ORDER} AND ma_don_hang != ? LIMIT 1`,
-        [order.ma_ban, ma_don_hang]
+      const [orderRows] = await conn.execute(
+        `SELECT * FROM donhang WHERE ma_don_hang = ?`,
+        [ma_don_hang]
       );
-      if (!other.length) {
-        await db.execute(`UPDATE ban SET trang_thai = 'Trong' WHERE ma_ban = ?`, [order.ma_ban]);
+      const order = orderRows[0];
+      if (!order) throw new Error("Đơn không tồn tại");
+
+      // Hoàn trả kho cho món đã gửi bar trước khi xoá
+      const [rows] = await conn.execute(
+        `SELECT ct.* FROM chitiethoadon ct WHERE ct.ma_don_hang = ?`,
+        [ma_don_hang]
+      );
+      const items = mapItems(rows);
+      for (const item of items) {
+        const daGui = Number(item.so_luong_da_gui_bar || 0);
+        if (daGui > 0) {
+          await MonRepository.deductStockByOrder(item.ma_mon, -daGui, conn);
+        }
       }
+
+      await conn.execute(`DELETE FROM chitiethoadon WHERE ma_don_hang = ?`, [ma_don_hang]);
+      await conn.execute(
+        `UPDATE donhang SET trang_thai_don = 'Da huy', trang_thai_thanh_toan = 'Da huy' WHERE ma_don_hang = ?`,
+        [ma_don_hang]
+      );
+      // Reset bàn về 'Trong' nếu không còn đơn active nào khác tại bàn đó
+      if (order.ma_ban) {
+        const [other] = await conn.execute(
+          `SELECT ma_don_hang FROM donhang WHERE ma_ban = ? AND ${ACTIVE_ORDER} AND ma_don_hang != ? LIMIT 1`,
+          [order.ma_ban, ma_don_hang]
+        );
+        if (!other.length) {
+          await conn.execute(`UPDATE ban SET trang_thai = 'Trong' WHERE ma_ban = ?`, [order.ma_ban]);
+        }
+      }
+
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
     }
   },
 
   checkout: async (ma_don_hang, hinh_thuc_thanh_toan = null) => {
-    const order = await DonHangRepository.getById(ma_don_hang);
-    if (!order) throw new Error("Đơn không tồn tại");
-    if (order.trang_thai_thanh_toan === "Da thanh toan") throw new Error("Đơn đã thanh toán");
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
 
-    const items = await DonHangRepository.getItems(ma_don_hang);
-    if (!items.length) throw new Error("Đơn trống");
-
-    // Chỉ trừ kho cho món chưa gửi bar
-    // Món đã gửi bar đã được kiểm tra + trừ kho lúc gửi
-    for (const item of items) {
-      const soLuongChuaGui = Number(item.so_luong) - Number(item.so_luong_da_gui_bar || 0);
-      if (soLuongChuaGui > 0) {
-        await MonRepository.assertCanSell(item.ma_mon, soLuongChuaGui);
-        await MonRepository.deductStockByOrder(item.ma_mon, soLuongChuaGui);
-      }
-    }
-
-    if (hinh_thuc_thanh_toan) {
-      await db.execute(
-        `UPDATE donhang SET trang_thai_don = 'Hoan thanh', trang_thai_thanh_toan = 'Da thanh toan', hinh_thuc_thanh_toan = ? WHERE ma_don_hang = ?`,
-        [hinh_thuc_thanh_toan, ma_don_hang]
-      );
-    } else {
-      await db.execute(
-        `UPDATE donhang SET trang_thai_don = 'Hoan thanh', trang_thai_thanh_toan = 'Da thanh toan' WHERE ma_don_hang = ?`,
+      const [orderRows] = await conn.execute(
+        `SELECT * FROM donhang WHERE ma_don_hang = ?`,
         [ma_don_hang]
       );
+      const order = orderRows[0];
+      if (!order) throw new Error("Đơn không tồn tại");
+      if (order.trang_thai_thanh_toan === "Da thanh toan") throw new Error("Đơn đã thanh toán");
+
+      // Chốt trạng thái thanh toán trước (khoá dòng donhang) để chặn thanh toán 2 lần đồng thời;
+      // nếu trừ kho phía sau lỗi thì rollback, đơn quay về 'Chua thanh toan'.
+      const [upd] = await conn.execute(
+        `UPDATE donhang SET trang_thai_don = 'Hoan thanh', trang_thai_thanh_toan = 'Da thanh toan',
+                hinh_thuc_thanh_toan = COALESCE(?, hinh_thuc_thanh_toan)
+         WHERE ma_don_hang = ? AND trang_thai_thanh_toan = 'Chua thanh toan'`,
+        [hinh_thuc_thanh_toan || null, ma_don_hang]
+      );
+      if (!upd.affectedRows) throw new Error("Đơn đã thanh toán");
+
+      const [itemRows] = await conn.execute(
+        `SELECT ma_mon, so_luong, so_luong_da_gui_bar FROM chitiethoadon WHERE ma_don_hang = ?`,
+        [ma_don_hang]
+      );
+      if (!itemRows.length) throw new Error("Đơn trống");
+
+      // Chỉ trừ kho cho món chưa gửi bar
+      // Món đã gửi bar đã được kiểm tra + trừ kho lúc gửi
+      for (const item of itemRows) {
+        const soLuongChuaGui = Number(item.so_luong) - Number(item.so_luong_da_gui_bar || 0);
+        if (soLuongChuaGui > 0) {
+          await MonRepository.assertCanSell(item.ma_mon, soLuongChuaGui, conn);
+          await MonRepository.deductStockByOrder(item.ma_mon, soLuongChuaGui, conn);
+        }
+      }
+
+      if (order.ma_ban) {
+        await conn.execute(`UPDATE ban SET trang_thai = 'Trong' WHERE ma_ban = ?`, [order.ma_ban]);
+      }
+
+      await conn.commit();
+      return DonHangRepository.getOrderDetail(ma_don_hang);
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
     }
-    if (order.ma_ban) {
-      await db.execute(`UPDATE ban SET trang_thai = 'Trong' WHERE ma_ban = ?`, [order.ma_ban]);
-    }
-    return DonHangRepository.getOrderDetail(ma_don_hang);
   },
 };
 

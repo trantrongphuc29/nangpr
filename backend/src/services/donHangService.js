@@ -3,7 +3,6 @@
  * Liên kết: donHangController → donHangService → donHangRepository
  * ============================================ */
 const DonHangRepository = require("../repositories/donHangRepository");
-const MonRepository = require("../repositories/monRepository");
 
 const DonHangService = {
   getBanPosList: async () => DonHangRepository.getBanPosList(),
@@ -57,15 +56,7 @@ const DonHangService = {
     const order = await DonHangRepository.getOrderDetail(id);
     if (!order) throw { status: 404, message: "Không tìm thấy đơn" };
 
-    // Kiểm tra tồn kho + trừ kho cho từng món chưa gửi bar
-    for (const item of order.items) {
-      const soLuongChoBar = Number(item.so_luong) - Number(item.so_luong_da_gui_bar || 0);
-      if (soLuongChoBar > 0) {
-        await MonRepository.assertCanSell(item.ma_mon, soLuongChoBar);
-        await MonRepository.deductStockByOrder(item.ma_mon, soLuongChoBar);
-      }
-    }
-
+    // Kiểm tra tồn kho + trừ kho + đánh dấu đã gửi diễn ra trong 1 transaction ở repository
     const n = await DonHangRepository.sendToBar(id);
     if (!n) throw { status: 400, message: "Không có món mới để gửi bar" };
     return DonHangRepository.getOrderDetail(id);
@@ -109,8 +100,15 @@ const DonHangService = {
     return DonHangRepository.moveOrder(parseInt(id, 10), parseInt(ma_ban_moi, 10));
   },
 
-  checkout: async (id, hinh_thuc_thanh_toan) =>
-    DonHangRepository.checkout(id, hinh_thuc_thanh_toan),
+  checkout: async (id, hinh_thuc_thanh_toan) => {
+    // Chỉ chấp nhận 2 hình thức thanh toán hợp lệ (hoặc null) — tránh dữ liệu rác làm sai báo cáo doanh thu.
+    // Chuỗi rỗng/undefined được coi như null (không ghi hình thức) như hành vi cũ.
+    const hinhThuc = hinh_thuc_thanh_toan || null;
+    if (hinhThuc && !["tien_mat", "chuyen_khoan"].includes(hinhThuc)) {
+      throw { status: 400, message: "Hình thức thanh toán không hợp lệ" };
+    }
+    return DonHangRepository.checkout(id, hinhThuc);
+  },
 };
 
 module.exports = DonHangService;

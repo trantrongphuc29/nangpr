@@ -266,14 +266,19 @@ const MonRepository = {
     return rows;
   },
 
-  /** Trừ kho khi bán món */
-  deductStockByOrder: async (ma_mon, so_luong_ban) => {
-    const conn = await db.getConnection();
+  /**
+   * Trừ kho khi bán món.
+   * Nếu truyền `conn` (đang nằm trong transaction của caller) thì dùng luôn connection đó
+   * và KHÔNG tự quản lý begin/commit/rollback — caller chịu trách nhiệm.
+   */
+  deductStockByOrder: async (ma_mon, so_luong_ban, conn = null) => {
+    const useConn = conn || (await db.getConnection());
+    const ownsTxn = !conn;
 
     try {
-      await conn.beginTransaction();
+      if (ownsTxn) await useConn.beginTransaction();
 
-      const [formulaItems] = await conn.execute(
+      const [formulaItems] = await useConn.execute(
         `SELECT ma_nguyen_lieu, dinh_luong 
          FROM congthuc 
          WHERE ma_mon = ?`,
@@ -283,7 +288,7 @@ const MonRepository = {
       for (const item of formulaItems) {
         const totalDeduct = item.dinh_luong * so_luong_ban;
 
-        await conn.execute(
+        await useConn.execute(
           `UPDATE nguyenlieu 
            SET ton_kho = ton_kho - ? 
            WHERE ma_nguyen_lieu = ?`,
@@ -291,19 +296,20 @@ const MonRepository = {
         );
       }
 
-      await conn.commit();
+      if (ownsTxn) await useConn.commit();
       return true;
     } catch (error) {
-      await conn.rollback();
+      if (ownsTxn) await useConn.rollback();
       throw error;
     } finally {
-      conn.release();
+      if (ownsTxn) useConn.release();
     }
   },
 
   /** Kiểm tra nguyên liệu có đủ để bán không */
-  assertCanSell: async (ma_mon, so_luong) => {
-    const [formulaItems] = await db.execute(
+  assertCanSell: async (ma_mon, so_luong, conn = null) => {
+    const q = conn || db;
+    const [formulaItems] = await q.execute(
       `SELECT 
           ct.ma_nguyen_lieu, 
           ct.dinh_luong, 
@@ -318,7 +324,7 @@ const MonRepository = {
     if (formulaItems.length === 0) return;
 
     // Kiểm tra nguyên liệu hết hạn — dùng MySQL CURDATE() để đồng bộ với SQL check
-    const [expiredRows] = await db.execute(
+    const [expiredRows] = await q.execute(
       `SELECT nl.ten_nguyen_lieu, nl.han_su_dung
        FROM congthuc ct
        JOIN nguyenlieu nl ON ct.ma_nguyen_lieu = nl.ma_nguyen_lieu
