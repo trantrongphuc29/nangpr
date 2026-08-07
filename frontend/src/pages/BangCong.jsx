@@ -300,19 +300,32 @@ export default function BangCong() {
                   ))}
                   <th className="px-4 py-3 text-center">Tổng số ca</th>
                   <th className="px-4 py-3 text-center">Tổng giờ làm</th>
-                  <th className="px-4 py-3 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline">
                 {sortedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5 + CAC_BUOI.length} className="px-4 py-12 text-center text-muted">
+                    <td colSpan={4 + CAC_BUOI.length} className="px-4 py-12 text-center text-muted">
                       Không có dữ liệu cho bộ lọc này.
                     </td>
                   </tr>
                 ) : (
                   sortedRows.map((row) => (
-                    <tr key={row.ma_nhan_vien} className="hover:bg-primary/5 transition-colors">
+                    <tr
+                      key={row.ma_nhan_vien}
+                      className="hover:bg-primary/5 transition-colors cursor-pointer"
+                      onClick={() => handleViewDetail(row)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleViewDetail(row);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      title="Nhấn để xem chi tiết công"
+                      aria-label={`Xem chi tiết công của ${row.ten || ""}`}
+                    >
                       <td className="px-4 py-3 font-semibold">{row.ten}</td>
                       <td className="px-4 py-3 text-center font-bold tabular-nums">{row.so_ngay_lam ?? 0}</td>
                       {CAC_BUOI.map((buoi) => {
@@ -332,17 +345,6 @@ export default function BangCong() {
                             ={Number(row.tong_gio_quy_doi || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} giờ quy đổi
                           </span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleViewDetail(row)}
-                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center transition-all hover:bg-primary/10"
-                          style={{ color: "var(--color-primary)" }}
-                          title="Xem chi tiết"
-                          aria-label={`Xem chi tiết công của ${row.ten || ""}`}
-                        >
-                          <span className="material-symbols-outlined text-sm">visibility</span>
-                        </button>
                       </td>
                     </tr>
                   ))

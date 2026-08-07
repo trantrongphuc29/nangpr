@@ -53,7 +53,11 @@ function DieuChinhCell({ value, soKhoan, mau, onOpen, readOnly }) {
   return (
     <button
       type="button"
-      onClick={onOpen}
+      // Chặn nổi bọt: cả dòng đã có onClick mở chi tiết lương
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen(e);
+      }}
       className="w-full max-w-[150px] ml-auto flex flex-col items-end gap-0.5 px-2.5 py-1.5 rounded-lg border border-transparent transition-all hover:border-outline hover:bg-primary/5"
       title={readOnly ? "Xem lịch sử các khoản" : "Bấm để thêm / xóa từng khoản"}
     >
@@ -488,13 +492,12 @@ export default function BangLuong() {
                   <th className="px-4 py-3 text-center">Khấu trừ</th>
                   <th className="px-4 py-3 text-center">Tạm ứng</th>
                   <th className="px-4 py-3 text-center">Lương thực nhận</th>
-                  <th className="px-4 py-3 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline">
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="px-4 py-12 text-center text-muted">
+                    <td colSpan={10} className="px-4 py-12 text-center text-muted">
                       Không có dữ liệu cho bộ lọc này.
                     </td>
                   </tr>
@@ -504,8 +507,19 @@ export default function BangLuong() {
                     return (
                     <tr
                       key={r.ma_nhan_vien}
-                      className="transition-colors hover:bg-primary/5"
+                      className="transition-colors hover:bg-primary/5 cursor-pointer"
                       style={chuaCauHinhLuong ? { backgroundColor: "color-mix(in srgb, var(--color-warning) 10%, transparent)" } : undefined}
+                      onClick={() => handleViewDetail(r)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleViewDetail(r);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      title="Nhấn để xem chi tiết lương"
+                      aria-label={`Xem chi tiết lương của ${r.ten || ""}`}
                     >
                       <td className="px-4 py-3 font-semibold">
                         <div className="flex items-center gap-1.5">
@@ -556,17 +570,6 @@ export default function BangLuong() {
                         {formatMoney(r.luong_thuc_nhan)}
                       </td>
 
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleViewDetail(r)}
-                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center transition-all hover:bg-primary/10"
-                          style={{ color: "var(--color-primary)" }}
-                          title="Xem chi tiết"
-                          aria-label={`Xem chi tiết lương của ${r.ten || ""}`}
-                        >
-                          <span className="material-symbols-outlined text-sm">visibility</span>
-                        </button>
-                      </td>
                     </tr>
                     );
                   })
@@ -585,7 +588,6 @@ export default function BangLuong() {
                     <td className="px-2 py-3 text-right">{formatMoney(footTotals.khau_tru)}</td>
                     <td className="px-2 py-3 text-right">{formatMoney(footTotals.tam_ung)}</td>
                     <td className="px-4 py-3 text-right text-primary">{formatMoney(footTotals.luong_thuc_nhan)}</td>
-                    <td className="px-4 py-3"></td>
                   </tr>
                 </tfoot>
               )}

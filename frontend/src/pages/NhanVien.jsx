@@ -586,8 +586,9 @@ const NhanVien = () => {
     .schedule-board {
       display: grid;
       width: 100%;
-      height: 100%;
-      min-height: 0;
+      /* Cao theo nội dung: ca nhiều nhân viên thì cao hơn, ca ít thì gọn lại */
+      height: auto;
+      align-content: start;
       border: 1px solid color-mix(in srgb, var(--color-outline, #ccc) 40%, transparent);
     }
     /* Hàng chỉ là lớp bọc logic — trên màn hình grid vẫn nhận trực tiếp các ô */
@@ -609,7 +610,8 @@ const NhanVien = () => {
       font-size: clamp(0.625rem, 1vw, 0.75rem);
     }
     .schedule-board .schedule-body {
-      overflow: auto;
+      /* Không cuộn trong ô nữa — ô tự cao lên theo số nhân viên */
+      overflow: visible;
     }
     .schedule-day-card {
       transition: border-color 0.15s ease;
@@ -630,7 +632,6 @@ const NhanVien = () => {
         table-layout: fixed !important;
         width: 100% !important;
         border-collapse: collapse !important;
-        border: 1.5pt solid black !important;
       }
       .schedule-board .schedule-row {
         display: table-row !important;
@@ -656,14 +657,62 @@ const NhanVien = () => {
         text-align: center !important;
         vertical-align: middle !important;
       }
+      /* Ô đã là table-cell nên mất flex-column: ép các dòng con xuống hàng riêng
+         (nếu không "Ca Tối 1" và "18:00-20:30" sẽ dính liền nhau) */
+      .schedule-board .schedule-head > *,
+      .schedule-board .schedule-shift > * {
+        display: block !important;
+        margin: 0 !important;
+      }
+      /* ...nhưng vẫn giữ ẩn các phần tử print:hidden (icon ca) */
+      .schedule-board .print\\:hidden {
+        display: none !important;
+      }
+      /* overflow:hidden/auto của card & vùng cuộn khiến trình duyệt cắt cụt
+         nội dung tại ranh giới trang thay vì đẩy nguyên hàng sang trang sau */
+      .card,
+      .overflow-hidden,
+      .overflow-auto,
+      .overflow-x-auto,
+      .overflow-y-auto,
+      .custom-scrollbar {
+        overflow: visible !important;
+      }
+      /* Bỏ chiều cao cố định của khung layout để nội dung trải dài nhiều trang */
+      html, body, #root {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+      }
       .schedule-board .schedule-cell,
       .schedule-day-card {
         border: 1pt solid black !important;
         break-inside: avoid;
       }
+      /* Viền ngoài do các ô vẽ; bỏ viền của chính bảng để không còn
+         khung rỗng thừa ở cuối trang khi hàng bị đẩy sang trang sau */
+      .schedule-board,
+      .schedule-board.print-table {
+        border: none !important;
+      }
+      /* Nén nội dung để cả tuần vừa một trang ngang */
+      .schedule-board {
+        font-size: 9pt !important;
+      }
+      .schedule-board .schedule-cell {
+        padding: 2pt 3pt !important;
+      }
       .assignee-pill {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 1pt 3pt !important;
+        border-radius: 3pt !important;
+      }
+      .assignee-name {
+        font-size: 9pt !important;
+        line-height: 1.2 !important;
       }
       .schedule-day-board {
         display: grid !important;
@@ -696,8 +745,8 @@ const NhanVien = () => {
           </div>
         </div>
 
-        {/* Lịch phân công — co giãn theo kích thước màn hình */}
-        <section className="card overflow-hidden print:border print:border-black w-full min-w-0 flex-1 flex flex-col min-h-0 print:flex-none">
+        {/* Lịch phân công — cao theo nội dung, không ép đầy màn hình */}
+        <section className="card overflow-hidden print:border print:border-black w-full min-w-0 flex flex-col min-h-0 print:flex-none">
           <div className="print:hidden p-3 md:p-4 border-b border-outline shrink-0">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
@@ -764,12 +813,13 @@ const NhanVien = () => {
           ) : (
             <div className="flex-1 min-h-0 w-full p-2 md:p-3 print:p-0">
               {viewMode === "week" ? (
-                <div className="h-full overflow-x-auto custom-scrollbar print:overflow-visible">
+                <div className="overflow-x-auto custom-scrollbar print:overflow-visible">
                 <div
-                  className="schedule-board print-table h-full min-w-[880px] print:min-w-0"
+                  className="schedule-board print-table min-w-[880px] print:min-w-0"
                   style={{
                     gridTemplateColumns: "minmax(3rem, 5%) repeat(7, minmax(0, 1fr))",
-                    gridTemplateRows: `minmax(2.25rem, auto) repeat(${shiftsConfig.length}, minmax(0, 1fr))`,
+                    // Mỗi ca cao theo số nhân viên được phân, tự giãn khi thêm người
+                    gridTemplateRows: `minmax(2.25rem, auto) repeat(${shiftsConfig.length}, minmax(3.25rem, auto))`,
                   }}
                 >
                   <div className="schedule-row schedule-header-row">
@@ -819,7 +869,7 @@ const NhanVien = () => {
                             key={idx}
                             className={`schedule-cell schedule-body px-1.5 py-1.5 ${dayStr === today ? "bg-primary/5" : ""}`}
                           >
-                            <div className="schedule-assignees flex flex-wrap gap-1 justify-start content-start h-full min-h-0 items-start text-left">
+                            <div className="schedule-assignees flex flex-wrap gap-1 justify-start content-start items-start text-left">
                               {renderAssigneeList(shift.id, dayStr)}
                             </div>
                           </div>
@@ -830,20 +880,20 @@ const NhanVien = () => {
                 </div>
                 </div>
               ) : (
-                <div className="flex flex-col h-full min-h-0 gap-3">
+                <div className="flex flex-col min-h-0 gap-3">
                   {holidays[toYmd(filterDate)] && (
                     <div className="shrink-0 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-warning" style={{ backgroundColor: "color-mix(in srgb, var(--color-warning) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--color-warning) 30%, transparent)" }}>
                       <span className="material-symbols-outlined text-lg">celebration</span>
                       Ngày lễ{holidays[toYmd(filterDate)].ten ? `: ${holidays[toYmd(filterDate)].ten}` : ""} — lương ×{holidays[toYmd(filterDate)].he_so}
                     </div>
                   )}
-                <div className="schedule-day-board print-table flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 auto-rows-fr">
+                <div className="schedule-day-board print-table min-h-0 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 items-start">
                   {shiftsConfig.map((shift) => {
                     const count = getAssignmentsForCell(shift.id, filterDate).length;
                     return (
                       <div
                         key={shift.id}
-                        className="schedule-day-card flex flex-col rounded-xl border border-outline/40 overflow-hidden min-h-[10rem]"
+                        className="schedule-day-card flex flex-col rounded-xl border border-outline/40 overflow-hidden"
                         style={{ borderLeft: `3px solid ${shift.color}`, background: `color-mix(in srgb, ${shift.color} 4%, transparent)` }}
                       >
                         <div className="px-3 py-3 border-b border-outline/30 flex items-center gap-3 shrink-0" style={{ background: `color-mix(in srgb, ${shift.color} 9%, transparent)` }}>
@@ -856,7 +906,7 @@ const NhanVien = () => {
                             {count} NV
                           </span>
                         </div>
-                        <div className="flex-1 p-3 schedule-assignees flex flex-wrap gap-2 justify-start content-start items-start text-left min-h-[5rem]">
+                        <div className="p-3 schedule-assignees flex flex-wrap gap-2 justify-start content-start items-start text-left">
                           {count === 0 ? (
                             <p className="text-sm text-muted w-full py-2">Chưa phân ca</p>
                           ) : null}
