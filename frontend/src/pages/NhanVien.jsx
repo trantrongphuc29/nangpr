@@ -590,6 +590,10 @@ const NhanVien = () => {
       min-height: 0;
       border: 1px solid color-mix(in srgb, var(--color-outline, #ccc) 40%, transparent);
     }
+    /* Hàng chỉ là lớp bọc logic — trên màn hình grid vẫn nhận trực tiếp các ô */
+    .schedule-board .schedule-row {
+      display: contents;
+    }
     .schedule-board .schedule-cell {
       min-width: 0;
       min-height: 0;
@@ -619,13 +623,47 @@ const NhanVien = () => {
         border: none !important;
         height: auto !important;
       }
+      /* Khi in: chuyển grid -> table thật để trình duyệt ngắt trang theo hàng,
+         không cắt đôi ô như khi dùng CSS grid */
       .schedule-board {
+        display: table !important;
+        table-layout: fixed !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
         border: 1.5pt solid black !important;
+      }
+      .schedule-board .schedule-row {
+        display: table-row !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      /* Lặp lại hàng tiêu đề (thứ/ngày) ở đầu mỗi trang in */
+      .schedule-board .schedule-header-row {
+        display: table-header-group !important;
+        break-inside: avoid !important;
+      }
+      .schedule-board .schedule-cell {
+        display: table-cell !important;
+        vertical-align: top !important;
+        height: auto !important;
+        width: auto !important;
+      }
+      .schedule-board .schedule-row > .schedule-cell:first-child {
+        width: 9% !important;
+      }
+      .schedule-board .schedule-head,
+      .schedule-board .schedule-shift {
+        text-align: center !important;
+        vertical-align: middle !important;
       }
       .schedule-board .schedule-cell,
       .schedule-day-card {
         border: 1pt solid black !important;
         break-inside: avoid;
+      }
+      .assignee-pill {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
       .schedule-day-board {
         display: grid !important;
@@ -734,6 +772,7 @@ const NhanVien = () => {
                     gridTemplateRows: `minmax(2.25rem, auto) repeat(${shiftsConfig.length}, minmax(0, 1fr))`,
                   }}
                 >
+                  <div className="schedule-row schedule-header-row">
                   <div className="schedule-cell schedule-head px-1 py-2 flex items-center justify-center font-semibold uppercase tracking-wide">
                     Ca
                   </div>
@@ -762,8 +801,9 @@ const NhanVien = () => {
                       </div>
                     );
                   })}
+                  </div>
                   {shiftsConfig.map((shift) => (
-                    <React.Fragment key={shift.id}>
+                    <div className="schedule-row" key={shift.id}>
                       <div
                         className="schedule-cell schedule-shift px-1 py-2 flex flex-col items-center justify-center text-center gap-0.5 print:bg-gray-50"
                         style={{ background: `color-mix(in srgb, ${shift.color} 10%, transparent)` }}
@@ -785,7 +825,7 @@ const NhanVien = () => {
                           </div>
                         );
                       })}
-                    </React.Fragment>
+                    </div>
                   ))}
                 </div>
                 </div>
