@@ -48,7 +48,7 @@
   --color-on-surface-variant: #5F646D;
   --color-error-container: #FDF2F1;
   --color-on-error: #FFFFFF;
-  --sidebar-bg: #FAFAF8;
+  --sidebar-bg: #FFFFFF;
   --sidebar-active-bg: rgba(47, 93, 80, 0.08);
   --sidebar-active-border: var(--color-primary);
 }
@@ -99,7 +99,7 @@ html.dark {
   --color-on-surface-variant: #A2A6AD;
   --color-error-container: rgba(226, 123, 108, 0.16);
   --color-on-error: #140D0B;
-  --sidebar-bg: #101216;
+  --sidebar-bg: #1D2025;
   --sidebar-active-bg: rgba(79, 180, 120, 0.16);
   --sidebar-active-border: var(--color-primary);
 }

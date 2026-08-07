@@ -42,8 +42,7 @@ export default function Sidebar({ open, setOpen }) {
         style={{ backgroundColor: "var(--sidebar-bg)" }}
       >
         {/* Mobile close */}
-        <div className="flex justify-between items-center px-4 py-3 lg:hidden border-b border-outline">
-          <span className="text-xs font-medium text-muted uppercase tracking-wider">Menu</span>
+        <div className="flex justify-end items-center px-4 py-3 lg:hidden">
           <button
             onClick={() => setOpen(false)}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/8 text-on-surface-variant"
@@ -53,11 +52,11 @@ export default function Sidebar({ open, setOpen }) {
         </div>
 
         {/* Logo */}
-        <div className="flex flex-col items-center gap-2 px-5 pt-6 pb-5 border-b border-outline">
+        <div className="shrink-0 flex items-center justify-center px-5 pt-5 pb-4">
           <img
             src={`${process.env.PUBLIC_URL}/logoNangPR.svg`}
             alt="Nắng PR"
-            className="h-16 w-auto object-contain"
+            className="h-14 w-auto object-contain"
           />
         </div>
 
