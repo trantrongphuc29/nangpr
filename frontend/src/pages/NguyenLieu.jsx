@@ -38,7 +38,22 @@ const EMPTY_CRUD = {
   don_vi_nhap: 'kg',
   dung_tich_san_pham: 1000,
   nguong_canh_bao: 1000,
+  han_su_dung: '',
   ghi_chu: '',
+};
+
+/* Chuyển hạn sử dụng (chuỗi hoặc Date từ MySQL) về dạng yyyy-MM-dd để điền vào input date */
+const toYmd = (val) => {
+  if (!val) return '';
+  if (typeof val === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}/.test(val)) return val.slice(0, 10);
+  }
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 };
 
 /* Lấy ngày giờ hôm nay theo giờ Việt Nam cho datetime-local (YYYY-MM-DDTHH:MM) */
@@ -52,15 +67,20 @@ const getHomNay = () => {
   return `${y}-${m}-${day}T${h}:${min}`;
 };
 
-const EMPTY_IMPORT = {
+/* Một dòng nguyên liệu trong phiếu nhập nhiều mặt hàng */
+const createEmptyImportLine = () => ({
   ma_nguyen_lieu: '',
-  nha_cung_cap: '',
-  ngay_nhap: getHomNay(),
   so_luong: '',
   gia_nhap: '',
   han_su_dung: '',
+});
+
+/* Thông tin chung phiếu nhập (chung cho tất cả dòng) */
+const EMPTY_IMPORT_HEADER = () => ({
+  nha_cung_cap: '',
+  ngay_nhap: getHomNay(),
   ghi_chu: '',
-};
+});
 
 
 
@@ -116,8 +136,8 @@ export default function NguyenLieu() {
   const [showCrudModal, setShowCrudModal] = useState(false);
   const [showImportDrawer, setShowImportDrawer] = useState(false);
   const [crudData, setCrudData] = useState(EMPTY_CRUD);
-  const [importData, setImportData] = useState(EMPTY_IMPORT);
-  const [importPresetId, setImportPresetId] = useState(null);
+  const [importLines, setImportLines] = useState(() => [createEmptyImportLine()]);
+  const [importHeader, setImportHeader] = useState(() => EMPTY_IMPORT_HEADER());
   const [showDiscardHistory, setShowDiscardHistory] = useState(false);
   const [discardHistory, setDiscardHistory] = useState([]);
   const [discardLoading, setDiscardLoading] = useState(false);
@@ -129,7 +149,7 @@ export default function NguyenLieu() {
     return discardHistory.slice(start, start + DISCARD_PER_PAGE);
   }, [discardHistory, discardPage]);
   const [discardDetail, setDiscardDetail] = useState(null);
-  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [showDiscardSection, setShowDiscardSection] = useState(false);
   const [discardItem, setDiscardItem] = useState(null);
   const [discardQty, setDiscardQty] = useState("");
   const [discardReason, setDiscardReason] = useState("");
@@ -255,16 +275,15 @@ const categories = useMemo(() => {
     };
   }, [list, stats]);
 
-  const selectedImportItemDetails = useMemo(() => {
-    if (!importData.ma_nguyen_lieu) return null;
-    return list.find((item) => String(item.ma_nguyen_lieu) === String(importData.ma_nguyen_lieu));
-  }, [list, importData.ma_nguyen_lieu]);
+  const getImportLineDetails = (line) => {
+    if (!line?.ma_nguyen_lieu) return null;
+    return list.find((item) => String(item.ma_nguyen_lieu) === String(line.ma_nguyen_lieu)) || null;
+  };
 
-  const actualVolumeToImport = useMemo(() => {
-    if (!selectedImportItemDetails) return 0;
-    const capacity = Number(selectedImportItemDetails.dung_tich_san_pham || 1);
-    return (Number(importData.so_luong) || 0) * capacity;
-  }, [importData.so_luong, selectedImportItemDetails]);
+  const editingItem = useMemo(() => {
+    if (!crudData.ma_nguyen_lieu) return null;
+    return list.find((item) => String(item.ma_nguyen_lieu) === String(crudData.ma_nguyen_lieu)) || null;
+  }, [list, crudData.ma_nguyen_lieu]);
 
   const filteredList = useMemo(() => {
     const searchClean = removeVietnameseTones(searchTerm);
@@ -307,7 +326,9 @@ const categories = useMemo(() => {
     return sortedList.slice(startIndex, startIndex + itemsPerPage);
   }, [sortedList, currentPage]);
 
-  const importTotal = useMemo(() => (Number(importData.so_luong) || 0) * (Number(importData.gia_nhap) || 0), [importData.so_luong, importData.gia_nhap]);
+  const importTotal = useMemo(() => {
+    return importLines.reduce((sum, line) => sum + (Number(line.so_luong) || 0) * (Number(line.gia_nhap) || 0), 0);
+  }, [importLines]);
 
   const requestSort = (key) => {
     setSortConfig((prev) => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }));
@@ -325,7 +346,14 @@ const categories = useMemo(() => {
     return `${ton.toLocaleString('vi-VN')} ${labelUnit}`;
   };
 
-  const openCreateModal = () => { setCrudData(EMPTY_CRUD); setShowCrudModal(true); };
+  const openCreateModal = () => {
+    setCrudData(EMPTY_CRUD);
+    setShowDiscardSection(false);
+    setDiscardItem(null);
+    setDiscardQty("");
+    setDiscardReason("");
+    setShowCrudModal(true);
+  };
 
   const openEditModal = (item) => {
     setCrudData({
@@ -336,16 +364,31 @@ const categories = useMemo(() => {
       don_vi_nhap: item.don_vi_nhap || 'kg',
       dung_tich_san_pham: item.dung_tich_san_pham || 1,
       nguong_canh_bao: item.nguong_canh_bao ?? 0,
+      han_su_dung: toYmd(item.han_su_dung),
       ghi_chu: item.ghi_chu || '',
     });
+    setShowDiscardSection(false);
+    setDiscardItem(null);
+    setDiscardQty("");
+    setDiscardReason("");
     setShowCrudModal(true);
   };
 
   const openImportDrawer = (presetId = null) => {
-    setImportData({ ...EMPTY_IMPORT, ma_nguyen_lieu: presetId ? String(presetId) : '', ngay_nhap: getHomNay() });
-    setImportPresetId(presetId);
+    setImportLines(presetId
+      ? [{ ma_nguyen_lieu: String(presetId), so_luong: '', gia_nhap: '', han_su_dung: '' }]
+      : [createEmptyImportLine()]);
+    setImportHeader(EMPTY_IMPORT_HEADER());
     setShowImportDrawer(true);
   };
+
+  const updateImportLine = (index, field, value) => {
+    setImportLines((prev) => prev.map((line, i) => (i === index ? { ...line, [field]: value } : line)));
+  };
+
+  const addImportLine = () => setImportLines((prev) => [...prev, createEmptyImportLine()]);
+
+  const removeImportLine = (index) => setImportLines((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
 
   const handleSaveIngredient = async () => {
     if (!crudData.ten_nguyen_lieu?.trim()) return toast('Tên nguyên liệu không được trống.', 'error');
@@ -372,6 +415,7 @@ const categories = useMemo(() => {
         don_vi_nhap: crudData.don_vi_nhap,
         dung_tich_san_pham: finalCapacity,
         nguong_canh_bao: parseFloat(crudData.nguong_canh_bao) || 0,
+        han_su_dung: crudData.han_su_dung || null,
         ghi_chu: crudData.ghi_chu?.trim() || null,
       };
 
@@ -391,39 +435,35 @@ const categories = useMemo(() => {
 
   const handleImport = async (e) => {
     e.preventDefault();
-    if (!importData.ma_nguyen_lieu) return toast('Vui lòng chọn nguyên liệu nhập kho.', 'error');
-    if (Number(importData.so_luong) <= 0) return toast('Số lượng nhập phải lớn hơn 0.', 'error');
-    if (Number(importData.gia_nhap) < 0) return toast('Giá nhập phải >= 0.', 'error');
+    const filledLines = importLines.filter((line) => line.ma_nguyen_lieu);
+    if (filledLines.length === 0) return toast('Vui lòng chọn ít nhất 1 nguyên liệu để nhập kho.', 'error');
+    if (importLines.some((line) => !line.ma_nguyen_lieu && (String(line.so_luong || '').trim() || String(line.gia_nhap || '').trim() || line.han_su_dung))) {
+      return toast('Có dòng đã nhập số liệu nhưng chưa chọn nguyên liệu — vui lòng chọn hoặc xóa dòng đó.', 'error');
+    }
+    for (const line of filledLines) {
+      if (!line.han_su_dung) return toast('Vui lòng nhập hạn sử dụng cho tất cả các lô hàng.', 'error');
+      if (Number(line.so_luong) <= 0) return toast('Số lượng nhập phải lớn hơn 0.', 'error');
+      if (Number(line.gia_nhap) < 0) return toast('Giá nhập phải >= 0.', 'error');
+    }
     try {
       await nlService.importStock({
-        items: [{ 
-          ma_nguyen_lieu: parseInt(importData.ma_nguyen_lieu, 10), 
-          so_luong: parseFloat(importData.so_luong), 
-          gia_nhap: parseFloat(importData.gia_nhap),
-          han_su_dung: importData.han_su_dung || null,
-        }],
-        nha_cung_cap: importData.nha_cung_cap?.trim() || 'Đại lý tự do',
-        ngay_nhap: importData.ngay_nhap,
-        ghi_chu: importData.ghi_chu?.trim() || 'Nhập kho hệ thống',
+        items: filledLines.map((line) => ({
+          ma_nguyen_lieu: parseInt(line.ma_nguyen_lieu, 10),
+          so_luong: parseFloat(line.so_luong),
+          gia_nhap: parseFloat(line.gia_nhap || 0),
+          han_su_dung: line.han_su_dung || null,
+        })),
+        nha_cung_cap: importHeader.nha_cung_cap?.trim() || 'Đại lý tự do',
+        ngay_nhap: importHeader.ngay_nhap,
+        ghi_chu: importHeader.ghi_chu?.trim() || 'Nhập kho hệ thống',
       });
       toast('Nhập kho thành công.');
       setShowImportDrawer(false);
-      setImportData(EMPTY_IMPORT);
-      setImportPresetId(null);
+      setImportLines([createEmptyImportLine()]);
+      setImportHeader(EMPTY_IMPORT_HEADER());
       await loadData();
     } catch (err) {
       toast(err.response?.data?.message || 'Lỗi nhập kho.', 'error');
-    }
-  };
-
-  const handleToggleStatus = async (item) => {
-    const newStatus = Number(item.trang_thai) === 0 ? 1 : 0;
-    try {
-      await nlService.setTrangThaiNguyenLieu(item.ma_nguyen_lieu, newStatus);
-      toast(newStatus ? 'Đã kích hoạt nguyên liệu.' : 'Đã ngưng sử dụng nguyên liệu.');
-      await loadData();
-    } catch (err) {
-      toast(err.response?.data?.message || 'Lỗi cập nhật trạng thái.', 'error');
     }
   };
 
@@ -443,8 +483,15 @@ const categories = useMemo(() => {
     }
   };
 
-  const handleDiscard = async (e) => {
-    e.preventDefault();
+  const openDiscardSection = () => {
+    if (!editingItem) return;
+    setDiscardItem(editingItem);
+    setDiscardQty(String(editingItem.so_luong_ton));
+    setDiscardReason("");
+    setShowDiscardSection(true);
+  };
+
+  const handleDiscard = async () => {
     if (!discardItem) return;
     const qty = Number(discardQty);
     if (qty <= 0) return toast("Số lượng huỷ phải lớn hơn 0.", "error");
@@ -456,10 +503,12 @@ const categories = useMemo(() => {
         ly_do: discardReason.trim(),
       });
       toast(result.message || "Đã huỷ hàng thành công.");
-      setShowDiscardModal(false);
+      setShowDiscardSection(false);
       setDiscardItem(null);
       setDiscardQty("");
       setDiscardReason("");
+      setShowCrudModal(false);
+      setCrudData(EMPTY_CRUD);
       await loadData();
     } catch (err) {
       toast(err.response?.data?.message || "Không thể huỷ hàng.", "error");
@@ -467,10 +516,12 @@ const categories = useMemo(() => {
   };
 
   const handleDelete = async (id, name) => {
-    if (!(await confirm(`Xóa vĩnh viễn nguyên liệu "${name}"?`, { danger: true, confirmLabel: "Xóa" }))) return;
+    if (!(await confirm(`Xóa vĩnh viễn nguyên liệu "${name}"?\nLịch sử nhập kho và hủy hàng của nguyên liệu này cũng sẽ bị xóa theo.`, { danger: true, confirmLabel: "Xóa" }))) return;
     try {
       await nlService.deleteNguyenLieu(id);
       toast('Đã xóa nguyên liệu.');
+      setShowCrudModal(false);
+      setCrudData(EMPTY_CRUD);
       await loadData();
     } catch (err) {
       toast(err.response?.data?.message || 'Không thể xóa nguyên liệu.', 'error');
@@ -489,9 +540,10 @@ const categories = useMemo(() => {
           <h2 className="text-3xl font-bold text-on-surface">Quản lý nguyên liệu</h2>
           <p className="text-sm text-muted">Khai báo nguyên liệu, theo dõi tồn kho và nhập hàng</p>
         </div>
-        <div className="flex gap-2 shrink-0 self-start">
-          <button type="button" onClick={handleOpenDiscardHistory} className="btn-outline !py-2 !px-3 !text-xs"><span className="material-symbols-outlined text-base">history</span>Lịch sử hủy</button>
+        <div className="flex flex-wrap gap-2 shrink-0 self-start">
           <button type="button" onClick={openCreateModal} className="btn-primary !py-2 !px-3 !text-xs"><span className="material-symbols-outlined text-base">add</span>Thêm nguyên liệu</button>
+          <button type="button" onClick={() => openImportDrawer()} className="btn-primary !py-2 !px-3 !text-xs" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 82%, #000)" }}><span className="material-symbols-outlined text-base">add_shopping_cart</span>Nhập nguyên liệu</button>
+          <button type="button" onClick={handleOpenDiscardHistory} className="btn-outline !py-2 !px-3 !text-xs"><span className="material-symbols-outlined text-base">history</span>Lịch sử hủy</button>
         </div>
       </div>
 
@@ -524,7 +576,6 @@ const categories = useMemo(() => {
               <option value="con_han">Còn hạn</option>
               <option value="sap_het_han">Sắp hết hạn</option>
               <option value="het_han">Hết hạn</option>
-              <option value="khong_co_han">Không có hạn</option>
             </select>
           </div>
         
@@ -549,15 +600,14 @@ const categories = useMemo(() => {
                 </th>
                 <th className="px-4 py-3">Đơn vị nhập</th>
                 <th className="px-4 py-3">Trạng thái Và Hạn sử dụng</th>
-                <th className="px-4 py-3 ">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline">
               {paginatedList.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-muted">Không có nguyên liệu phù hợp bộ lọc.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted">Không có nguyên liệu phù hợp bộ lọc.</td></tr>
               ) : (
                 paginatedList.map((item) => (
-                  <tr key={item.ma_nguyen_lieu} className={`hover:bg-primary/5 transition-colors ${Number(item.trang_thai) === 0 ? 'opacity-50' : ''} ${item.trang_thai_han === 'het_han' ? 'bg-error-container/10' : item.trang_thai_han === 'sap_het_han' ? 'bg-warning-bg/10' : ''}`}>
+                  <tr key={item.ma_nguyen_lieu} title="Bấm vào dòng để sửa / hủy hàng / xóa" onClick={() => openEditModal(item)} className={`cursor-pointer hover:bg-primary/5 transition-colors ${Number(item.trang_thai) === 0 ? 'opacity-50' : ''} ${item.trang_thai_han === 'het_han' ? 'bg-error-container/10' : item.trang_thai_han === 'sap_het_han' ? 'bg-warning-bg/10' : ''}`}>
                     <td className="px-4 py-3 font-semibold">{item.ten_nguyen_lieu}</td>
                     <td className="px-4 py-3 text-muted">{item.danh_muc || '—'}</td>
                     <td className="px-4 py-3">
@@ -590,45 +640,7 @@ const categories = useMemo(() => {
                           {Number(item.trang_thai) === 0 && <span className="badge-warning">Ngưng dùng</span>}
                         </div>
                       </div>
-                    </td>                   <td className="px-4 py-3">
-                  {/* Flex giữ các nút trên một dòng, dùng gap nhỏ hơn trên mobile */}
-                  <div className="flex justify-end gap-0.5 sm:gap-1">
-                    <button title="Nhập kho" onClick={() => openImportDrawer(item.ma_nguyen_lieu)} className="btn-icon-edit p-1.5">
-                      <span className="material-symbols-outlined text-sm">add_shopping_cart</span>
-                    </button>
-                    <button title="Sửa" onClick={() => openEditModal(item)} className="btn-icon-edit p-1.5">
-                      <span className="material-symbols-outlined text-sm">edit</span>
-                    </button>
-
-                    {/* Nút Hủy hàng — hiển thị trên mọi nguyên liệu có tồn kho > 0 */}
-                    {Number(item.so_luong_ton) > 0 && (
-                      <button
-                        title="Hủy hàng (hết hạn, hư hỏng...)"
-                        onClick={() => {
-                          setDiscardItem(item);
-                          setDiscardQty(String(item.so_luong_ton));
-                          setDiscardReason("");
-                          setShowDiscardModal(true);
-                        }}
-                        className="btn-icon-edit p-1.5 text-error hover:bg-error-container/20"
-                      >
-                        <span className="material-symbols-outlined text-sm">delete_sweep</span>
-                      </button>
-                    )}
-
-                    {/* Ẩn các nút ít dùng trên màn hình cực nhỏ (dưới 360px) nếu cần */}
-                    <div className="hidden sm:flex gap-0.5">
-                      <button title="Trạng thái" onClick={() => handleToggleStatus(item)} className="btn-ghost p-1.5">
-                        <span className="material-symbols-outlined text-sm">
-                          {Number(item.trang_thai) === 0 ? 'visibility' : 'visibility_off'}
-                        </span>
-                      </button>
-                      <button title="Xóa" onClick={() => handleDelete(item.ma_nguyen_lieu, item.ten_nguyen_lieu)} className="btn-icon-delete p-1.5">
-                        <span className="material-symbols-outlined text-sm">delete</span>
-                      </button>
-                    </div>
-                  </div>
-                </td>
+                    </td>
                   </tr>
                 ))
               )}
@@ -684,13 +696,18 @@ const categories = useMemo(() => {
      {showCrudModal && (
   <ModalPortal>
     <ModalOverlay onClick={() => setShowCrudModal(false)}>
-      <div className="modal-panel max-w-lg p-6 md:p-8 h-full w-full overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-6">
-          <span className="material-symbols-outlined">inventory_2</span>
-          {crudData.ma_nguyen_lieu ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu'}
-        </h2>
+      <div className="modal-panel max-w-lg p-5 md:p-6 max-h-[90vh] overflow-y-auto no-scrollbar animate-fade-in" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+            <span className="material-symbols-outlined">inventory_2</span>
+            {crudData.ma_nguyen_lieu ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu'}
+          </h2>
+          <button type="button" onClick={() => setShowCrudModal(false)} className="btn-ghost !p-2 shrink-0" aria-label="Đóng form">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
         
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           <div>
             <label className="block text-sm font-semibold text-on-surface mb-1">Tên nguyên liệu *</label>
             <input className="input-field" value={crudData.ten_nguyen_lieu} onChange={(e) => setCrudData({ ...crudData, ten_nguyen_lieu: e.target.value })} placeholder="" />
@@ -740,16 +757,102 @@ const categories = useMemo(() => {
 
 
 
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-1">Ngưỡng cảnh báo</label>
-            <input type="number" min="0" className="input-field" value={crudData.nguong_canh_bao} onChange={(e) => setCrudData({ ...crudData, nguong_canh_bao: e.target.value })} />
-            <p className="text-xs text-muted mt-1">Tính theo đơn vị: {crudData.don_vi_tinh}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-on-surface mb-1">Ngưỡng cảnh báo</label>
+              <input type="number" min="0" className="input-field" value={crudData.nguong_canh_bao} onChange={(e) => setCrudData({ ...crudData, nguong_canh_bao: e.target.value })} />
+              <p className="text-xs text-muted mt-1">Tính theo đơn vị: {crudData.don_vi_tinh}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-on-surface mb-1">Hạn sử dụng</label>
+              <input type="date" className="input-field" value={crudData.han_su_dung} onChange={(e) => setCrudData({ ...crudData, han_su_dung: e.target.value })} />
+              <p className="text-xs text-muted mt-1">Để trống nếu chưa biết (vẫn bắt buộc nhập khi nhập kho).</p>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setShowCrudModal(false)} className="btn-outline flex-1">Hủy</button>
-            <button type="button" onClick={handleSaveIngredient} className="btn-primary flex-1">Lưu nguyên liệu</button>
+            <button type="button" onClick={() => setShowCrudModal(false)} className="btn-outline flex-1 !py-2 !px-3 !text-sm">Hủy</button>
+            <button type="button" onClick={handleSaveIngredient} className="btn-primary flex-1 !py-2 !px-3 !text-sm">Lưu nguyên liệu</button>
           </div>
+
+          {/* Vùng thao tác khác — chỉ hiển thị khi SỬA nguyên liệu đã có */}
+          {crudData.ma_nguyen_lieu && (
+            <div className="mt-4 pt-4 border-t border-error/25 space-y-3">
+              {showDiscardSection ? (
+                <div className="rounded-xl border border-error/25 bg-error-container/10 p-3.5 space-y-3">
+                  <div className="p-3 rounded-xl bg-surface-container-low border border-outline space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted">Nguyên liệu</span>
+                      <span className="font-bold">{discardItem?.ten_nguyen_lieu}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted">Tồn kho hiện tại</span>
+                      <span className="font-bold">
+                        {Number(discardItem?.so_luong_ton ?? 0).toLocaleString('vi-VN')} {discardItem?.danh_muc === 'Nguyên liệu pha chế' ? discardItem?.don_vi_tinh : discardItem?.don_vi_nhap}
+                      </span>
+                    </div>
+                    {discardItem?.trang_thai_han === 'het_han' && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted">Tình trạng</span>
+                        <span className="font-bold text-error">Hết hạn</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Số lượng huỷ <span className="text-error">*</span></label>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      max={discardItem?.so_luong_ton}
+                      className="input-field font-bold text-lg"
+                      value={discardQty}
+                      onChange={(e) => setDiscardQty(e.target.value)}
+                      placeholder="0"
+                      required
+                    />
+                    <p className="text-xs text-muted mt-1">Tối đa: {Number(discardItem?.so_luong_ton ?? 0).toLocaleString('vi-VN')} {discardItem?.danh_muc === 'Nguyên liệu pha chế' ? discardItem?.don_vi_tinh : discardItem?.don_vi_nhap}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">Lý do huỷ <span className="text-error">*</span></label>
+                    <textarea className="input-field min-h-[80px]" value={discardReason} onChange={(e) => setDiscardReason(e.target.value)} placeholder="Bắt buộc nhập lý do: hết hạn, hư hỏng, vỡ, sai quy cách..." required />
+                  </div>
+
+                  <div className="flex gap-3 pt-1">
+                    <button type="button" onClick={() => setShowDiscardSection(false)} className="btn-outline flex-1 !py-2 !px-3 !text-sm">Quay lại</button>
+                    <button type="button" onClick={handleDiscard} className="btn-primary flex-1 !py-2 !px-3 !text-sm" style={{ backgroundColor: "var(--color-error)" }}>Xác nhận huỷ hàng</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openImportDrawer(crudData.ma_nguyen_lieu)}
+                    className="btn-outline flex-1 !py-2 !px-3 !text-sm !border-primary/30 !text-primary hover:!bg-primary/5"
+                  >
+                    <span className="material-symbols-outlined text-sm">add_shopping_cart</span> Nhập kho
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openDiscardSection}
+                    disabled={Number(editingItem?.so_luong_ton ?? 0) <= 0}
+                    className="btn-outline flex-1 !py-2 !px-3 !text-sm !border-error/30 !text-error hover:!bg-error/5 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete_sweep</span> Hủy hàng
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(crudData.ma_nguyen_lieu, crudData.ten_nguyen_lieu)}
+                    className="btn-outline flex-1 !py-2 !px-3 !text-sm !border-error/30 !text-error hover:!bg-error/5"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span> Xóa nguyên liệu
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </ModalOverlay>
@@ -1074,74 +1177,81 @@ const categories = useMemo(() => {
         </ModalPortal>
       )}
 
-      {/* Modal: Nhập kho */}
+      {/* Modal: Nhập nguyên liệu — nhiều dòng, chung 1 nhà cung cấp */}
       {showImportDrawer && (
         <ModalPortal>
           <ModalOverlay onClick={() => setShowImportDrawer(false)}>
-            <div className="modal-panel max-w-lg p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-panel max-w-3xl p-6 md:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-primary flex items-center gap-2"><span className="material-symbols-outlined">add_shopping_cart</span>Nhập kho</h2>
+                <h2 className="text-xl font-bold text-primary flex items-center gap-2"><span className="material-symbols-outlined">add_shopping_cart</span>Nhập nguyên liệu</h2>
                 <button type="button" onClick={() => setShowImportDrawer(false)} className="btn-ghost !p-2" aria-label="Đóng"><span className="material-symbols-outlined">close</span></button>
               </div>
               <form id="form-nhap-kho" onSubmit={handleImport} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Nguyên liệu *</label>
-                  <select className="input-field appearance-none" value={importData.ma_nguyen_lieu} onChange={(e) => setImportData({ ...importData, ma_nguyen_lieu: e.target.value })} required disabled={!!importPresetId} style={{ backgroundImage: 'none' }}>
-                    <option value="">— Chọn nguyên liệu —</option>
-                    {list.filter((nl) => Number(nl.trang_thai) !== 0).map((nl) => (<option key={nl.ma_nguyen_lieu} value={nl.ma_nguyen_lieu}>{nl.ten_nguyen_lieu}</option>))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Thông tin chung của phiếu nhập */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-semibold mb-1">Nhà cung cấp</label>
-                    <input className="input-field" value={importData.nha_cung_cap} onChange={(e) => setImportData({ ...importData, nha_cung_cap: e.target.value })} placeholder="Tên nhà cung cấp" />
+                    <input className="input-field" value={importHeader.nha_cung_cap} onChange={(e) => setImportHeader({ ...importHeader, nha_cung_cap: e.target.value })} placeholder="Tên nhà cung cấp" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-1">Ngày giờ nhập</label>
-                    <input type="datetime-local" className="input-field" value={importData.ngay_nhap} onChange={(e) => setImportData({ ...importData, ngay_nhap: e.target.value })} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold mb-1">Số lượng nhập *</label>
-                    <input type="number" min="0.01" step="0.01" className="input-field" value={importData.so_luong} onChange={(e) => setImportData({ ...importData, so_luong: e.target.value })} placeholder="0" required />
-                    <p className="text-xs text-muted mt-1">Theo đơn vị nhập ({selectedImportItemDetails?.don_vi_nhap || 'Cái, lon, chai, kg...' })</p>
+                    <input type="datetime-local" className="input-field" value={importHeader.ngay_nhap} onChange={(e) => setImportHeader({ ...importHeader, ngay_nhap: e.target.value })} />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1">Giá nhập *</label>
-                    <PriceInput className="input-field" value={importData.gia_nhap} onChange={(val) => setImportData({ ...importData, gia_nhap: val })} placeholder="0" required />
+                    <label className="block text-sm font-semibold mb-1">Ghi chú phiếu</label>
+                    <input className="input-field" value={importHeader.ghi_chu} onChange={(e) => setImportHeader({ ...importHeader, ghi_chu: e.target.value })} placeholder="Ghi chú phiếu nhập" />
                   </div>
                 </div>
 
-                {/* Hạn sử dụng */}
-                {selectedImportItemDetails && (
-                  <div>
-                    <label className="block text-sm font-semibold mb-1">Hạn sử dụng</label>
-                    <input type="date" className="input-field" value={importData.han_su_dung} onChange={(e) => setImportData({ ...importData, han_su_dung: e.target.value })} />
-                    <p className="text-xs text-muted mt-1">Nếu không nhập, hạn sử dụng cũ của nguyên liệu sẽ được giữ nguyên.</p>
+                {/* Danh sách nguyên liệu nhập */}
+                <div className="rounded-xl border border-outline overflow-x-auto">
+                  <div className="hidden md:grid bg-surface-container-high px-3 py-2 text-xs font-bold text-muted uppercase tracking-wide grid-cols-[1fr_90px_110px_140px_32px] gap-2 items-center">
+                    <span>Nguyên liệu</span>
+                    <span className="text-right">Số lượng</span>
+                    <span className="text-right">Giá nhập</span>
+                    <span>Hạn sử dụng *</span>
+                    <span></span>
                   </div>
-                )}
+                  {importLines.map((line, idx) => {
+                    const lineDetails = getImportLineDetails(line);
+                    return (
+                      <div key={idx} className="px-3 py-2.5 border-t border-outline grid grid-cols-1 md:grid-cols-[1fr_90px_110px_140px_32px] gap-2 items-center">
+                        <select className="input-field appearance-none !py-2 text-sm" value={line.ma_nguyen_lieu} onChange={(e) => updateImportLine(idx, 'ma_nguyen_lieu', e.target.value)} style={{ backgroundImage: 'none' }}>
+                          <option value="">— Chọn nguyên liệu —</option>
+                          {list.filter((nl) => Number(nl.trang_thai) !== 0).map((nl) => (<option key={nl.ma_nguyen_lieu} value={nl.ma_nguyen_lieu}>{nl.ten_nguyen_lieu}</option>))}
+                        </select>
+                        <input type="number" min="0.01" step="0.01" className="input-field !py-2 text-sm" value={line.so_luong} onChange={(e) => updateImportLine(idx, 'so_luong', e.target.value)} placeholder="Số lượng" />
+                        <PriceInput className="input-field !py-2 text-sm" value={line.gia_nhap} onChange={(val) => updateImportLine(idx, 'gia_nhap', val)} placeholder="Giá" />
+                        <input type="date" className="input-field !py-2 text-sm" value={line.han_su_dung} onChange={(e) => updateImportLine(idx, 'han_su_dung', e.target.value)} />
+                        <button
+                          type="button"
+                          onClick={() => removeImportLine(idx)}
+                          disabled={importLines.length <= 1}
+                          title={importLines.length <= 1 ? 'Cần ít nhất 1 dòng' : 'Xóa dòng'}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-error hover:bg-error-container/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors justify-self-end"
+                        >
+                          <span className="material-symbols-outlined text-sm">close</span>
+                        </button>
+                        {lineDetails && (
+                          <p className="md:col-span-4 text-[11px] text-muted -mt-1.5">
+                            1 {lineDetails.don_vi_nhap} = {Number(lineDetails.dung_tich_san_pham).toLocaleString('vi-VN')} {lineDetails.danh_muc === 'Nguyên liệu pha chế' ? lineDetails.don_vi_tinh : lineDetails.don_vi_nhap}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
 
-                {/* Thông số định mức quy đổi */}
-                {selectedImportItemDetails && (
-                  <div className="p-3.5 rounded-xl bg-primary-container border border-primary/20 text-xs text-primary space-y-1">
-                    <p className="font-medium">
-                      Tỷ lệ nhập: 1 {selectedImportItemDetails.don_vi_nhap} = {Number(selectedImportItemDetails.dung_tich_san_pham).toLocaleString('vi-VN')} {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap}
-                    </p>
-                    <p className="font-bold text-sm mt-1">
-                      Tổng cộng thêm: <span className="underline font-black text-base">{actualVolumeToImport.toLocaleString('vi-VN')}</span> {selectedImportItemDetails.danh_muc === 'Nguyên liệu pha chế' ? selectedImportItemDetails.don_vi_tinh : selectedImportItemDetails.don_vi_nhap} vào tổng tồn kho gốc.
-                    </p>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <button type="button" onClick={addImportLine} className="btn-outline !text-xs !py-2">
+                    <span className="material-symbols-outlined text-sm">add</span>Thêm dòng
+                  </button>
+                  <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-3">
+                    <span className="text-xs font-semibold text-muted">Thành tiền ({importLines.filter((l) => l.ma_nguyen_lieu).length} nguyên liệu)</span>
+                    <span className="text-lg font-bold text-primary tabular-nums">{importTotal.toLocaleString('vi-VN')}đ</span>
                   </div>
-                )}
+                </div>
 
-                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex justify-between items-center">
-                  <span className="text-sm font-semibold text-muted">Thành tiền</span>
-                  <span className="text-xl font-bold text-primary">{importTotal.toLocaleString('vi-VN')}đ</span>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Ghi chú</label>
-                  <textarea className="input-field min-h-[72px]" value={importData.ghi_chu} onChange={(e) => setImportData({ ...importData, ghi_chu: e.target.value })} placeholder="Ghi chú phiếu nhập" />
-                </div>
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setShowImportDrawer(false)} className="btn-outline flex-1">Hủy</button>
                   <button type="submit" className="btn-primary flex-1">Xác nhận nhập kho</button>
@@ -1152,84 +1262,6 @@ const categories = useMemo(() => {
         </ModalPortal>
       )}
 
-      {/* Modal: Hủy hàng */}
-      {showDiscardModal && discardItem && (
-        <ModalPortal>
-          <ModalOverlay onClick={() => setShowDiscardModal(false)}>
-            <div className="modal-panel max-w-md p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-error flex items-center gap-2">
-                  <span className="material-symbols-outlined">delete_sweep</span>
-                  Hủy hàng
-                </h2>
-                <button type="button" onClick={() => setShowDiscardModal(false)} className="btn-ghost !p-2" aria-label="Đóng">
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
-
-              <form onSubmit={handleDiscard} className="space-y-4">
-                <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted">Nguyên liệu</span>
-                    <span className="font-bold">{discardItem.ten_nguyen_lieu}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted">Tồn kho hiện tại</span>
-                    <span className="font-bold">
-                      {Number(discardItem.so_luong_ton).toLocaleString('vi-VN')} {discardItem.danh_muc === 'Nguyên liệu pha chế' ? discardItem.don_vi_tinh : discardItem.don_vi_nhap}
-                    </span>
-                  </div>
-                  {discardItem.trang_thai_han === 'het_han' && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted">Tình trạng</span>
-                      <span className="font-bold text-error">Hết hạn</span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Số lượng huỷ <span className="text-error">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    max={discardItem.so_luong_ton}
-                    className="input-field font-bold text-lg"
-                    value={discardQty}
-                    onChange={(e) => setDiscardQty(e.target.value)}
-                    placeholder="0"
-                    required
-                    autoFocus
-                  />
-                  <p className="text-xs text-muted mt-1">Tối đa: {Number(discardItem.so_luong_ton).toLocaleString('vi-VN')} {discardItem.danh_muc === 'Nguyên liệu pha chế' ? discardItem.don_vi_tinh : discardItem.don_vi_nhap}</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Lý do huỷ <span className="text-error">*</span>
-                  </label>
-                  <textarea
-                    className="input-field min-h-[80px]"
-                    value={discardReason}
-                    onChange={(e) => setDiscardReason(e.target.value)}
-                    placeholder="Bắt buộc nhập lý do: hết hạn, hư hỏng, vỡ, sai quy cách..."
-                    required
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => setShowDiscardModal(false)} className="btn-outline flex-1">Hủy</button>
-                  <button type="submit" className="btn-primary flex-1" style={{ backgroundColor: "var(--color-error)" }}>
-                    Xác nhận huỷ hàng
-                  </button>
-                </div>
-              </form>
-            </div>
-          </ModalOverlay>
-        </ModalPortal>
-      )}
 
     </div>
   );

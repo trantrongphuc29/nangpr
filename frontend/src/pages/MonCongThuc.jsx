@@ -2,7 +2,7 @@
  * Quản lý danh sách món, thêm/sửa/xóa, gán công thức nguyên liệu
  * Components: MonFormModal, FormulaModal
  * ============================================== */
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import * as monService from "../services/monService";
 import * as nguyenlieuService from "../services/nguyenlieuService";
 import * as congThucService from "../services/congThucService";
@@ -29,7 +29,7 @@ const removeVietnameseTones = (str) => {
 };
 
 /* ──────── Modal: Thêm / Sửa món ──────── */
-function MonFormModal({ mon, categories, onClose, onSaved, toast }) {
+function MonFormModal({ mon, categories, onClose, onSaved, toast, onDelete }) {
   const isEdit = Boolean(mon?.ma_mon);
 
   const [form, setForm] = useState({
@@ -48,6 +48,7 @@ function MonFormModal({ mon, categories, onClose, onSaved, toast }) {
   );
 
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -112,10 +113,10 @@ function MonFormModal({ mon, categories, onClose, onSaved, toast }) {
   return (
     <ModalOverlay onClick={onClose}>
       <div
-        className="modal-panel max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar"
+        className="modal-panel max-w-2xl w-full max-h-[90vh] overflow-y-auto no-scrollbar animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 md:px-8 pt-6 md:pt-8 pb-4 flex justify-between items-center">
+        <div className="px-6 md:px-8 pt-5 md:pt-6 pb-4 flex justify-between items-center">
           <h2 className="text-xl font-bold text-primary flex items-center gap-2">
             <span className="material-symbols-outlined">restaurant_menu</span>
             {isEdit ? "Cập nhật món" : "Thêm món mới"}
@@ -126,7 +127,7 @@ function MonFormModal({ mon, categories, onClose, onSaved, toast }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 md:px-8 pb-6 md:pb-8 space-y-5">
+        <form onSubmit={handleSubmit} className="px-6 md:px-8 pb-5 md:pb-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 md:col-span-1">
               <label className="block text-sm font-semibold text-on-surface mb-1">
@@ -246,17 +247,41 @@ function MonFormModal({ mon, categories, onClose, onSaved, toast }) {
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} disabled={busy} className="btn-outline flex-1">
-              Hủy
-            </button>
-            <button type="submit" disabled={busy} className="btn-primary flex-1">
-              {busy
-                ? "Đang lưu..."
-                : isEdit
-                ? "Lưu thay đổi"
-                : "Lưu & tiếp tục tạo công thức"}
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-outline/60">
+            {/* Nút Xóa — chỉ hiển thị khi SỬA món, tách riêng bên trái để tránh bấm nhầm */}
+            {isEdit && onDelete && (
+              <button
+                type="button"
+                disabled={busy || deleting}
+                onClick={async () => {
+                  if (deleting) return;
+                  setDeleting(true);
+                  try {
+                    if (await onDelete(mon)) onClose();
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg px-2.5 py-2 shrink-0 whitespace-nowrap transition-all hover:bg-error/10 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ color: "var(--color-error)" }}
+              >
+                <span className="material-symbols-outlined text-base">delete_outline</span>
+                {deleting ? "Đang xóa..." : "Xóa món"}
+              </button>
+            )}
+
+            <div className="flex gap-3 flex-1 justify-end flex-wrap">
+              <button type="button" onClick={onClose} disabled={busy || deleting} className="btn-outline !py-2 !px-4 !text-sm">
+                Hủy
+              </button>
+              <button type="submit" disabled={busy || deleting} className="btn-primary !py-2 !px-4 !text-sm">
+                {busy
+                  ? "Đang lưu..."
+                  : isEdit
+                  ? "Lưu thay đổi"
+                  : "Lưu & tiếp tục tạo công thức"}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -271,6 +296,22 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
   const [qty, setQty] = useState("");
   const [unit, setUnit] = useState("ml");
   const [error, setError] = useState("");
+  const [searchNL, setSearchNL] = useState("");
+  const [moBangNL, setMoBangNL] = useState(false);
+  const qtyRef = useRef(null);
+  const comboboxRef = useRef(null);
+
+  // Đóng bảng gợi ý khi bấm ra ngoài (dùng ref — an toàn hơn fixed overlay)
+  useEffect(() => {
+    if (!moBangNL) return;
+    const handleClickOutside = (e) => {
+      if (comboboxRef.current && !comboboxRef.current.contains(e.target)) {
+        setMoBangNL(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [moBangNL]);
 
   const [formulaItems, setFormulaItems] = useState(
     Array.isArray(mon.chi_tiet_cong_thuc) ? mon.chi_tiet_cong_thuc : []
@@ -279,6 +320,15 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
   const selectedIngredient = nguyenLieuList.find(
     (nl) => Number(nl.ma_nguyen_lieu) === Number(selectedNL)
   );
+
+  // Danh sách nguyên liệu lọc theo từ khóa tìm kiếm (không dấu)
+  const locDanhSachNL = useMemo(() => {
+    const s = removeVietnameseTones(searchNL.trim().toLowerCase());
+    return nguyenLieuList.filter((nl) => {
+      if (s && !removeVietnameseTones(nl.ten_nguyen_lieu || "").toLowerCase().includes(s)) return false;
+      return true;
+    });
+  }, [nguyenLieuList, searchNL]);
 
   const handleAdd = () => {
     if (!selectedIngredient) {
@@ -372,21 +422,92 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
             <label className="block text-sm font-semibold text-on-surface mb-1">
               Nguyên liệu
             </label>
-            <select
-              className="input-field"
-              value={selectedNL}
-              onChange={(e) => {
-                setSelectedNL(e.target.value);
-                setError("");
-              }}
-            >
-              <option value="">-- Chọn nguyên liệu --</option>
-              {nguyenLieuList.map((nl) => (
-                <option key={nl.ma_nguyen_lieu} value={nl.ma_nguyen_lieu}>
-                  {nl.ten_nguyen_lieu}
-                </option>
-              ))}
-            </select>
+            <div className="relative" ref={comboboxRef}>
+              <input
+                className="input-field pr-9"
+                placeholder="Nhập tên nguyên liệu..."
+                value={selectedIngredient ? selectedIngredient.ten_nguyen_lieu : searchNL}
+                role="combobox"
+                aria-expanded={moBangNL}
+                aria-haspopup="listbox"
+                onChange={(e) => {
+                  setSearchNL(e.target.value);
+                  setSelectedNL("");
+                  setMoBangNL(true);
+                  setError("");
+                }}
+                onFocus={(e) => {
+                  setMoBangNL(true);
+                  e.target.select();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && moBangNL && locDanhSachNL.length > 0) {
+                    const first = locDanhSachNL[0];
+                    const daCo = formulaItems.some((i) => Number(i.ma_nguyen_lieu) === Number(first.ma_nguyen_lieu));
+                    if (!daCo) {
+                      setSelectedNL(String(first.ma_nguyen_lieu));
+                      setSearchNL("");
+                      setMoBangNL(false);
+                      qtyRef.current?.focus();
+                      e.preventDefault();
+                    }
+                  }
+                  if (e.key === "Escape") setMoBangNL(false);
+                }}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
+                <span className="material-symbols-outlined text-lg">search</span>
+              </span>
+
+              {moBangNL && (
+                <div
+                  role="listbox"
+                  className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-xl border border-outline shadow-lg custom-scrollbar"
+                  style={{ backgroundColor: "var(--color-card-bg)" }}
+                >
+                    {locDanhSachNL.length === 0 ? (
+                      <div className="px-3 py-4 text-center text-xs text-muted">Không tìm thấy nguyên liệu</div>
+                    ) : (
+                      locDanhSachNL.map((nl) => {
+                        const daCo = formulaItems.some((i) => Number(i.ma_nguyen_lieu) === Number(nl.ma_nguyen_lieu));
+                        return (
+                          <button
+                            key={nl.ma_nguyen_lieu}
+                            type="button"
+                            role="option"
+                            aria-selected={selectedNL === String(nl.ma_nguyen_lieu)}
+                            disabled={daCo}
+                            onClick={() => {
+                              setSelectedNL(String(nl.ma_nguyen_lieu));
+                              setSearchNL("");
+                              setMoBangNL(false);
+                              setError("");
+                              qtyRef.current?.focus();
+                            }}
+                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                              daCo ? "opacity-40 cursor-not-allowed" : "hover:bg-primary/5"
+                            }`}
+                          >
+                            <span className="truncate font-medium">{nl.ten_nguyen_lieu}</span>
+                            <span className="flex items-center gap-2 shrink-0 text-[11px] text-muted">
+                              <span className="uppercase">{nl.danh_muc === 'Nguyên liệu pha chế' ? nl.don_vi_tinh : nl.don_vi_nhap}</span>
+                              <span className={`font-semibold tabular-nums ${Number(nl.ton_kho) > 0 ? "text-success" : "text-error"}`}>
+                                {Number(nl.ton_kho || 0).toLocaleString("vi-VN")}
+                              </span>
+                              {daCo && <span className="material-symbols-outlined text-sm text-success">check</span>}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted mt-1">
+              {selectedIngredient
+                ? `Đã chọn: ${selectedIngredient.ten_nguyen_lieu} — đơn vị ${selectedIngredient.danh_muc === 'Nguyên liệu pha chế' ? selectedIngredient.don_vi_tinh : selectedIngredient.don_vi_nhap}`
+                : "Tìm tên hoặc chọn từ danh sách."}
+            </p>
           </div>
 
           <div className="p-4 rounded-xl border border-outline bg-surface-container-low/60">
@@ -399,6 +520,7 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
                   Số lượng
                 </label>
                 <input
+                  ref={qtyRef}
                   className="input-field"
                   placeholder="25"
                   type="number"
@@ -561,8 +683,11 @@ export default function MonCongThuc() {
     setShowFormulaModal(true);
   };
 
-  const handleDelete = async (id, name) => {
-    if (!(await confirm(`Xóa món "${name}"?`, { danger: true, confirmLabel: "Xóa" }))) return;
+  const handleDelete = async (mon) => {
+    // mon là object đầy đủ (truyền từ MonFormModal qua onDelete(mon))
+    const id = mon?.ma_mon ?? mon?.id;
+    const name = mon?.ten_mon || mon?.name || "";
+    if (!(await confirm(`Xóa món "${name}"?`, { danger: true, confirmLabel: "Xóa" }))) return false;
     try {
       await monService.deleteMonCu(id);
       toast(`Đã xóa món "${name}"`);
@@ -571,8 +696,10 @@ export default function MonCongThuc() {
         setShowFormulaModal(false);
       }
       await loadAllData();
+      return true;
     } catch (err) {
       toast(err.response?.data?.message || "Không thể xóa món.", "error");
+      return false;
     }
   };
 
@@ -677,7 +804,12 @@ export default function MonCongThuc() {
           const hasFormula = formulaItems.length > 0;
 
           return (
-            <div key={mon.ma_mon} className="card group flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4">
+            <div
+              key={mon.ma_mon}
+              title="Bấm vào món để sửa / xóa"
+              onClick={() => handleOpenEdit(mon)}
+              className="card group cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4 hover:border-primary/30 transition-colors"
+            >
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="w-14 h-14 rounded-lg bg-surface-container-high flex items-center justify-center text-muted shrink-0 overflow-hidden">
                   {mon.hinh_anh ? (
@@ -780,7 +912,7 @@ export default function MonCongThuc() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={() => handleOpenFormula(mon)}
+                    onClick={(e) => { e.stopPropagation(); handleOpenFormula(mon); }}
                     className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg transition-all"
                     style={{
                       color: hasFormula ? "var(--color-primary)" : "var(--color-error)",
@@ -791,12 +923,6 @@ export default function MonCongThuc() {
                   >
                     <span className="material-symbols-outlined text-base">menu_book</span>
                     Công thức
-                  </button>
-                  <button onClick={() => handleOpenEdit(mon)} className="btn-icon-edit !w-8 !h-8 !p-0">
-                    <span className="material-symbols-outlined text-base">edit</span>
-                  </button>
-                  <button onClick={() => handleDelete(mon.ma_mon, mon.ten_mon)} className="btn-icon-delete !w-8 !h-8 !p-0">
-                    <span className="material-symbols-outlined text-base">delete</span>
                   </button>
                 </div>
               </div>
@@ -855,6 +981,7 @@ export default function MonCongThuc() {
           mon={editMon}
           categories={categories}
           toast={toast}
+          onDelete={handleDelete}
           onClose={() => {
             setShowMonModal(false);
             setEditMon(null);

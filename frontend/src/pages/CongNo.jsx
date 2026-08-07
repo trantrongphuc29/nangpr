@@ -2,7 +2,7 @@
  * Quản lý phiếu nhập kho, theo dõi công nợ nhà cung cấp
  * Tích hợp: lịch sử nhập kho + công nợ + in phiếu
  * ==================================== */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 import * as congNoService from "../services/congNoService";
 import { exportPhieuNhapExcel } from "../utils/bangLuongExport";
@@ -451,7 +451,7 @@ function ModalThanhToan({ phieu, onDong, onThanhCong }) {
 }
 
 /* ── Modal chi tiết phiếu nhập ── */
-function ModalChiTiet({ phieu, onDong }) {
+function ModalChiTiet({ phieu, onDong, onThanhToan }) {
   useScrollLock(Boolean(phieu));
 
   if (!phieu) return null;
@@ -479,13 +479,6 @@ function ModalChiTiet({ phieu, onDong }) {
               <p className="text-xs text-muted mt-0.5">{dinhDangNgay(phieu.ngay_nhap)}</p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => inPhieuNhap(phieu)}
-                className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all"
-                title="In phiếu nhập"
-              >
-                <span className="material-symbols-outlined text-sm">print</span> In
-              </button>
               <button
                 onClick={onDong}
                 className="w-7 h-7 rounded-full hover:bg-primary/10 flex items-center justify-center text-muted"
@@ -559,6 +552,97 @@ function ModalChiTiet({ phieu, onDong }) {
               </table>
             </div>
           )}
+
+          {/* Footer: In phiếu + Thanh toán */}
+          <div className="px-5 py-4 border-t" style={{ borderColor: "var(--color-border)" }}>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => inPhieuNhap(phieu)}
+                className="btn-outline flex-1 !py-2 !px-3 !text-sm"
+              >
+                <span className="material-symbols-outlined text-sm">print</span> In phiếu
+              </button>
+              {conNo > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => onThanhToan?.(phieu)}
+                  className="btn-primary flex-1 !py-2 !px-3 !text-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">payments</span> Thanh toán công nợ
+                </button>
+              ) : (
+                <div className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold" style={{ color: "var(--color-success)" }}>
+                  <span className="material-symbols-outlined text-base">check_circle</span>
+                  Đã thanh toán đầy đủ
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── Modal chi tiết phiếu thanh toán ── */
+function ModalChiTietThanhToan({ item, onDong }) {
+  useScrollLock(Boolean(item));
+
+  if (!item) return null;
+
+  const conNoSau = Number(item.con_no_sau_khi_tra || 0);
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onDong} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-2xl shadow-2xl animate-fade-in" style={{ backgroundColor: "var(--color-card-bg)", border: "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--color-border)" }}>
+            <div>
+              <h3 className="font-bold text-on-surface">Phiếu thanh toán #{item.id}</h3>
+              <p className="text-xs text-muted mt-0.5">{dinhDangNgay(item.ngay_thanh_toan)}</p>
+            </div>
+            <button onClick={onDong} className="w-7 h-7 rounded-full hover:bg-primary/10 flex items-center justify-center text-muted">✕</button>
+          </div>
+
+          {/* Thông tin */}
+          <div className="px-5 py-3 border-b border-outline space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted">Phiếu nhập</span>
+              <span className="font-semibold">#{item.ma_phieu}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">Nhà cung cấp</span>
+              <span className="font-semibold">{item.nha_cung_cap || '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">Số tiền thanh toán</span>
+              <span className="font-bold text-success">{dinhDangTien(item.so_tien)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">Còn nợ sau thanh toán</span>
+              <span className={`font-bold ${conNoSau > 0 ? "text-error" : "text-success"}`}>{dinhDangTien(conNoSau)}</span>
+            </div>
+            {item.ghi_chu && (
+              <div className="flex justify-between">
+                <span className="text-muted">Ghi chú</span>
+                <span className="font-semibold">{item.ghi_chu}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Footer: In phiếu thanh toán */}
+          <div className="px-5 py-4 border-t" style={{ borderColor: "var(--color-border)" }}>
+            <button
+              type="button"
+              onClick={() => inPhieuThanhToan(item)}
+              className="btn-primary w-full !py-2 !px-3 !text-sm"
+            >
+              <span className="material-symbols-outlined text-sm">print</span> In phiếu thanh toán
+            </button>
+          </div>
         </div>
       </div>
     </>
@@ -601,6 +685,9 @@ export default function CongNo() {
   // Modal
   const [modalThanhToan, setModalThanhToan] = useState(null);
   const [modalChiTiet, setModalChiTiet] = useState(null);
+  const [modalChiTietTT, setModalChiTietTT] = useState(null);
+  // Nhớ phiếu đang xem chi tiết để khi đóng modal thanh toán sẽ quay lại chi tiết
+  const phieuTraVeChiTiet = useRef(null);
 
   // Format ngày theo giờ địa phương (YYYY-MM-DD) — nhất quán không bị lệch múi giờ
   const fmtDate = (d) => {
@@ -971,7 +1058,6 @@ export default function CongNo() {
                     <th className="px-4 py-3.5 text-right w-[13%]">Đã thanh toán</th>
                     <th className="px-4 py-3.5 text-right w-[13%]">Còn nợ</th>
                     <th className="px-4 py-3.5 text-center w-[11%]">Trạng thái</th>
-                    <th className="px-4 py-3.5 text-center w-[8%]">Tác vụ</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
@@ -979,7 +1065,12 @@ export default function CongNo() {
                       const conNo = Number(phieu.con_no || 0);
                       const isPaid = conNo <= 0;
                       return (
-                        <tr key={phieu.ma_phieu} className={`hover:bg-surface-container-low/40 transition-colors ${isPaid ? "opacity-60" : ""}`}>
+                        <tr
+                          key={phieu.ma_phieu}
+                          title="Bấm vào phiếu để xem chi tiết / in / thanh toán"
+                          onClick={() => setModalChiTiet(phieu)}
+                          className={`cursor-pointer hover:bg-surface-container-low/40 transition-colors ${isPaid ? "opacity-60" : ""}`}
+                        >
                           <td className="px-4 py-3.5 w-[10%]">
                             <span className="font-bold text-xs" style={{ color: "var(--color-primary)" }}>#{phieu.ma_phieu}</span>
                           </td>
@@ -1002,27 +1093,6 @@ export default function CongNo() {
                                 <span className="material-symbols-outlined text-[10px]">hourglass_top</span> Chưa thanh toán
                               </span>
                             )}
-                          </td>
-                          <td className="px-4 py-3.5 text-center w-[8%]">
-                            <div className="flex items-center justify-center gap-0.5">
-                              <button onClick={() => setModalChiTiet(phieu)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all hover:bg-primary/10"
-                                style={{ color: "var(--color-primary)" }} title="Chi tiết">
-                                <span className="material-symbols-outlined text-sm">visibility</span>
-                              </button>
-                              <button onClick={() => inPhieuNhap(phieu)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all hover:bg-primary/10"
-                                style={{ color: "var(--color-primary)" }} title="In phiếu">
-                                <span className="material-symbols-outlined text-sm">print</span>
-                              </button>
-                              {!isPaid && (
-                                <button onClick={() => setModalThanhToan(phieu)}
-                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all"
-                                  style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary)" }} title="Thanh toán">
-                                  <span className="material-symbols-outlined text-sm">payments</span>
-                                </button>
-                              )}
-                            </div>
                           </td>
                         </tr>
                       );
@@ -1078,12 +1148,16 @@ export default function CongNo() {
                       <th className="px-4 py-3.5 text-right w-[13%]">Số tiền</th>
                       <th className="px-4 py-3.5 text-right w-[13%]">Còn nợ sau TT</th>
                       <th className="px-4 py-3.5 w-[12%]">Ghi chú</th>
-                      <th className="px-4 py-3.5 text-center w-[7%]">In</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
                     {payments.map((item) => (
-                      <tr key={item.id} className="hover:bg-surface-container-low/40 transition-colors">
+                      <tr
+                        key={item.id}
+                        title="Bấm vào phiếu để xem chi tiết / in phiếu thanh toán"
+                        onClick={() => setModalChiTietTT(item)}
+                        className="cursor-pointer hover:bg-surface-container-low/40 transition-colors"
+                      >
                         <td className="px-4 py-3.5">
                           <span className="font-bold text-xs" style={{ color: "var(--color-primary)" }}>#{item.id}</span>
                         </td>
@@ -1097,14 +1171,6 @@ export default function CongNo() {
                           {dinhDangTien(item.con_no_sau_khi_tra)}
                         </td>
                         <td className="px-4 py-3.5 text-xs text-muted">{item.ghi_chu || '—'}</td>
-                        <td className="px-4 py-3.5 text-center">
-                          {/* ── In phiếu thanh toán công nợ từ bảng ── */}
-                          <button onClick={() => inPhieuThanhToan(item)}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all hover:bg-primary/10"
-                            style={{ color: "var(--color-primary)" }} title="In phiếu thanh toán">
-                            <span className="material-symbols-outlined text-sm">print</span>
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1140,14 +1206,37 @@ export default function CongNo() {
       {modalThanhToan && (
         <ModalThanhToan
           phieu={modalThanhToan}
-          onDong={() => setModalThanhToan(null)}
-          onThanhCong={taiDuLieu}
+          onDong={() => {
+            setModalThanhToan(null);
+            // Đóng thanh toán → quay lại form chi tiết phiếu
+            if (phieuTraVeChiTiet.current) {
+              setModalChiTiet(phieuTraVeChiTiet.current);
+              phieuTraVeChiTiet.current = null;
+            }
+          }}
+          onThanhCong={() => {
+            phieuTraVeChiTiet.current = null;
+            taiDuLieu();
+          }}
         />
       )}
 
       {/* Modal chi tiết */}
       {modalChiTiet && (
-        <ModalChiTiet phieu={modalChiTiet} onDong={() => setModalChiTiet(null)} />
+        <ModalChiTiet
+          phieu={modalChiTiet}
+          onDong={() => setModalChiTiet(null)}
+          onThanhToan={(p) => {
+            phieuTraVeChiTiet.current = p;
+            setModalChiTiet(null);
+            setModalThanhToan(p);
+          }}
+        />
+      )}
+
+      {/* Modal chi tiết phiếu thanh toán */}
+      {modalChiTietTT && (
+        <ModalChiTietThanhToan item={modalChiTietTT} onDong={() => setModalChiTietTT(null)} />
       )}
     </div>
   );

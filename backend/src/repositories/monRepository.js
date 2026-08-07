@@ -194,12 +194,58 @@ const MonRepository = {
 
   /** Xóa món */
   delete: async (id) => {
-    const [result] = await db.execute(
-      "DELETE FROM mon WHERE ma_mon = ?",
-      [id]
-    );
+    const cleanId = parseInt(id, 10);
 
-    return result.affectedRows > 0;
+    // Kiểm tra ràng buộc: món đã từng nằm trong hóa đơn bán hàng
+    const [hd] = await db.execute(
+      `SELECT ma_don_hang FROM chitiethoadon WHERE ma_mon = ? LIMIT 1`,
+      [cleanId]
+    );
+    if (hd.length > 0) {
+      throw new Error(
+        `Không thể xóa món này vì đã có trong hóa đơn #${hd[0].ma_don_hang}. Bạn có thể chuyển trạng thái món thành "Tạm ngưng" thay vì xóa.`
+      );
+    }
+
+    // Kiểm tra ràng buộc: món từng bị hủy (log hủy món)
+    const [log] = await db.execute(
+      `SELECT id FROM huy_mon_log WHERE ma_mon = ? LIMIT 1`,
+      [cleanId]
+    );
+    if (log.length > 0) {
+      throw new Error(
+        "Không thể xóa món này vì có lịch sử hủy món trong hệ thống."
+      );
+    }
+
+    // Kiểm tra ràng buộc: món vẫn còn nguyên liệu được gán trong công thức
+    const [ct] = await db.execute(
+      `SELECT 1 FROM congthuc WHERE ma_mon = ? LIMIT 1`,
+      [cleanId]
+    );
+    if (ct.length > 0) {
+      throw new Error(
+        "Không thể xóa món này vì vẫn còn nguyên liệu được gán trong công thức. Vui lòng gỡ hết nguyên liệu khỏi công thức trước khi xóa."
+      );
+    }
+
+    // Sau khi đã gỡ hết nguyên liệu thì DELETE an toàn (congthuc không còn dòng nào)
+    try {
+      const [result] = await db.execute(
+        "DELETE FROM mon WHERE ma_mon = ?",
+        [cleanId]
+      );
+
+      return result.affectedRows > 0;
+    } catch (error) {
+      // Phòng trường hợp có bản ghi mới chèn vào giữa lúc kiểm tra và lúc xóa (race condition)
+      if (error && error.errno === 1451) {
+        throw new Error(
+          "Không thể xóa món này vì nó đang được tham chiếu bởi dữ liệu khác (hóa đơn bán hàng, lịch sử hủy món)."
+        );
+      }
+      throw error;
+    }
   },
 
   /** Lấy thông tin một món theo ID */

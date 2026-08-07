@@ -161,10 +161,11 @@ const NguyenLieuRepository = {
     const dung_tich_san_pham = parseFloat(data.dung_tich_san_pham) || 1.00;
     const nguong_canh_bao = parseFloat(data.nguong_canh_bao) || 0.00;
     const ghi_chu = data.ghi_chu ? String(data.ghi_chu).trim() : null;
+    const han_su_dung = data.han_su_dung || null;
 
     const [result] = await db.execute(
-      `INSERT INTO nguyenlieu (ten_nguyen_lieu, danh_muc, don_vi_tinh, don_vi_nhap, dung_tich_san_pham, ton_kho, nguong_canh_bao, ghi_chu, trang_thai) VALUES (?, ?, ?, ?, ?, 0.00, ?, ?, 1)`,
-      [ten_nguyen_lieu, danh_muc, don_vi_tinh, don_vi_nhap, dung_tich_san_pham, nguong_canh_bao, ghi_chu]
+      `INSERT INTO nguyenlieu (ten_nguyen_lieu, danh_muc, don_vi_tinh, don_vi_nhap, dung_tich_san_pham, ton_kho, nguong_canh_bao, ghi_chu, trang_thai, han_su_dung) VALUES (?, ?, ?, ?, ?, 0.00, ?, ?, 1, ?)`,
+      [ten_nguyen_lieu, danh_muc, don_vi_tinh, don_vi_nhap, dung_tich_san_pham, nguong_canh_bao, ghi_chu, han_su_dung]
     );
     const newId = result.insertId;
 
@@ -179,11 +180,12 @@ const NguyenLieuRepository = {
     const dung_tich_san_pham = parseFloat(data.dung_tich_san_pham) || 1.00;
     const nguong_canh_bao = parseFloat(data.nguong_canh_bao) || 0.00;
     const ghi_chu = data.ghi_chu ? String(data.ghi_chu).trim() : null;
+    const han_su_dung = data.han_su_dung || null;
     const cleanId = parseInt(id, 10);
 
     const [result] = await db.execute(
-      `UPDATE nguyenlieu SET ten_nguyen_lieu = ?, danh_muc = ?, don_vi_tinh = ?, don_vi_nhap = ?, dung_tich_san_pham = ?, nguong_canh_bao = ?, ghi_chu = ? WHERE ma_nguyen_lieu = ?`,
-      [ten_nguyen_lieu, danh_muc, don_vi_tinh, don_vi_nhap, dung_tich_san_pham, nguong_canh_bao, ghi_chu, cleanId]
+      `UPDATE nguyenlieu SET ten_nguyen_lieu = ?, danh_muc = ?, don_vi_tinh = ?, don_vi_nhap = ?, dung_tich_san_pham = ?, nguong_canh_bao = ?, ghi_chu = ?, han_su_dung = ? WHERE ma_nguyen_lieu = ?`,
+      [ten_nguyen_lieu, danh_muc, don_vi_tinh, don_vi_nhap, dung_tich_san_pham, nguong_canh_bao, ghi_chu, han_su_dung, cleanId]
     );
 
     return result.affectedRows > 0;
@@ -195,8 +197,49 @@ const NguyenLieuRepository = {
   },
 
   delete: async (id) => {
-    const [result] = await db.execute("DELETE FROM nguyenlieu WHERE ma_nguyen_lieu = ?", [parseInt(id, 10)]);
-    return result.affectedRows > 0;
+    const cleanId = parseInt(id, 10);
+
+    // Ràng buộc DUY NHẤT: nguyên liệu đang nằm trong công thức của món nào đó
+    const [ctMon] = await db.execute(
+      `SELECT m.ten_mon
+       FROM congthuc ct
+       JOIN mon m ON m.ma_mon = ct.ma_mon
+       WHERE ct.ma_nguyen_lieu = ?
+       LIMIT 1`,
+      [cleanId]
+    );
+    if (ctMon.length > 0) {
+      throw new Error(
+        `Không thể xóa nguyên liệu này vì đang được dùng trong công thức của món "${ctMon[0].ten_mon}". Vui lòng gỡ nguyên liệu khỏi công thức trước khi xóa.`
+      );
+    }
+
+    // Nguyên liệu không nằm trong công thức nào → cho phép xóa.
+    // Vì chitiet_phieunhap / lich_su_huy_hang có khóa ngoại RESTRICT,
+    // phải xóa các bản ghi liên quan trong cùng transaction để không bị MySQL chặn.
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      await conn.execute("DELETE FROM lich_su_huy_hang WHERE ma_nguyen_lieu = ?", [cleanId]);
+      await conn.execute("DELETE FROM chitiet_phieunhap WHERE ma_nguyen_lieu = ?", [cleanId]);
+
+      const [result] = await conn.execute("DELETE FROM nguyenlieu WHERE ma_nguyen_lieu = ?", [cleanId]);
+
+      await conn.commit();
+      return result.affectedRows > 0;
+    } catch (error) {
+      await conn.rollback();
+      // Phòng trường hợp có bản ghi mới chèn vào giữa lúc kiểm tra và lúc xóa (race condition)
+      if (error && error.errno === 1451) {
+        throw new Error(
+          "Không thể xóa nguyên liệu này vì nó vẫn đang được tham chiếu bởi dữ liệu khác (công thức món)."
+        );
+      }
+      throw error;
+    } finally {
+      conn.release();
+    }
   },
 
   //  LẤY LỊCH SỬ HỦY HÀNG

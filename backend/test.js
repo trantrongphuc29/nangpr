@@ -205,7 +205,7 @@ async function run() {
     // Buoc 3: Nhap kho
     if (maNL) {
       const nhapKho = await api("/api/nguyenlieu/import", "POST", {
-        items: [{ ma_nguyen_lieu: maNL, so_luong: 10, gia_nhap: 50000 }],
+        items: [{ ma_nguyen_lieu: maNL, so_luong: 10, gia_nhap: 50000, han_su_dung: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().split("T")[0] }],
         nha_cung_cap: "Nha cung cap test",
         ngay_nhap: new Date().toISOString().split("T")[0],
         ghi_chu: "Nhap test",
@@ -320,7 +320,7 @@ async function run() {
 
       if (maNL2) {
         const nhapKho2 = await api("/api/nguyenlieu/import", "POST", {
-          items: [{ ma_nguyen_lieu: maNL2, so_luong: 5, gia_nhap: 200000 }],
+          items: [{ ma_nguyen_lieu: maNL2, so_luong: 5, gia_nhap: 200000, han_su_dung: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().split("T")[0] }],
           nha_cung_cap: "NCC test cong no",
           ngay_nhap: new Date().toISOString().split("T")[0],
           ghi_chu: "Tao cong no test",

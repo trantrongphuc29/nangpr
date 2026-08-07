@@ -56,6 +56,7 @@ const NguyenLieuService = {
       if (!item.ma_nguyen_lieu) throw new Error("Chưa chọn nguyên liệu.");
       if (Number(item.so_luong) <= 0) throw new Error("Số lượng nhập phải lớn hơn 0.");
       if (Number(item.gia_nhap) < 0) throw new Error("Giá nhập không hợp lệ.");
+      if (!item.han_su_dung) throw new Error("Vui lòng nhập hạn sử dụng của lô hàng trước khi nhập kho.");
     }
     const tongTien = data.items.reduce(
       (sum, item) => sum + Number(item.so_luong) * Number(item.gia_nhap),

@@ -334,7 +334,7 @@ function BanHangCart({
                 placeholder="Ghi chú (ít đường, không đá...)"
                 defaultValue={item.ghi_chu_mon || ""}
                 disabled={busy}
-                className="mt-1.5 w-full text-[10px] bg-transparent border-b border-dotted border-outline/20 text-on-surface-variant placeholder:text-outline/30 focus:border-primary/40 focus:outline-none px-0 py-0.5 transition-colors"
+                className="mt-1.5 w-full text-[10px] bg-transparent border-b border-dotted border-outline/20 text-on-surface-variant placeholder:text-outline/90 focus:border-primary/40 focus:outline-none px-0 py-0.5 transition-colors"
                 onBlur={(e) => {
                   const val = e.target.value.trim();
                   if (val !== (item.ghi_chu_mon || "")) {

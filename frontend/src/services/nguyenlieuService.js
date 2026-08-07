@@ -47,11 +47,6 @@ export const getCostStats = async () => {
     return response.data;
 };
 
-export const setTrangThaiNguyenLieu = async (id, trang_thai) => {
-    const response = await axiosClient.patch(`${API_URL}/${id}/status`, { trang_thai });
-    return response.data;
-};
-
 export const getDiscardHistory = async () => {
     const response = await axiosClient.get(`${API_URL}/discard-history`);
     return response.data;

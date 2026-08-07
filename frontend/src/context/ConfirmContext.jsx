@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import ModalOverlay from '../components/ModalOverlay';
+import ModalPortal from '../components/ModalPortal';
 
 const ConfirmContext = createContext();
 
@@ -46,7 +47,8 @@ export function ConfirmProvider({ children }) {
     <ConfirmContext.Provider value={{ confirm, promptText }}>
       {children}
       {dialog && (
-        <ModalOverlay onClick={() => close(cancelValue)}>
+        <ModalPortal>
+          <ModalOverlay onClick={() => close(cancelValue)} className="!z-[130]" style={{ zIndex: 130 }}>
           <div
             className="modal-panel max-w-sm w-full p-5 md:p-6"
             onClick={(e) => e.stopPropagation()}
@@ -83,7 +85,8 @@ export function ConfirmProvider({ children }) {
               </button>
             </div>
           </div>
-        </ModalOverlay>
+          </ModalOverlay>
+        </ModalPortal>
       )}
     </ConfirmContext.Provider>
   );
