@@ -95,8 +95,9 @@ export const getCompletedOrders = async (limit = 50, offset = 0) => {
 };
 
 /** Lấy báo cáo doanh thu với bộ lọc + phân trang */
-export const getRevenueReport = async ({ period = 'day', date, from_date, to_date, loai_don, hinh_thuc_thanh_toan, limit = 20, offset = 0 }) => {
+export const getRevenueReport = async ({ period = 'day', date, from_date, to_date, loai_don, hinh_thuc_thanh_toan, limit = 20, offset = 0, top_mon_limit = 0 }) => {
   const params = new URLSearchParams({ period, limit, offset });
+  if (top_mon_limit > 0) params.append('top_mon_limit', top_mon_limit);
   if (date) params.append('date', date);
   if (from_date) params.append('from_date', from_date);
   if (to_date) params.append('to_date', to_date);

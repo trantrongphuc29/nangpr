@@ -126,7 +126,7 @@ const DonHangController = {
   /** Lấy báo cáo doanh thu với bộ lọc + phân trang */
   revenueReport: async (req, res) => {
     try {
-      const { period, date, from_date, to_date, loai_don, hinh_thuc_thanh_toan, limit, offset } = req.query;
+      const { period, date, from_date, to_date, loai_don, hinh_thuc_thanh_toan, limit, offset, top_mon_limit } = req.query;
       const data = await DonHangService.getRevenueReport({
         period,
         date,
@@ -136,6 +136,7 @@ const DonHangController = {
         hinh_thuc_thanh_toan,
         limit: parseInt(limit, 10) || 20,
         offset: parseInt(offset, 10) || 0,
+        top_mon_limit: parseInt(top_mon_limit, 10) || 0,
       });
       res.json(data);
     } catch (e) {

@@ -255,63 +255,76 @@ function RecentActivity({ title, items, loading }) {
 
 /* ── OrderTypeBreakdown ── */
 function OrderTypeBreakdown({ todayRevenue }) {
-  const paid = todayRevenue.tm + todayRevenue.ck;
-  // Làm tròn 1 lần rồi lấy phần bù để 2 tỉ lệ luôn cộng đủ 100%
-  const tmPct = paid > 0 ? Math.round((todayRevenue.tm / paid) * 100) : 0;
-  const ckPct = paid > 0 ? 100 - tmPct : 0;
-
   return (
     <div className="card p-5">
       <h3 className="text-sm font-semibold text-on-surface mb-3">Phân tích hôm nay</h3>
-      <div className="space-y-4">
-        <div>
-          <div className="flex justify-between text-xs mb-2">
-            <span className="text-muted">Tổng đơn</span>
-            <span className="font-semibold text-on-surface tabular-nums">{fmtN(todayRevenue.orders)}</span>
-          </div>
+      <div className="flex justify-between text-xs mb-3">
+        <span className="text-muted">Tổng đơn</span>
+        <span className="font-semibold text-on-surface tabular-nums">{fmtN(todayRevenue.orders)}</span>
+      </div>
 
-          {/* Payment method bar */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-[11px]">
-              <span className="text-muted flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-success" />
-                Tiền mặt ({tmPct}%)
-              </span>
-              <span className="font-medium tabular-nums">{fmt(todayRevenue.tm)}</span>
+      {/* Order types */}
+      <div className="pt-3 border-t border-outline-subtle">
+        <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">Loại đơn</p>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Tại chỗ", value: todayRevenue.taiCho || 0 },
+            { label: "Mang về", value: todayRevenue.mangVe || 0 },
+            { label: "Giao hàng", value: todayRevenue.giaoHang || 0 },
+          ].map((t) => (
+            <div key={t.label} className="text-center py-2.5 px-2 rounded-lg"
+              style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 5%, transparent)" }}
+            >
+              <p className="text-lg font-bold text-on-surface tabular-nums">{fmtN(t.value)}</p>
+              <p className="text-[11px] text-muted mt-0.5">{t.label}</p>
             </div>
-            <div className="w-full h-1.5 rounded-full bg-surface-container-high overflow-hidden flex">
-              <div className="h-full rounded-l-full" style={{ width: `${tmPct}%`, backgroundColor: "var(--color-success)" }} />
-              <div className="h-full rounded-r-full" style={{ width: `${ckPct}%`, backgroundColor: "var(--color-info)" }} />
-            </div>
-            <div className="flex justify-between text-[11px]">
-              <span className="text-muted flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--color-info)" }} />
-                Chuyển khoản ({ckPct}%)
-              </span>
-              <span className="font-medium tabular-nums">{fmt(todayRevenue.ck)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Order types */}
-        <div className="pt-3 border-t border-outline-subtle">
-          <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">Loại đơn</p>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: "Tại chỗ", value: todayRevenue.taiCho || 0 },
-              { label: "Mang về", value: todayRevenue.mangVe || 0 },
-              { label: "Giao hàng", value: todayRevenue.giaoHang || 0 },
-            ].map((t) => (
-              <div key={t.label} className="text-center py-2.5 px-2 rounded-lg"
-                style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 5%, transparent)" }}
-              >
-                <p className="text-lg font-bold text-on-surface tabular-nums">{fmtN(t.value)}</p>
-                <p className="text-[11px] text-muted mt-0.5">{t.label}</p>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── TopMonBanChay — món được gọi nhiều nhất trong tháng ── */
+function TopMonBanChay({ items, loading }) {
+  return (
+    <div className="card p-5">
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-on-surface">Top món được gọi nhiều nhất</h3>
+        <p className="text-xs text-muted mt-0.5">Tháng này</p>
+      </div>
+
+      {loading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-10 bg-surface-container-high rounded-lg animate-pulse" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="py-8 text-center">
+          <span className="material-symbols-outlined text-3xl text-muted/30 block mb-1">local_cafe</span>
+          <p className="text-sm text-muted">Chưa có món nào tháng này</p>
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {items.map((m, i) => (
+            <div key={m.ma_mon} className="flex items-center gap-2.5">
+              <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 tabular-nums"
+                style={{ color: "var(--color-primary)", backgroundColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)" }}
+              >
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-[13px] text-on-surface truncate">{m.ten_mon}</p>
+                  <span className="text-[13px] font-semibold text-on-surface tabular-nums shrink-0">×{fmtN(m.so_luong)}</span>
+                </div>
+                <p className="text-[11px] text-muted mt-0.5 tabular-nums">{fmt(m.doanh_thu)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -476,6 +489,7 @@ export default function Dashboard() {
   const [costStats, setCostStats] = useState({ day: 0, month: 0 });
   const [debt, setDebt] = useState({ tong_con_no: 0, so_phieu_no: 0, so_ncc_dang_no: 0 });
   const [recentOrders, setRecentOrders] = useState([]);
+  const [topMon, setTopMon] = useState([]);
   const [stockStats, setStockStats] = useState({ total: 0, sapHet: 0, hetHang: 0, sapHetHan: 0, hetHan: 0 });
   const [stockAlerts, setStockAlerts] = useState([]);
   const [topNhanVien, setTopNhanVien] = useState([]);
@@ -515,10 +529,10 @@ export default function Dashboard() {
       const yesterday = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
       const lastMonthRef = ymd(new Date(now.getFullYear(), now.getMonth() - 1, 1));
       const [todayRev, monthRev, costResult, debtResult, nlList, yesterdayRev, lastMonthRev, topNV] = await Promise.all([
-        // limit lớn để TM/CK & phân loại đơn tính đủ, khớp với summary.total_orders
+        // limit lớn để danh sách "Đơn hàng gần đây" xem thêm được hết đơn trong ngày
         getRevenueReport({ period: "day", date: today, limit: 1000, offset: 0 }),
-        // Chỉ cần summary + series; danh sách đơn của tháng không dùng tới nên lấy limit nhỏ nhất
-        getRevenueReport({ period: "month", limit: 1, offset: 0 }),
+        // Chỉ cần summary + series + top món; danh sách đơn của tháng không dùng tới nên lấy limit nhỏ nhất
+        getRevenueReport({ period: "month", limit: 1, offset: 0, top_mon_limit: 5 }),
         getCostStats(),
         getCongNoStats(),
         getNguyenLieu(),
@@ -554,6 +568,8 @@ export default function Dashboard() {
       setCostStats({ day: costResult.day || 0, month: costResult.month || 0 });
       setDebt({ tong_con_no: debtResult.tong_con_no || 0, so_phieu_no: debtResult.so_phieu_no || 0, so_ncc_dang_no: debtResult.so_ncc_dang_no || 0 });
       setTopNhanVien(topNV?.rows || []);
+
+      setTopMon(monthRev.top_mon || []);
 
       setRecentOrders(
         (todayRev.orders || []).map((o) => ({
@@ -630,6 +646,7 @@ export default function Dashboard() {
             <div className="card h-56 animate-pulse" />
           </div>
           <div className="space-y-4">
+            <div className="card h-48 animate-pulse" />
             <div className="card h-64 animate-pulse" />
             <div className="card h-60 animate-pulse" />
             <div className="card h-72 animate-pulse" />
@@ -676,6 +693,7 @@ export default function Dashboard() {
             </div>
             <div className="space-y-4">
               <OrderTypeBreakdown todayRevenue={todayRevenue} />
+              <TopMonBanChay items={topMon} loading={loading} />
               <TopNhanVienTheoGioLam items={topNhanVien} loading={loading} />
               <StockOverview stats={stockStats} alerts={stockAlerts} loading={loading} />
             </div>

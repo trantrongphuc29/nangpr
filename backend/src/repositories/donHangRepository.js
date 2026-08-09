@@ -287,7 +287,7 @@ const DonHangRepository = {
   },
 
   /** Báo cáo doanh thu với bộ lọc + phân trang */
-  getRevenueReport: async ({ period, date, from_date, to_date, loai_don, hinh_thuc_thanh_toan, limit = 20, offset = 0 }) => {
+  getRevenueReport: async ({ period, date, from_date, to_date, loai_don, hinh_thuc_thanh_toan, limit = 20, offset = 0, top_mon_limit = 0 }) => {
     let dateFilter;
     let dateParams = [];
     const fmtLocal = DonHangRepository.fmtLocalDate;
@@ -414,6 +414,32 @@ const DonHangRepository = {
       orders: Number(r.orders),
     }));
 
+    // Top món bán chạy trong kỳ (không phân trang) — chỉ chạy khi client yêu cầu,
+    // tránh tốn thêm 1 query cho mọi lần gọi báo cáo.
+    let top_mon = [];
+    const safeTopMon = toSafeInt(top_mon_limit, 0);
+    if (safeTopMon > 0) {
+      const [monRows] = await db.execute(
+        `SELECT ct.ma_mon, m.ten_mon,
+                COALESCE(SUM(ct.so_luong), 0) AS so_luong,
+                COALESCE(SUM(ct.so_luong * ct.don_gia), 0) AS doanh_thu
+         FROM donhang dh
+         JOIN chitiethoadon ct ON dh.ma_don_hang = ct.ma_don_hang
+         JOIN mon m ON ct.ma_mon = m.ma_mon
+         WHERE ${where}
+         GROUP BY ct.ma_mon, m.ten_mon
+         ORDER BY so_luong DESC, doanh_thu DESC
+         LIMIT ${safeTopMon}`,
+        params
+      );
+      top_mon = monRows.map(r => ({
+        ma_mon: r.ma_mon,
+        ten_mon: r.ten_mon,
+        so_luong: Number(r.so_luong),
+        doanh_thu: Number(r.doanh_thu),
+      }));
+    }
+
     if (!total_count) {
       return {
         orders: [],
@@ -423,6 +449,7 @@ const DonHangRepository = {
           count_tai_cho: 0, count_mang_ve: 0, count_giao_hang: 0,
         },
         series: [],
+        top_mon: [],
         bucket_type: bucketType,
         pagination: { total: 0, limit, offset, page: Math.floor(offset / limit) + 1, total_pages: 0 },
       };
@@ -492,6 +519,7 @@ const DonHangRepository = {
         count_giao_hang: Number(totalRows[0].count_giao_hang),
       },
       series,
+      top_mon,
       bucket_type: bucketType,
       pagination: {
         total: total_count,
