@@ -42,7 +42,7 @@ export default function Sidebar({ open, setOpen }) {
         style={{ backgroundColor: "var(--sidebar-bg)" }}
       >
         {/* Mobile close */}
-        <div className="flex justify-end items-center px-4 py-3 lg:hidden">
+        <div className="flex justify-end items-center px-2 pt-1.5 pb-0.5 lg:hidden">
           <button
             onClick={() => setOpen(false)}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/8 text-on-surface-variant"
@@ -52,7 +52,7 @@ export default function Sidebar({ open, setOpen }) {
         </div>
 
         {/* Logo */}
-        <div className="shrink-0 flex items-center justify-center px-5 pt-5 pb-4">
+        <div className="shrink-0 flex items-center justify-center px-5 pt-1 pb-3 lg:pt-5 lg:pb-4">
           <img
             src={`${process.env.PUBLIC_URL}/logoNangPR.svg`}
             alt="Nắng PR"
