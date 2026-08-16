@@ -874,11 +874,11 @@ export default function CongNo() {
         />
       </div>
 
-      {/* ── ROW 2: Search (30%) + Filter (30%) + Thống kê nhanh ── */}
+      {/* ── ROW 2: Search + Filter + Thống kê nhanh ── */}
       <div className="grid grid-cols-1 sm:grid-cols-10 gap-2">
-        {/* Search: 30% - cột 1-3 */}
-        <div className="col-span-3 relative">
-          <input type="text" placeholder="Tìm kiếm..." value={tuKhoaTimKiem}
+        {/* Search: 30% - cột 1-3 (cùng chiều cao ở cả 2 tab) */}
+        <div className="col-span-3 relative sm:min-h-[56px]">
+          <input type="text" placeholder={tab === 'import' ? "Tìm kiếm phiếu nhập..." : "Tìm kiếm phiếu thanh toán..."} value={tuKhoaTimKiem}
             onChange={(e) => { setTuKhoaTimKiem(e.target.value); }}
             className="w-full border-none rounded-xl pl-3 pr-9 py-2 text-sm transition-all h-full focus:ring-1"
             style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)", color: "var(--color-on-surface)" }} />
@@ -889,9 +889,9 @@ export default function CongNo() {
           )}
         </div>
 
-        {/* Filter: 30% - cột 4-6 */}
-        <div className="col-span-3 flex items-center">
-          {tab === 'import' ? (
+        {/* Filter trạng thái (chỉ tab Phiếu nhập) */}
+        {tab === 'import' && (
+          <div className="col-span-3 flex items-center">
             <div className="flex items-center gap-1 bg-surface-container-high p-0.5 rounded-lg w-full">
               {[
                 { key: "no", label: "Đang nợ" },
@@ -911,19 +911,11 @@ export default function CongNo() {
                 </button>
               ))}
             </div>
-          ) : (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-success) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-success) 20%, transparent)" }}>
-              <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-success)" }}>payments</span>
-              <div className="min-w-0">
-                <p className="text-[9px] font-bold uppercase text-muted tracking-wider">Đã thanh toán</p>
-                <p className="text-sm font-black" style={{ color: "var(--color-success)" }}>{dinhDangTien(paymentsSummary.tong_da_tra)}</p>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Thống kê nhanh: 40% - cột 7-10 */}
-        {tab === 'import' ? (
+        {/* Thống kê nhanh (chỉ tab Phiếu nhập) */}
+        {tab === 'import' && (
           <>
             <div className="col-span-2">
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-amber) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-amber) 20%, transparent)" }}>
@@ -940,27 +932,6 @@ export default function CongNo() {
                 <div className="min-w-0">
                   <p className="text-[9px] font-bold uppercase text-muted tracking-wider truncate">Nhà cung cấp đang nợ</p>
                   <p className="text-base font-black" style={{ color: "var(--color-purple)" }}>{thongKe.so_ncc_dang_no}</p>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="col-span-2">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-info) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-info) 20%, transparent)" }}>
-                <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-info)" }}>receipt_long</span>
-                <div className="min-w-0">
-                  <p className="text-[9px] font-bold uppercase text-muted tracking-wider truncate">Số lần thanh toán</p>
-                  <p className="text-base font-black" style={{ color: "var(--color-info)" }}>{paymentsSummary.so_lan_thanh_toan}</p>
-                </div>
-              </div>
-            </div>
-            <div className="col-span-2">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm border h-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-success) 8%, transparent)", borderColor: "color-mix(in srgb, var(--color-success) 20%, transparent)" }}>
-                <span className="material-symbols-outlined text-base shrink-0" style={{ color: "var(--color-success)" }}>payments</span>
-                <div className="min-w-0">
-                  <p className="text-[9px] font-bold uppercase text-muted tracking-wider truncate">Tổng đã thanh toán</p>
-                  <p className="text-base font-black" style={{ color: "var(--color-success)" }}>{dinhDangTien(paymentsSummary.tong_da_tra)}</p>
                 </div>
               </div>
             </div>
