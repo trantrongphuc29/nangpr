@@ -1340,7 +1340,6 @@ export default function BanHang() {
                     </div>
                     <div>
                       <p className="font-bold text-sm text-on-surface">Mang về</p>
-                      <p className="text-[10px] text-muted mt-0.5">Khách mua mang đi</p>
                     </div>
                   </div>
                 </button>
@@ -1356,7 +1355,6 @@ export default function BanHang() {
                     </div>
                     <div>
                       <p className="font-bold text-sm text-on-surface">Giao hàng</p>
-                      <p className="text-[10px] text-muted mt-0.5">Giao tận nơi</p>
                     </div>
                   </div>
                 </button>
