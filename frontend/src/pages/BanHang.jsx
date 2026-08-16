@@ -88,6 +88,7 @@ function buildPrintHTML(mode, { table, order, newItems, tenKhach, soDienThoaiGia
         </div>
         <div class="line"></div>
         <div class="center bold" style="font-size:24px;padding:8px 0">${tenBan}</div>
+        ${maDon ? `<div class="center small mb4">Đơn #${maDon}</div>` : ''}
         <div class="line"></div>
         <table>
           <thead>
@@ -921,10 +922,10 @@ function useBanHang() {
       });
     });
 
-  const sendBar = () =>
+  const sendBar = (persistedOrder) =>
     run(async () => {
       // Persist vào DB trước nếu chưa
-      let currentOrder = order;
+      let currentOrder = persistedOrder?.ma_don_hang ? persistedOrder : order;
       if (!currentOrder?.ma_don_hang) {
         currentOrder = await persistOrderToDb();
         setOrder(currentOrder);
@@ -934,13 +935,13 @@ function useBanHang() {
       setOrder(res?.data || res);
       setError("");
       await Promise.all([refreshTables(), refreshMenu()]);
-      return true;
+      return res?.data || res;
     });
 
-  const pay = (hinhThuc) =>
+  const pay = (hinhThuc, persistedOrder) =>
     run(async () => {
       // Persist vào DB trước nếu chưa
-      let currentOrder = order;
+      let currentOrder = persistedOrder?.ma_don_hang ? persistedOrder : order;
       if (!currentOrder?.ma_don_hang) {
         currentOrder = await persistOrderToDb();
         setOrder(currentOrder);
@@ -1060,16 +1061,18 @@ export default function BanHang() {
         bh.setError("Không có món mới để in");
         return;
       }
-      const ok = await bh.sendBar();
-      if (!ok) return;
-      const html = buildPrintHTML("mon", { table: bh.table, order: bh.order, newItems });
+      // sendBar đã persist đơn → trả về đơn có mã để in phiếu chế biến
+      const updatedOrder = await bh.sendBar();
+      if (!updatedOrder) return;
+      const html = buildPrintHTML("mon", { table: bh.table, order: updatedOrder, newItems });
       openAndPrint(html);
       toast(tenBan ? `Đã in món cho ${tenBan}!` : "Đã in món thành công!");
     } else {
       // In bill → persist trước để có mã đơn 
-      if (!bh.order?.ma_don_hang) {
+      let currentOrder = bh.order;
+      if (!currentOrder?.ma_don_hang) {
         try {
-          await bh.persistOrder();
+          currentOrder = await bh.persistOrder();
         } catch (e) {
           bh.setError('Không thể lưu đơn hàng để in bill');
           return;
@@ -1077,7 +1080,7 @@ export default function BanHang() {
       }
       const html = buildPrintHTML("bill", {
         table: bh.table,
-        order: bh.order,
+        order: currentOrder,
         tenKhach: bh.tenKhach,
         soDienThoaiGiao: bh.soDienThoaiGiao,
         diaChiGiao: bh.diaChiGiao,
@@ -1145,9 +1148,19 @@ export default function BanHang() {
     // In khi thanh toán (mọi loại đơn):
     //  - còn món mới chưa gửi bar -> in kèm phiếu chế biến (bar) + hóa đơn
     //  - không còn món mới        -> chỉ in hóa đơn
+    // Persist trước để phiếu in (phiếu chế biến + hóa đơn) có mã đơn
+    let currentOrder = bh.order;
+    if (!currentOrder?.ma_don_hang) {
+      try {
+        currentOrder = await bh.persistOrder();
+      } catch (e) {
+        bh.setError('Không thể lưu đơn hàng để in hóa đơn');
+        return;
+      }
+    }
     const printArgs = {
       table: bh.table,
-      order: bh.order,
+      order: currentOrder,
       tenKhach: bh.tenKhach,
       soDienThoaiGiao: bh.soDienThoaiGiao,
       diaChiGiao: bh.diaChiGiao,
@@ -1159,9 +1172,9 @@ export default function BanHang() {
     openAndPrint(html);
 
     if (hasNewItems) {
-      await bh.sendBar();
+      await bh.sendBar(currentOrder);
     }
-    const ok = await bh.pay(hinhThuc);
+    const ok = await bh.pay(hinhThuc, currentOrder);
     if (ok) toast(paidMsg);
   };
 
