@@ -468,7 +468,8 @@ function ModalChiTiet({ phieu, onDong, onThanhToan }) {
   return (
     <ModalPortal>
       <ModalOverlay onClick={onDong}>
-        <div className="modal-panel max-w-lg max-h-[85vh] overflow-y-auto animate-fade-in" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-panel max-w-lg overflow-hidden animate-fade-in" onClick={(e) => e.stopPropagation()}>
+          <div className="max-h-[85vh] overflow-y-auto custom-scrollbar">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--color-border)" }}>
             <div>
@@ -575,6 +576,7 @@ function ModalChiTiet({ phieu, onDong, onThanhToan }) {
                 </div>
               )}
             </div>
+          </div>
           </div>
         </div>
       </ModalOverlay>
