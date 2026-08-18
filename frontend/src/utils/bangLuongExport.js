@@ -85,7 +85,7 @@ function slugifyName(str) {
 
 // Các dòng của phiếu lương cá nhân — chỉ những khoản nhân viên cần biết,
 // không có trạng thái kỳ / tổng tiền phải trả / tổng cộng toàn quán.
-function payslipLines(r) {
+export function payslipLines(r) {
   return [
     ["Tổng ca làm", String(moneyNum(r.tong_ca)), false],
     ["Tổng giờ làm", hoursText(r.tong_gio_quy_doi ?? r.tong_gio), false],

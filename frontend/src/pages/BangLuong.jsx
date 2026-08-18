@@ -7,7 +7,7 @@ import {
   markKyLuongPaid,
   revertKyLuongPaid,
 } from "../services/payrollService";
-import { exportBangLuongExcel, exportBangLuongPDF } from "../utils/bangLuongExport";
+import { exportBangLuongExcel, exportBangLuongPDF, payslipLines } from "../utils/bangLuongExport";
 import ModalPortal from "../components/ModalPortal";
 import ModalOverlay from "../components/ModalOverlay";
 import DieuChinhModal from "../components/DieuChinhModal";
@@ -43,6 +43,46 @@ function mapRowsFromApi(list) {
     so_khoan_khau_tru: toInt(r.so_khoan_khau_tru),
     so_khoan_tam_ung: toInt(r.so_khoan_tam_ung),
   }));
+}
+
+/* ── In phiếu lương cá nhân (giống bảng công: in qua cửa sổ trình duyệt) ── */
+function buildPhieuLuongPrintHTML({ employee, thang, nam }) {
+  const now = new Date().toLocaleString("vi-VN");
+  const lines = payslipLines(employee || {});
+  const body = lines
+    .filter(([, , highlight]) => !highlight)
+    .map(([label, value]) => `<tr><td>${label}</td><td class="right">${value}</td></tr>`)
+    .join("");
+  const foot = lines
+    .filter(([, , highlight]) => highlight)
+    .map(([label, value]) => `<tr><td>${label}</td><td class="right">${value}</td></tr>`)
+    .join("");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Phiếu lương</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Times New Roman',serif;color:#000;font-size:13px;padding:24px}
+    h1{font-size:18px;text-align:center;text-transform:uppercase;letter-spacing:1px}
+    .sub{text-align:center;font-size:12px;margin-top:2px}
+    .info{margin:14px 0;line-height:1.7}
+    table{width:100%;border-collapse:collapse;margin-top:6px}
+    th,td{border:1px solid #000;padding:6px 8px;font-size:12px}
+    th{background:#f0f0f0;text-transform:uppercase;font-size:11px}
+    .right{text-align:right}
+    tfoot td{font-weight:bold;background:#f7f7f7}
+    .foot{margin-top:18px;text-align:right;font-size:11px}
+  </style></head><body>
+    <h1>Phiếu lương nhân viên</h1>
+    <div class="sub">Tháng ${pad2(thang)}/${nam}</div>
+    <div class="info">
+      <div><b>Nhân viên:</b> ${employee?.ten || ""}</div>
+    </div>
+    <table>
+      <thead><tr><th>Khoản mục</th><th class="right">Giá trị</th></tr></thead>
+      <tbody>${body || '<tr><td colspan="2" style="text-align:center;padding:16px">Không có dữ liệu</td></tr>'}</tbody>
+      <tfoot>${foot}</tfoot>
+    </table>
+    <div class="foot">Ngày in: ${now}</div>
+  </body></html>`;
 }
 
 // Ô Thưởng / Khấu trừ / Tạm ứng: hiển thị tổng + số khoản, bấm để mở modal
@@ -264,13 +304,18 @@ export default function BangLuong() {
     }
   };
 
-  const handlePrintPhieuLuong = async () => {
+  const handlePrintPhieuLuong = () => {
     if (!detailEmployee) return;
-    try {
-      await exportBangLuongPDF({ rows: [detailEmployee], totals, thang, nam, kyLabel });
-    } catch (err) {
-      toast(err.message || "Không thể in phiếu lương", "error");
+    const html = buildPhieuLuongPrintHTML({ employee: detailEmployee, thang, nam });
+    const w = window.open("", "_blank", "width=420,height=640,menubar=no,toolbar=no,scrollbars=yes");
+    if (!w) {
+      toast("Trình duyệt đã chặn popup. Hãy cho phép popup và thử lại.", "error");
+      return;
     }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
   };
 
   const handleViewDetail = async (row) => {
