@@ -376,6 +376,7 @@ async function getBangLuongSummary({ ky_luong_id, ma_nhan_vien }) {
         COUNT(*) AS tong_nhan_vien,
         COALESCE(SUM(bl.tong_ca), 0) AS tong_ca,
         COALESCE(SUM(bl.tong_gio), 0) AS tong_gio,
+        COALESCE(SUM(bc.tong_gio_quy_doi), 0) AS tong_gio_quy_doi,
         COALESCE(SUM(bl.luong_co_ban), 0) AS tong_luong_co_ban,
         COALESCE(SUM(bl.phu_cap), 0) AS tong_phu_cap,
         COALESCE(SUM(bl.thuong), 0) AS tong_thuong,
@@ -383,6 +384,8 @@ async function getBangLuongSummary({ ky_luong_id, ma_nhan_vien }) {
         COALESCE(SUM(bl.tam_ung), 0) AS tong_tam_ung,
         COALESCE(SUM(bl.luong_thuc_nhan), 0) AS tong_tien_phai_tra
       FROM bang_luong_thang bl
+      LEFT JOIN bang_cong_thang bc
+        ON bc.ky_luong_id = bl.ky_luong_id AND bc.ma_nhan_vien = bl.ma_nhan_vien
       WHERE ${where}
     `,
     params
@@ -395,6 +398,7 @@ async function getBangLuongSummary({ ky_luong_id, ma_nhan_vien }) {
         nv.ten,
         bl.tong_ca,
         bl.tong_gio,
+        COALESCE(bc.tong_gio_quy_doi, bl.tong_gio, 0) AS tong_gio_quy_doi,
         bl.luong_gio,
         bl.luong_co_ban,
         bl.phu_cap,
@@ -405,6 +409,8 @@ async function getBangLuongSummary({ ky_luong_id, ma_nhan_vien }) {
         ${SO_KHOAN_SELECT}
       FROM bang_luong_thang bl
       JOIN nhanvien nv ON nv.ma_nhan_vien = bl.ma_nhan_vien
+      LEFT JOIN bang_cong_thang bc
+        ON bc.ky_luong_id = bl.ky_luong_id AND bc.ma_nhan_vien = bl.ma_nhan_vien
       WHERE bl.ky_luong_id = ?
         ${ma_nhan_vien ? "AND bl.ma_nhan_vien = ?" : ""}
       ORDER BY nv.ten ASC
@@ -416,6 +422,7 @@ async function getBangLuongSummary({ ky_luong_id, ma_nhan_vien }) {
     tong_nhan_vien: 0,
     tong_ca: 0,
     tong_gio: 0,
+    tong_gio_quy_doi: 0,
     tong_luong_co_ban: 0,
     tong_phu_cap: 0,
     tong_thuong: 0,
@@ -435,6 +442,7 @@ async function getBangLuongRow({ ky_luong_id, ma_nhan_vien }) {
         nv.ten,
         bl.tong_ca,
         bl.tong_gio,
+        COALESCE(bc.tong_gio_quy_doi, bl.tong_gio, 0) AS tong_gio_quy_doi,
         bl.luong_gio,
         bl.luong_co_ban,
         bl.phu_cap,
@@ -445,6 +453,8 @@ async function getBangLuongRow({ ky_luong_id, ma_nhan_vien }) {
         ${SO_KHOAN_SELECT}
       FROM bang_luong_thang bl
       JOIN nhanvien nv ON nv.ma_nhan_vien = bl.ma_nhan_vien
+      LEFT JOIN bang_cong_thang bc
+        ON bc.ky_luong_id = bl.ky_luong_id AND bc.ma_nhan_vien = bl.ma_nhan_vien
       WHERE bl.ky_luong_id = ? AND bl.ma_nhan_vien = ?
     `,
     [ky_luong_id, ma_nhan_vien]

@@ -116,7 +116,7 @@ export default function BangLuong() {
     return rows.reduce(
       (acc, r) => {
         acc.tong_ca += Number(r.tong_ca || 0);
-        acc.tong_gio += Number(r.tong_gio || 0);
+        acc.tong_gio += Number(r.tong_gio_quy_doi ?? r.tong_gio ?? 0);
         acc.luong_co_ban += Number(r.luong_co_ban || 0);
         acc.phu_cap += Number(r.phu_cap || 0);
         acc.thuong += Number(r.thuong || 0);
@@ -445,7 +445,7 @@ export default function BangLuong() {
           <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-sm" style={{ backgroundColor: "var(--color-success)" }} />
           <div className="pl-2">
             <p className="text-xs font-medium text-muted">Tổng giờ làm</p>
-            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{formatNumber(totals?.tong_gio || 0)}</p>
+            <p className="text-lg font-bold text-on-surface tabular-nums mt-0.5">{formatNumber(totals?.tong_gio_quy_doi ?? totals?.tong_gio ?? 0)}</p>
           </div>
         </div>
         <div className="card p-4 relative overflow-hidden">
@@ -530,7 +530,12 @@ export default function BangLuong() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center text-muted">{r.tong_ca}</td>
-                      <td className="px-4 py-3 text-right font-bold">{Number(r.tong_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}</td>
+                      <td className="px-4 py-3 text-right font-bold">
+                        {Number(r.tong_gio_quy_doi ?? r.tong_gio ?? 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })}
+                        {Number(r.tong_gio_quy_doi ?? r.tong_gio ?? 0) > Number(r.tong_gio || 0) && (
+                          <span className="block text-[10px] font-medium text-muted">gồm {Number(r.tong_gio || 0).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} giờ thực tế</span>
+                        )}
+                      </td>
                       <td className={`px-4 py-3 text-right font-bold ${chuaCauHinhLuong ? "text-warning" : ""}`}>{formatMoney(r.luong_gio)}</td>
                       <td className="px-4 py-3 text-right font-bold">{formatMoney(r.luong_co_ban)}</td>
 

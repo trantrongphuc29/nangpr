@@ -37,7 +37,7 @@ function rowToExportCells(r) {
   return [
     r.ten || "",
     moneyNum(r.tong_ca),
-    Number(r.tong_gio) || 0,
+    Number(r.tong_gio_quy_doi ?? r.tong_gio) || 0,
     moneyNum(r.luong_gio),
     moneyNum(r.luong_co_ban),
     moneyNum(r.phu_cap),
@@ -52,7 +52,7 @@ function totalsToExportCells(totals) {
   return [
     "TỔNG CỘNG",
     "",
-    Number(totals?.tong_gio) || 0,
+    Number(totals?.tong_gio_quy_doi ?? totals?.tong_gio) || 0,
     "",
     moneyNum(totals?.tong_luong_co_ban),
     moneyNum(totals?.tong_phu_cap),
@@ -88,7 +88,7 @@ function slugifyName(str) {
 function payslipLines(r) {
   return [
     ["Tổng ca làm", String(moneyNum(r.tong_ca)), false],
-    ["Tổng giờ làm", hoursText(r.tong_gio), false],
+    ["Tổng giờ làm", hoursText(r.tong_gio_quy_doi ?? r.tong_gio), false],
     ["Lương/giờ", `${moneyText(r.luong_gio)} đ`, false],
     ["Lương cơ bản", `${moneyText(r.luong_co_ban)} đ`, false],
     ["Phụ cấp", `${moneyText(r.phu_cap)} đ`, false],
@@ -503,6 +503,12 @@ export async function exportPhieuLuongPDF({ row, thang, nam }) {
     columnStyles: {
       0: { halign: "left", cellWidth: 90 },
       1: { halign: "right", fontStyle: "bold" },
+    },
+    // columnStyles chỉ áp dụng cho body; căn phải thêm header + foot (Lương thực nhận)
+    didParseCell: (data) => {
+      if (data.column.index === 1 && (data.section === "head" || data.section === "foot")) {
+        data.cell.styles.halign = "right";
+      }
     },
     margin: { left: 16, right: 16 },
   });
