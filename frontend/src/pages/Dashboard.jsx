@@ -681,7 +681,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard label="Doanh thu hôm nay" value={fmt(todayRevenue.total)} icon="payments" sub={`${fmtN(todayRevenue.orders)} đơn hàng`} variant="success" trend={trend.today} />
             <StatCard label="Doanh thu tháng" value={fmt(monthRevenue.total)} icon="trending_up" sub={`${fmtN(monthRevenue.orders)} đơn hàng`} variant="default" trend={trend.month} />
-            <StatCard label="Chi nhập kho tháng" value={fmt(costStats.month)} icon="shopping_cart" sub={`Hôm nay: ${fmt(costStats.day)}`} variant="warning" />
+            <StatCard label="Chi phí nhập kho trong tháng" value={fmt(costStats.month)} icon="shopping_cart" sub={`Hôm nay: ${fmt(costStats.day)}`} variant="warning" />
             <StatCard label="Công nợ" value={fmt(debt.tong_con_no)} icon="account_balance" sub={`${fmtN(debt.so_ncc_dang_no)} NCC · ${fmtN(debt.so_phieu_no)} phiếu`} variant={Number(debt.tong_con_no) > 0 ? "error" : "default"} />
           </div>
 

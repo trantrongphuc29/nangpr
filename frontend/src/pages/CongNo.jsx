@@ -8,7 +8,8 @@ import * as congNoService from "../services/congNoService";
 import { exportPhieuNhapExcel } from "../utils/bangLuongExport";
 import { ToastContainer, useToast } from "../components/Toast";
 import PriceInput from "../components/PriceInput";
-import useScrollLock from "../components/useScrollLock";
+import ModalPortal from "../components/ModalPortal";
+import ModalOverlay from "../components/ModalOverlay";
 
 function moCuaSoIn(html) {
   const printWindow = window.open("", "_blank");
@@ -386,16 +387,14 @@ function ModalThanhToan({ phieu, onDong, onThanhCong }) {
     }
   };
 
-  useScrollLock(Boolean(phieu));
-
   if (!phieu) return null;
 
   return (
     <>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onDong} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md p-6 rounded-2xl shadow-2xl animate-fade-in" style={{ backgroundColor: "var(--color-card-bg)", border: "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+      <ModalPortal>
+        <ModalOverlay onClick={onDong}>
+          <div className="modal-panel max-w-md p-6 animate-fade-in" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-on-surface">Thanh toán công nợ</h3>
             <button onClick={onDong} className="w-7 h-7 rounded-full hover:bg-primary/10 flex items-center justify-center text-muted">
@@ -445,15 +444,14 @@ function ModalThanhToan({ phieu, onDong, onThanhCong }) {
             </div>
           </form>
         </div>
-      </div>
+      </ModalOverlay>
+    </ModalPortal>
     </>
   );
 }
 
 /* ── Modal chi tiết phiếu nhập ── */
 function ModalChiTiet({ phieu, onDong, onThanhToan }) {
-  useScrollLock(Boolean(phieu));
-
   if (!phieu) return null;
   const items = (() => {
     try {
@@ -468,10 +466,9 @@ function ModalChiTiet({ phieu, onDong, onThanhToan }) {
   const conNo = Number(phieu.tong_tien || 0) - Number(phieu.so_tien_da_tra || 0);
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onDong} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl shadow-2xl animate-fade-in" style={{ backgroundColor: "var(--color-card-bg)", border: "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+    <ModalPortal>
+      <ModalOverlay onClick={onDong}>
+        <div className="modal-panel max-w-lg max-h-[85vh] overflow-y-auto animate-fade-in" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--color-border)" }}>
             <div>
@@ -580,24 +577,21 @@ function ModalChiTiet({ phieu, onDong, onThanhToan }) {
             </div>
           </div>
         </div>
-      </div>
-    </>
+      </ModalOverlay>
+    </ModalPortal>
   );
 }
 
 /* ── Modal chi tiết phiếu thanh toán ── */
 function ModalChiTietThanhToan({ item, onDong }) {
-  useScrollLock(Boolean(item));
-
   if (!item) return null;
 
   const conNoSau = Number(item.con_no_sau_khi_tra || 0);
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onDong} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl shadow-2xl animate-fade-in" style={{ backgroundColor: "var(--color-card-bg)", border: "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+    <ModalPortal>
+      <ModalOverlay onClick={onDong}>
+        <div className="modal-panel max-w-md animate-fade-in" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--color-border)" }}>
             <div>
@@ -644,8 +638,8 @@ function ModalChiTietThanhToan({ item, onDong }) {
             </button>
           </div>
         </div>
-      </div>
-    </>
+      </ModalOverlay>
+    </ModalPortal>
   );
 }
 

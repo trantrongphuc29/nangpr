@@ -84,12 +84,31 @@ const CongNoRepository = {
 
   /** Lấy thống kê công nợ */
   getStats: async ({ from_date, to_date } = {}) => {
-    // Tổng công nợ chưa thanh toán
+    // Điều kiện lọc theo kỳ (dựa trên ngày nhập phiếu) — dùng chung cho các chỉ số theo kỳ
+    let kyParams = [];
+    let kyWhere = '';
+    if (from_date) {
+      kyWhere += ' AND DATE(pn.ngay_nhap + INTERVAL 7 HOUR) >= ?';
+      kyParams.push(from_date);
+    }
+    if (to_date) {
+      kyWhere += ' AND DATE(pn.ngay_nhap + INTERVAL 7 HOUR) <= ?';
+      kyParams.push(to_date);
+    }
+
+    // Tổng công nợ chưa thanh toán (toàn bộ thời gian)
     const [tongNo] = await db.execute(
-      `SELECT COALESCE(SUM(pn.tong_tien - pn.so_tien_da_tra), 0) AS tong_con_no,
-              COUNT(*) AS so_phieu_no
+      `SELECT COALESCE(SUM(pn.tong_tien - pn.so_tien_da_tra), 0) AS tong_con_no
        FROM phieunhap pn
        WHERE pn.da_thanh_toan = 0 OR pn.tong_tien > pn.so_tien_da_tra`
+    );
+
+    // Số phiếu chưa thanh toán trong kỳ đã chọn
+    const [phieuNo] = await db.execute(
+      `SELECT COUNT(*) AS so_phieu_no
+       FROM phieunhap pn
+       WHERE (pn.da_thanh_toan = 0 OR pn.tong_tien > pn.so_tien_da_tra) ${kyWhere}`,
+      kyParams
     );
 
     // Đã thanh toán trong kỳ (theo from_date/to_date)
@@ -119,24 +138,15 @@ const CongNoRepository = {
          AND YEAR(pn.ngay_nhap + INTERVAL 7 HOUR) = YEAR(NOW() + INTERVAL 7 HOUR)`
     );
 
-    // Số nhà cung cấp đang có công nợ
+    // Số nhà cung cấp đang có công nợ trong kỳ đã chọn
     const [nccNo] = await db.execute(
       `SELECT COUNT(DISTINCT pn.nha_cung_cap) AS so_ncc
        FROM phieunhap pn
-       WHERE pn.da_thanh_toan = 0 OR pn.tong_tien > pn.so_tien_da_tra`
+       WHERE (pn.da_thanh_toan = 0 OR pn.tong_tien > pn.so_tien_da_tra) ${kyWhere}`,
+      kyParams
     );
 
     // Tổng công nợ theo kỳ (theo from_date/to_date)
-    let kyParams = [];
-    let kyWhere = '';
-    if (from_date) {
-      kyWhere += ' AND DATE(pn.ngay_nhap + INTERVAL 7 HOUR) >= ?';
-      kyParams.push(from_date);
-    }
-    if (to_date) {
-      kyWhere += ' AND DATE(pn.ngay_nhap + INTERVAL 7 HOUR) <= ?';
-      kyParams.push(to_date);
-    }
     const [kyNo] = await db.execute(
       `SELECT COALESCE(SUM(pn.tong_tien - pn.so_tien_da_tra), 0) AS tong_con_no_ky
        FROM phieunhap pn
@@ -146,7 +156,7 @@ const CongNoRepository = {
 
     return {
       tong_con_no: Number(tongNo[0].tong_con_no),
-      so_phieu_no: Number(tongNo[0].so_phieu_no),
+      so_phieu_no: Number(phieuNo[0].so_phieu_no),
       da_tra_trong_thang: Number(daTraThang[0].da_tra),
       chi_trong_thang: Number(chiThang[0].chi),
       so_ncc_dang_no: Number(nccNo[0].so_ncc),
