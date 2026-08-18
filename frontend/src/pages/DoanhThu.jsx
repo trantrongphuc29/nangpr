@@ -898,13 +898,12 @@ export default function DoanhThu() {
                     <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "800px" }}>
                       <thead>
                         <tr className="text-[10px] font-bold text-muted uppercase tracking-wider" style={{ backgroundColor: "color-mix(in srgb, var(--color-surface-container-low) 40%, transparent)" }}>
-                          <th className="px-5 py-3.5 w-[10%]">Đơn hàng</th>
-                          <th className="px-5 py-3.5 w-[14%]">Thời gian</th>
-                          <th className="px-5 py-3.5 w-[20%]">Bàn / Loại</th>
-                          <th className="px-5 py-3.5 text-center w-[10%]">Số món</th>
-                          <th className="px-5 py-3.5 text-right w-[16%]">Tổng tiền</th>
-                          <th className="px-5 py-3.5 w-[18%]">Thanh toán</th>
-                          <th className="px-5 py-3.5 text-center w-[12%]">Thao tác</th>
+                          <th className="px-5 py-3.5 w-[12%]">Đơn hàng</th>
+                          <th className="px-5 py-3.5 w-[15%]">Thời gian</th>
+                          <th className="px-5 py-3.5 w-[22%]">Bàn / Loại</th>
+                          <th className="px-5 py-3.5 text-center w-[11%]">Số món</th>
+                          <th className="px-5 py-3.5 text-right w-[20%]">Tổng tiền</th>
+                          <th className="px-5 py-3.5 text-right w-[20%]">Thanh toán</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
@@ -943,7 +942,7 @@ export default function DoanhThu() {
                                   <span className="block text-[10px] font-medium text-muted mt-0.5">gồm ship {dinhDangTien(phi)}</span>
                                 )}
                               </td>
-                              <td className="px-5 py-3.5">
+                              <td className="px-5 py-3.5 text-right">
                                 <Badge
                                   label={hinhThucThanhToanLabel[o.hinh_thuc_thanh_toan] || "Tiền mặt"}
                                   color={o.hinh_thuc_thanh_toan === "chuyen_khoan" ? "var(--color-info)" : "var(--color-success)"}
@@ -951,25 +950,6 @@ export default function DoanhThu() {
                                     ? "color-mix(in srgb, var(--color-info) 15%, transparent)"
                                     : "color-mix(in srgb, var(--color-success) 15%, transparent)"}
                                 />
-                              </td>
-                              {/* stopPropagation: bấm nút In không kéo theo mở modal của dòng */}
-                              <td className="px-5 py-3.5">
-                                <div className="flex items-center justify-center gap-1">
-                                  <button type="button" onClick={() => setDonChon(o)}
-                                    className="w-9 h-9 rounded-lg flex items-center justify-center transition-all hover:bg-primary/10"
-                                    style={{ color: "var(--color-primary)" }}
-                                    title={`Xem chi tiết đơn #${o.ma_don_hang}`}
-                                    aria-label={`Xem chi tiết đơn #${o.ma_don_hang}`}>
-                                    <span className="material-symbols-outlined text-lg">visibility</span>
-                                  </button>
-                                  <button type="button" onClick={(e) => { e.stopPropagation(); inHoaDon(o); }}
-                                    className="w-9 h-9 rounded-lg flex items-center justify-center transition-all hover:bg-primary/10"
-                                    style={{ color: "var(--color-on-surface-variant)" }}
-                                    title={`In hóa đơn #${o.ma_don_hang}`}
-                                    aria-label={`In hóa đơn #${o.ma_don_hang}`}>
-                                    <span className="material-symbols-outlined text-lg">print</span>
-                                  </button>
-                                </div>
                               </td>
                             </tr>
                           );
