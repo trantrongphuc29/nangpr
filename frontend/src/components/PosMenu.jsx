@@ -14,7 +14,7 @@ export default function PosMenu({ menu, busy, onAdd }) {
 
   const list = useMemo(() => {
     let items = [...menu];
-    items = items.filter((m) => Number(m.so_luong_nguyen_lieu) > 0);
+    items = items.filter((m) => Number(m.trang_thai_ban) === 1 && Number(m.so_luong_nguyen_lieu) > 0);
     // Sắp xếp theo tên A-Z
     items.sort((a, b) => a.ten_mon.localeCompare(b.ten_mon, 'vi'));
     if (cat !== "Tất cả") items = items.filter((m) => m.ten_danh_muc === cat);

@@ -729,6 +729,14 @@ export default function MonCongThuc() {
       ));
     }
 
+    // Món tạm ngưng (trang_thai_ban = 0) xếp cuối danh sách
+    result.sort((a, b) => {
+      const statusA = Number(a.trang_thai_ban ?? 1);
+      const statusB = Number(b.trang_thai_ban ?? 1);
+      if (statusA !== statusB) return statusB - statusA; // đang bán (1) lên trước, tạm ngưng (0) xuống sau
+      return 0;
+    });
+
     return result;
   }, [monList, selectedCategory, searchTerm]);
 
@@ -808,7 +816,11 @@ export default function MonCongThuc() {
               key={mon.ma_mon}
               title="Bấm vào món để sửa / xóa"
               onClick={() => handleOpenEdit(mon)}
-              className="card group cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4 hover:border-primary/30 transition-colors"
+              className={`card group cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4 transition-colors ${
+                Number(mon.trang_thai_ban) === 0
+                  ? 'opacity-55 border-dashed hover:border-warning/40 bg-surface-container-low/40'
+                  : 'hover:border-primary/30'
+              }`}
             >
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="w-14 h-14 rounded-lg bg-surface-container-high flex items-center justify-center text-muted shrink-0 overflow-hidden">
@@ -830,6 +842,11 @@ export default function MonCongThuc() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="badge-primary">{mon.ten_danh_muc || 'Chưa phân nhóm'}</span>
+                    {Number(mon.trang_thai_ban) === 0 && (
+                      <span className="badge-warning flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[10px]">pause_circle</span> Tạm ngưng
+                      </span>
+                    )}
                     {hasFormula && mon.bi_khoa && (
                       <span className="badge-error flex items-center gap-1">
                         <span className="material-symbols-outlined text-[10px]">block</span> Tạm khóa

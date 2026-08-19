@@ -53,7 +53,7 @@ const MonService = {
 
   getMenuPos: async () => {
     const all = await MonRepository.getAllWithEstimation();
-    return all.map(enrichMonStatus);
+    return all.map(enrichMonStatus).filter((m) => Number(m.trang_thai_ban) === 1);
   },
 
   themMonMoi: async (data) => {
