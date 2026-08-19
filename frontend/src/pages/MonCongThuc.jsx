@@ -248,28 +248,6 @@ function MonFormModal({ mon, categories, onClose, onSaved, toast, onDelete }) {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-outline/60">
-            {/* Nút Xóa — chỉ hiển thị khi SỬA món, tách riêng bên trái để tránh bấm nhầm */}
-            {isEdit && onDelete && (
-              <button
-                type="button"
-                disabled={busy || deleting}
-                onClick={async () => {
-                  if (deleting) return;
-                  setDeleting(true);
-                  try {
-                    if (await onDelete(mon)) onClose();
-                  } finally {
-                    setDeleting(false);
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg px-2.5 py-2 shrink-0 whitespace-nowrap transition-all hover:bg-error/10 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ color: "var(--color-error)" }}
-              >
-                <span className="material-symbols-outlined text-base">delete_outline</span>
-                {deleting ? "Đang xóa..." : "Xóa món"}
-              </button>
-            )}
-
             <div className="flex gap-3 flex-1 justify-end flex-wrap">
               <button type="button" onClick={onClose} disabled={busy || deleting} className="btn-outline !py-2 !px-4 !text-sm">
                 Hủy
