@@ -48,7 +48,6 @@ function MonFormModal({ mon, categories, onClose, onSaved, toast, onDelete }) {
   );
 
   const [busy, setBusy] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -249,10 +248,10 @@ function MonFormModal({ mon, categories, onClose, onSaved, toast, onDelete }) {
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-outline/60">
             <div className="flex gap-3 flex-1 justify-end flex-wrap">
-              <button type="button" onClick={onClose} disabled={busy || deleting} className="btn-outline !py-2 !px-4 !text-sm">
+              <button type="button" onClick={onClose} disabled={busy} className="btn-outline !py-2 !px-4 !text-sm">
                 Hủy
               </button>
-              <button type="submit" disabled={busy || deleting} className="btn-primary !py-2 !px-4 !text-sm">
+              <button type="submit" disabled={busy} className="btn-primary !py-2 !px-4 !text-sm">
                 {busy
                   ? "Đang lưu..."
                   : isEdit
@@ -406,6 +405,7 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
                 placeholder="Nhập tên nguyên liệu..."
                 value={selectedIngredient ? selectedIngredient.ten_nguyen_lieu : searchNL}
                 role="combobox"
+                aria-controls="nguyen-lieu-listbox"
                 aria-expanded={moBangNL}
                 aria-haspopup="listbox"
                 onChange={(e) => {
@@ -439,6 +439,7 @@ function FormulaModal({ mon, nguyenLieuList, onClose, onSaved }) {
 
               {moBangNL && (
                 <div
+                  id="nguyen-lieu-listbox"
                   role="listbox"
                   className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-xl border border-outline shadow-lg custom-scrollbar"
                   style={{ backgroundColor: "var(--color-card-bg)" }}
